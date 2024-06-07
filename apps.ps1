@@ -13,7 +13,7 @@ function Install-Application {
     )
     
     # Base directory where scripts are located
-    $baseDirectory = "C:\windows\deploy\install"
+    $baseDirectory = "C:\Windows\deploy\install"
     
     # Get the list of scripts for the selected purpose
     $scripts = $applicationScripts[$purpose]
