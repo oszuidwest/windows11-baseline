@@ -31,15 +31,6 @@ jobs:
             Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error
           }
 
-      - name: Format PowerShell scripts
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem -Recurse -Include *.ps1
-          foreach ($file in $files) {
-            Write-Output "Formatting $file"
-            Invoke-Formatter -Path $file.FullName -Recurse -Verbose
-          }
-
       - name: Commit formatted files
         shell: pwsh
         run: |
