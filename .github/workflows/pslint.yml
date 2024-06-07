@@ -38,6 +38,13 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "Auto-format PowerShell scripts" || echo "No changes to commit"
-          BRANCH=$(echo "${GITHUB_REF}" | sed -e 's/^refs\/heads\///')
-          echo "Pushing changes to branch $BRANCH"
-          git push origin "HEAD:$BRANCH"
+
+      - name: Push changes to pull request
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Extract the original branch from the GitHub event payload
+          PR_BRANCH=$(jq -r ".pull_request.head.ref" "$GITHUB_EVENT_PATH")
+          echo "Pushing changes to branch $PR_BRANCH"
+          git push origin HEAD:$PR_BRANCH
