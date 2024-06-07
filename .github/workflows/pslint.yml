@@ -11,6 +11,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
       - name: Format PowerShell scripts
         shell: pwsh
         run: |
@@ -31,20 +36,21 @@ jobs:
             Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error
           }
 
-      - name: Commit formatted files
-        shell: bash
+      - name: Check for changes
+        id: git-check
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Auto-format PowerShell scripts" || echo "No changes to commit"
+          git diff --exit-code || echo "Changes detected"
 
-      - name: Push changes to pull request
-        shell: bash
+      - name: Commit changes
+        if: steps.git-check.outputs.changes-detected
+        run: |
+          git add .
+          git commit -m "Formatted and linted PowerShell scripts"
+
+      - name: Push changes
+        if: steps.git-check.outputs.changes-detected
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Extract the original branch from the GitHub event payload
-          PR_BRANCH=$(jq -r ".pull_request.head.ref" "$GITHUB_EVENT_PATH")
-          echo "Pushing changes to branch $PR_BRANCH"
-          git push origin HEAD:$PR_BRANCH
+          branch=$(echo $GITHUB_REF | sed -e 's/refs\/heads\///g')
+          git push origin $branch
