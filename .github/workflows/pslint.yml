@@ -2,8 +2,6 @@ name: PowerShell Lint and Format
 
 on: 
   pull_request:
-    paths:
-      - '**/*.ps1'
 
 jobs:
   lint_and_format:
