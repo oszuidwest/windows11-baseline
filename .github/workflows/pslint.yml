@@ -1,9 +1,7 @@
 name: PowerShell Lint and Format
 
-on:
-  pull_request:
-    paths:
-      - '**/*.ps1'
+on: 
+  push:
 
 jobs:
   lint_and_format:
@@ -26,9 +24,8 @@ jobs:
             Write-Output "Formatting $file"
             $content = Get-Content -Path $file.FullName -Raw
             $formatted = Invoke-Formatter -ScriptDefinition $content
-            Set-Content -Path $file.FullName -Value $formatted
+            Set-Content -Path $file.FullName -Value $formatted -NoNewline
           }
-
       - name: Lint PowerShell scripts
         shell: pwsh
         run: |
