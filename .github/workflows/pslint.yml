@@ -14,7 +14,6 @@ jobs:
       - name: Install PowerShell Modules
         shell: pwsh
         run: |
-          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
           Install-Module -Name PSCodeFormat -Force -Scope CurrentUser
 
       - name: Lint PowerShell scripts
