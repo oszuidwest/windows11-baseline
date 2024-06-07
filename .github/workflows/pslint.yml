@@ -39,16 +39,20 @@ jobs:
       - name: Check for changes
         id: git-check
         run: |
-          git diff --exit-code || echo "Changes detected"
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::set-output name=changes-detected::true"
+          else
+            echo "::set-output name=changes-detected::false"
+          fi
 
       - name: Commit changes
-        if: steps.git-check.outputs.changes-detected
+        if: steps.git-check.outputs.changes-detected == 'true'
         run: |
           git add .
           git commit -m "Formatted and linted PowerShell scripts"
 
       - name: Push changes
-        if: steps.git-check.outputs.changes-detected
+        if: steps.git-check.outputs.changes-detected == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
