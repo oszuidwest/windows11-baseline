@@ -24,7 +24,7 @@ This repository is a comprehensive refactor of [Windows 10 Baseline](https://git
 | Creative Cloud  | N     | Y  | N         | N     |
 | LibreOffice     | Y     | Y  | Y         | N     |
 | MS Teams        | N     | N  | Y         | N     |
-| Paint.net       | N     | N  | Y         | N     |
+| Pintra       | N     | N  | Y         | N     |
 | Thunderbird     | Y     | N  | N         | N     |
 | VLC             | Y     | Y  | Y         | N     |
 
