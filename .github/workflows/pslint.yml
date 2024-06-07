@@ -10,37 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install PSScriptAnalyzer and PSCodeFormat
-      run: |
-        Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
-        Install-Module -Name PSCodeFormat -Force -Scope CurrentUser
+      - name: Install PSScriptAnalyzer and PSCodeFormat
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Install-Module -Name PSCodeFormat -Force -Scope CurrentUser
 
-    - name: Lint PowerShell scripts
-      run: |
-        $files = Get-ChildItem -Recurse -Include *.ps1
-        foreach ($file in $files) {
-          Write-Output "Linting $file"
-          Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error -Verbose
-        }
-      shell: pwsh
+      - name: Lint PowerShell scripts
+        run: |
+          $files = Get-ChildItem -Recurse -Include *.ps1
+          foreach ($file in $files) {
+            Write-Output "Linting $file"
+            Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error -Verbose
+          }
+        shell: pwsh
 
-    - name: Format PowerShell scripts
-      run: |
-        $files = Get-ChildItem -Recurse -Include *.ps1
-        foreach ($file in $files) {
-          Write-Output "Formatting $file"
-          Invoke-Formatter -Path $file.FullName -Recurse -Verbose
-        }
-      shell: pwsh
+      - name: Format PowerShell scripts
+        run: |
+          $files = Get-ChildItem -Recurse -Include *.ps1
+          foreach ($file in $files) {
+            Write-Output "Formatting $file"
+            Invoke-Formatter -Path $file.FullName -Recurse -Verbose
+          }
+        shell: pwsh
 
-    - name: Commit formatted files
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "Auto-format PowerShell scripts" || echo "No changes to commit"
-        git push
-      shell: pwsh
+      - name: Commit formatted files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-format PowerShell scripts" || echo "No changes to commit"
+          git push
+        shell: pwsh
