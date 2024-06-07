@@ -30,6 +30,7 @@ if (Test-Path -Path $defaultDesktopPath) {
     $shortcut.Save()
 
     Write-Output "Shortcut for WhatsApp created"
-} else {
+}
+else {
     Write-Output "No Desktop directory found in the Default User profile"
 }
