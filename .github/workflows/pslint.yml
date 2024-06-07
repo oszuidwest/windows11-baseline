@@ -1,7 +1,7 @@
 name: PowerShell Lint and Format
 
 on: 
-  pull_request:
+  push:
 
 jobs:
   lint_and_format:
@@ -46,15 +46,9 @@ jobs:
           fi
 
       - name: Commit changes
-        if: steps.git-check.outputs.changes-detected == 'true'
         run: |
-          git add .
-          git commit -m "Formatted and linted PowerShell scripts"
-
-      - name: Push changes
-        if: steps.git-check.outputs.changes-detected == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          branch=$(echo $GITHUB_REF | sed -e 's/refs\/heads\///g')
-          git push origin $branch
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m "Formatted files" || echo "No changes to commit"
+          git push
