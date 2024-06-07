@@ -6,8 +6,8 @@ $applicationScripts = @{
     "Plain"     = @()
 }
 
-# Function to install applications based on the purpose
-function Install-Applications {
+# Function to install an application based on the purpose
+function Install-Application {
     param (
         [string]$purpose
     )
@@ -19,7 +19,7 @@ function Install-Applications {
     $scripts = $applicationScripts[$purpose]
 
     if ($scripts.Count -eq 0) {
-        Write-Host "No applications to install for $purpose purpose."
+        Write-Output "No applications to install for $purpose purpose."
         return
     }
 
@@ -27,20 +27,21 @@ function Install-Applications {
     foreach ($script in $scripts) {
         $scriptPath = Join-Path -Path $baseDirectory -ChildPath $script
         if (Test-Path $scriptPath) {
-            Write-Host "Executing $script..."
+            Write-Output "Executing $script..."
             & "$scriptPath"
-        } else {
-            Write-Host "Script not found: $scriptPath"
+        }
+        else {
+            Write-Warning "Script not found: $scriptPath"
         }
     }
 }
 
 # Main execution
-Write-Host "Choose the purpose for this computer:"
-Write-Host "1. Radio"
-Write-Host "2. TV"
-Write-Host "3. Editorial"
-Write-Host "4. Plain"
+Write-Output "Choose the purpose for this computer:"
+Write-Output "1. Radio"
+Write-Output "2. TV"
+Write-Output "3. Editorial"
+Write-Output "4. Plain"
 
 $choice = Read-Host "Enter your choice (1-4)"
 
@@ -50,11 +51,11 @@ switch ($choice) {
     "3" { $purpose = "Editorial" }
     "4" { $purpose = "Plain" }
     default {
-        Write-Host "Invalid choice. Exiting."
+        Write-Output "Invalid choice. Exiting."
         exit
     }
 }
 
-Write-Host "Setting up the computer for $purpose purpose..."
-Install-Applications -purpose $purpose
-Write-Host "Setup complete."
+Write-Output "Setting up the computer for $purpose purpose..."
+Install-Application -purpose $purpose
+Write-Output "Setup complete."
