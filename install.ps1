@@ -18,12 +18,5 @@ $deploy_computer_name = Read-Host -Prompt "Vul computernaam in"
 
 $deployDirectory = "C:\Windows\deploy"
 
-# Remove the directory if it exists
-if (Test-Path -Path $deployDirectory) {
-    Remove-Item -Path $deployDirectory -Recurse -Force
-}
-
-# Create the directory if it does not exist
-if (-not (Test-Path -Path $deployDirectory)) {
-    New-Item -Path $deployDirectory -ItemType Directory
-}
+# Recreate the directory forcefully
+New-Item -Path $deployDirectory -ItemType Directory -Force
