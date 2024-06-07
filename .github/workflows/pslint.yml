@@ -11,14 +11,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if PSScriptAnalyzer is installed
+      - name: Format PowerShell scripts
         shell: pwsh
         run: |
-          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
-            Write-Output "PSScriptAnalyzer not found. Installing..."
-            Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
-          } else {
-            Write-Output "PSScriptAnalyzer is already installed."
+          $files = Get-ChildItem -Recurse -Include *.ps1
+          foreach ($file in $files) {
+            Write-Output "Formatting $file"
+            $content = Get-Content -Path $file.FullName -Raw
+            $formatted = Invoke-Formatter -ScriptDefinition $content
+            Set-Content -Path $file.FullName -Value $formatted
           }
 
       - name: Lint PowerShell scripts
