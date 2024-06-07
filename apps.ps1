@@ -29,7 +29,8 @@ function Install-Applications {
         if (Test-Path $scriptPath) {
             Write-Host "Executing $script..."
             & "$scriptPath"
-        } else {
+        }
+        else {
             Write-Host "Script not found: $scriptPath"
         }
     }
@@ -58,3 +59,4 @@ switch ($choice) {
 Write-Host "Setting up the computer for $purpose purpose..."
 Install-Applications -purpose $purpose
 Write-Host "Setup complete."
+
