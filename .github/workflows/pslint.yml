@@ -11,11 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install PowerShell Modules
-        shell: pwsh
-        run: |
-          Install-Module -Name PSCodeFormat -Force -Scope CurrentUser
-
       - name: Lint PowerShell scripts
         shell: pwsh
         run: |
