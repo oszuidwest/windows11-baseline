@@ -2,7 +2,8 @@
 $shortcutName = "WhatsApp"
 $edgePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 $whatsappUrl = "https://web.whatsapp.com"
-
+#TODO: $iconPath = "C:\Path\To\Your\Icon.ico"
+	
 # Arguments for Edge to open WhatsApp Web in app mode, in private window, and specified size
 $browserArguments = "--app=$whatsappUrl --inprivate --window-size=640,360"
 
@@ -20,16 +21,16 @@ if (Test-Path -Path $defaultDesktopPath) {
     $shortcut = $wshShell.CreateShortcut($shortcutPath)
     $shortcut.TargetPath = $edgePath
     $shortcut.Arguments = $browserArguments
-    $shortcut.Description = "Open WhatsApp Web in een 640x360 venster zonder browser elementen"
+    $shortcut.Description = "Open WhatsApp"
     $shortcut.WorkingDirectory = Split-Path $edgePath
     
     # TODO: Add an icon to the shortcut
-    # $iconPath = "C:\Path\To\Your\Icon.ico"
     # $shortcut.IconLocation = $iconPath
 
     $shortcut.Save()
 
     Write-Output "Shortcut for WhatsApp created"
-} else {
+}
+else {
     Write-Output "No Desktop directory found in the Default User profile"
 }
