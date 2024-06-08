@@ -5,7 +5,7 @@ $whatsappUrl = "https://web.whatsapp.com"
 #TODO: $iconPath = "C:\Path\To\Your\Icon.ico"
 	
 # Arguments for Edge to open WhatsApp Web in app mode, in private window, and specified size
-$browserArguments = "--app=$whatsappUrl --inprivate --window-size=640,360"
+$browserArguments = "--app=$whatsappUrl --inprivate --name=WhatsApp --window-size=640,360"
 
 # Path to the Default User profile's Desktop directory
 $defaultDesktopPath = "C:\Users\Default\Desktop"
