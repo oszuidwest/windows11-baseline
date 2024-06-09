@@ -25,51 +25,54 @@ if (-not (Test-Admin)) {
 }
 
 # Prompt for system purpose
-$purpose = Get-UserInput -PromptMessage "Enter the system purpose:"
-[System.Environment]::SetEnvironmentVariable("_deploy_purpose", $purpose, [System.EnvironmentVariableTarget]::Machine)
+$systemPurpose = Get-UserInput -PromptMessage "Enter the system purpose:"
 
 # Prompt for system ownership
-$ownership = Get-UserInput -PromptMessage "Enter the system ownership:"
-[System.Environment]::SetEnvironmentVariable("_deploy_ownership", $ownership, [System.EnvironmentVariableTarget]::Machine)
+$systemOwnership = Get-UserInput -PromptMessage "Enter the system ownership:"
 
 # Prompt for user password
-$deploy_user_password = Get-UserInput -PromptMessage "Enter the user password:"
-[System.Environment]::SetEnvironmentVariable("_deploy_user_password", $deploy_user_password, [System.EnvironmentVariableTarget]::Machine)
+$userPassword = Get-UserInput -PromptMessage "Enter the user password:"
 
 # Prompt for computer name
-$deploy_computer_name = Get-UserInput -PromptMessage "Enter the computer name:"
-[System.Environment]::SetEnvironmentVariable("_deploy_computer_name", $deploy_computer_name, [System.EnvironmentVariableTarget]::Machine)
+$computerName = Get-UserInput -PromptMessage "Enter the computer name:"
 
-# Prompt for workgroup
-$workgroup = Get-UserInput -PromptMessage "Enter the workgroup name:"
-[System.Environment]::SetEnvironmentVariable("_deploy_workgroup", $workgroup, [System.EnvironmentVariableTarget]::Machine)
+# Prompt for workgroup name
+$workgroupName = Get-UserInput -PromptMessage "Enter the workgroup name:"
 
 #===============================================================
 # Cleanup directory
 #===============================================================
 
-$deployDirectory = "C:\Windows\deploy"
+$deployDir = "C:\Windows\deploy"
 
 # Recreate the directory forcefully
-if (Test-Path $deployDirectory) {
-    Remove-Item -Path $deployDirectory -Recurse -Force
+if (Test-Path $deployDir) {
+    Remove-Item -Path $deployDir -Recurse -Force
 }
-New-Item -Path $deployDirectory -ItemType Directory -Force
+New-Item -Path $deployDir -ItemType Directory -Force
 
 #===============================================================
 # Call all sub-scripts with admin rights and bypass execution policy
 #===============================================================
 
-$scriptDirectory = "C:\Windows\deploy\scripts"
+$scriptsDir = "C:\Windows\deploy\scripts"
 
-if (Test-Path $scriptDirectory) {
+if (Test-Path $scriptsDir) {
     # Get all .ps1 files in the directory
-    $scriptFiles = Get-ChildItem -Path $scriptDirectory -Filter *.ps1
+    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1
 
     foreach ($scriptFile in $scriptFiles) {
         Write-Output "Executing script: $($scriptFile.FullName)"
         try {
-            $arguments = "-ExecutionPolicy Bypass -File `"$($scriptFile.FullName)`" -purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
+            $arguments = @(
+                "-ExecutionPolicy Bypass"
+                "-File `"$($scriptFile.FullName)`""
+                "-systemPurpose `"$systemPurpose`""
+                "-systemOwnership `"$systemOwnership`""
+                "-userPassword `"$userPassword`""
+                "-computerName `"$computerName`""
+                "-workgroupName `"$workgroupName`""
+            )
             Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Wait -NoNewWindow -Verb RunAs
             Write-Output "Successfully executed: $($scriptFile.FullName)"
         }
@@ -79,8 +82,7 @@ if (Test-Path $scriptDirectory) {
     }
 }
 else {
-    Write-Output "Script directory does not exist: $scriptDirectory"
+    Write-Output "Script directory does not exist: $scriptsDir"
 }
 
 Write-Output "Script execution completed."
-

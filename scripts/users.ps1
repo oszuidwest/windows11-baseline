@@ -1,14 +1,14 @@
 # Define script parameters
 param (
-    [string]$purpose,
-    [string]$ownership,
-    [securestring]$password,
-    [string]$computername,
-    [string]$workgroup
+    [string]$systemPurpose,
+    [string]$systemOwnership,
+    [securestring]$userPassword,
+    [string]$computerName,
+    [string]$workgroupName
 )
 
 # Map purpose to username
-$userName = switch ($purpose) {
+$userName = switch ($systemPurpose) {
     'editorial' { "Redactie Gebruiker" }
     'tv' { "Studio Gebruiker" }
     'radio' { "Studio Gebruiker" }
@@ -16,7 +16,7 @@ $userName = switch ($purpose) {
 }
 
 # Add user if ownership is shared and userName is specified
-if ($ownership -eq "shared" -and $userName -ne "") {
+if ($systemOwnership -eq "shared" -and $userName -ne "") {
     if (-not (Get-LocalUser -Name $userName -ErrorAction SilentlyContinue)) {
         New-LocalUser -Name $userName -Password $password -FullName $userName -Description "User created by deployment script"
     }
@@ -38,9 +38,9 @@ $regPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
 if ($userName -ne "") {
     Set-ItemProperty -Path $regPath -Name "DefaultUserName" -Value $userName -Force
     
-    if ($purpose -ne "plain") {
+    if ($systemPurpose -ne "plain") {
         # Convert SecureString password to plain text for registry entry
-        $plainTextPassword = Convert-SecureStringToPlainText $password
+        $plainTextPassword = Convert-SecureStringToPlainText $userPassword
         Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $plainTextPassword -Force
         Set-ItemProperty -Path $regPath -Name "AutoAdminLogon" -Value 1 -Force
     }
