@@ -11,7 +11,7 @@ function Get-UserInput {
 }
 
 # Function to check for admin rights
-function Check-Admin {
+function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
     $isAdmin = (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
@@ -19,7 +19,7 @@ function Check-Admin {
 }
 
 # Check if running as admin
-if (-not (Check-Admin)) {
+if (-not (Test-Admin)) {
     Write-Error "This script must be run as an administrator. Exiting..."
     exit
 }
