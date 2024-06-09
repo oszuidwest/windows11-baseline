@@ -25,7 +25,7 @@ function Install-Application {
     $purpose = $purpose.ToLower()
 
     # Base directory where scripts are located
-    $baseDirectory = "C:\Windows\deploy\install"
+    $baseDirectory = "C:\Windows\deploy\installers"
     
     # Get the list of scripts for the selected purpose
     $scripts = $applicationScripts[$purpose]
