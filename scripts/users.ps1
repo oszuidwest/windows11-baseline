@@ -2,7 +2,7 @@
 param (
     [string]$purpose,
     [string]$ownership,
-    [string]$password,
+    [securestring]$password,
     [string]$computername,
     [string]$workgroup
 )
