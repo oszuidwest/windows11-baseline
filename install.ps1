@@ -10,6 +10,20 @@ function Get-UserInput {
     return Read-Host -Prompt $PromptMessage
 }
 
+# Function to check for admin rights
+function Check-Admin {
+    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
+    $isAdmin = (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
+    return $isAdmin
+}
+
+# Check if running as admin
+if (-not (Check-Admin)) {
+    Write-Error "This script must be run as an administrator. Exiting..."
+    exit
+}
+
 # Prompt for system purpose
 $purpose = Get-UserInput -PromptMessage "Enter the system purpose:"
 [System.Environment]::SetEnvironmentVariable("_deploy_purpose", $purpose, [System.EnvironmentVariableTarget]::Machine)
