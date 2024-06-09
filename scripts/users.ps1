@@ -1,6 +1,3 @@
-# Suppress PSReviewUnusedParameter for the entire file
-# pragma: allow(PSReviewUnusedParameter)
-
 # Define script parameters
 param (
     [string]$purpose,
