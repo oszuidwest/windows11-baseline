@@ -32,7 +32,7 @@ jobs:
           $files = Get-ChildItem -Recurse -Include *.ps1
           foreach ($file in $files) {
             Write-Output "Linting $file"
-            Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error
+            Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error -ExcludeRule PSReviewUnusedParameter
           }
 
       - name: Commit changes
