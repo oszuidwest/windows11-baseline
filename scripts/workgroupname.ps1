@@ -1,7 +1,7 @@
 param (
-    [string]$purpose,
-    [string]$ownership,
-    [string]$password,
+    [string]$purpose, # Ignore: PSReviewUnusedParameter
+    [string]$ownership, # Ignore: PSReviewUnusedParameter
+    [string]$password, # Ignore: PSReviewUnusedParameter
     [string]$computername,
     [string]$workgroup
 )
