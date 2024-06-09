@@ -16,20 +16,21 @@ Both parameters are mandatory.
 
 # Application scripts by purpose
 $appScripts = @{
-    "radio"     = "app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1"
-    "tv"        = "app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1"
-    "editorial" = "app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1"
+    "radio"     = @("app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1")
+    "tv"        = @("app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1")
+    "editorial" = @("app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1")
     "plain"     = @()
 }
 
 # Function to install applications
-function Install-Apps {
+function Install-App {
     param (
         [string]$purpose,
         [string]$ownership
     )
     $purpose = $purpose.ToLower()
     $scripts = $appScripts[$purpose]
+
     if ($scripts.Count -eq 0) {
         Write-Output "No apps to install for '$purpose'."
         return
@@ -61,7 +62,7 @@ if (-not $appScripts.ContainsKey($systemPurpose)) {
 }
 
 Write-Output "Installing apps for '$systemPurpose' with '$systemOwnership' ownership..."
-Install-Apps -purpose $systemPurpose -ownership $systemOwnership
+Install-App -purpose $systemPurpose -ownership $systemOwnership
 Write-Output "Installation complete."
 
 # Prevent the script from closing immediately

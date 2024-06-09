@@ -2,7 +2,8 @@
 
 This repository is a comprehensive refactor of [Windows 10 Baseline](https://github.com/oszuidwest/windows10-baseline). It serves as the baseline configuration for Windows 11 computers owned by Streekomroep ZuidWest.
 
-**⚠️ This project is currently under development. The aim is to customize the configuration according to the computer's intended use and ownership. It remains entirely untested and is based on theoretical concepts. We are awaiting the release of Windows 11 24H2 to conduct practical tests.**
+
+**⚠️ This project is still being developed. The goal is to customize the configuration for the computer’s intended use and ownership. It is not yet complete, fully tested, or secure. We are waiting for the release of Windows 11 24H2 to start practical tests.**
 
 ## Purpose
 - Radio (Radio production)
