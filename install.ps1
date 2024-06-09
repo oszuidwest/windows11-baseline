@@ -43,12 +43,26 @@ if (Test-Path $deployDirectory) {
 New-Item -Path $deployDirectory -ItemType Directory -Force
 
 #===============================================================
-# Call sub-scripts
+# Call all sub-scripts
 #===============================================================
 
-# TODO: Implement a loop that calls all the script
-$installScriptPath = "C:\windows\deploy\apps.ps1"
-$arguments = "-purpose `"$purpose`" -ownership `"$ownership`""
-Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$installScriptPath`" $arguments" -Wait -NoNewWindow
+$scriptDirectory = "C:\Windows\deploy\scripts"
+
+if (Test-Path $scriptDirectory) {
+    # Get all .ps1 files in the directory
+    $scriptFiles = Get-ChildItem -Path $scriptDirectory -Filter *.ps1
+
+    foreach ($scriptFile in $scriptFiles) {
+        Write-Output "Executing script: $($scriptFile.FullName)"
+        try {
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$($scriptFile.FullName)`" -Wait -NoNewWindow
+            Write-Output "Successfully executed: $($scriptFile.FullName)"
+        } catch {
+            Write-Output "Failed to execute: $($scriptFile.FullName) - Error: $_"
+        }
+    }
+} else {
+    Write-Output "Script directory does not exist: $scriptDirectory"
+}
 
 Write-Output "Script execution completed."
