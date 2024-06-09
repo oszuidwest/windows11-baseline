@@ -22,3 +22,11 @@ Computer
 Software\Policies\Microsoft\Windows\Windows Search
 AllowCloudSearch
 DELETE
+
+; Verify that this one works on computer level, maybe only on user level
+; ----------
+Computer
+Software\Policies\Microsoft\Windows\Explorer
+DisableSearchBoxSuggestions
+DWORD:1
+; ----------
