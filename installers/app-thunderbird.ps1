@@ -1,1 +1,1 @@
-sudo choco install thunderbird -y
+choco install thunderbird -y

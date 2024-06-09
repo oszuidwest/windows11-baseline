@@ -1,1 +1,1 @@
-sudo choco install libreoffice-fresh -y
+choco install libreoffice-fresh -y
