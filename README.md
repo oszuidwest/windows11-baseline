@@ -15,6 +15,10 @@ This repository is a comprehensive refactor of [Windows 10 Baseline](https://git
 - Owned (Company-issued laptops for employees)
 - Dedicated (e.g., playout servers)
 
+```powershell
+Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -UseBasicParsing).Content | Invoke-Expression }`"" -Verb RunAs
+```
+
 ### Application Mapping
 
 |                 | Radio | TV | Editorial | Plain |

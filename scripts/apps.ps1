@@ -1,73 +1,65 @@
+# Define script parameters
+param (
+    [string]$systemPurpose,
+    [string]$systemOwnership,
+    [string]$userPassword,
+    [string]$computerName,
+    [string]$workgroupName
+)
+
 <#
-This script installs a set of applications based on the specified purpose and ownership type. 
-The 'purpose' parameter should be one of "radio", "tv", "editorial", or "plain".
-The 'ownership' parameter should specify the type of ownership, such as "shared", "personal", or "dedicated". 
-Both parameters are required for the script to run. 
-If they are not provided, the script will print an error message and exit.
+This script installs applications based on the specified purpose and ownership type.
+'systemPurpose' should be "radio", "tv", "editorial", or "plain".
+'systemOwnership' should be "shared", "personal", or "dedicated".
+Both parameters are mandatory.
 #>
 
-# Application scripts for each purpose in lowercase
-$applicationScripts = @{
-    "radio"     = @("app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1")
-    "tv"        = @("app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1")
-    "editorial" = @("app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1")
+# Application scripts by purpose
+$appScripts = @{
+    "radio"     = "app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1"
+    "tv"        = "app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1"
+    "editorial" = "app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1"
     "plain"     = @()
 }
 
-# Function to install applications based on the purpose
-function Install-Application {
+# Function to install applications
+function Install-Apps {
     param (
         [string]$purpose,
         [string]$ownership
     )
-    
-    # Ensure purpose is lowercase
     $purpose = $purpose.ToLower()
-
-    # Base directory where scripts are located
-    $baseDirectory = "C:\Windows\deploy\installers"
-    
-    # Get the list of scripts for the selected purpose
-    $scripts = $applicationScripts[$purpose]
-
+    $scripts = $appScripts[$purpose]
     if ($scripts.Count -eq 0) {
-        Write-Output "No applications to install for $purpose purpose."
+        Write-Output "No apps to install for '$purpose'."
         return
     }
 
-    # Execute each script
+    $baseDir = "C:\Windows\deploy\installers"
     foreach ($script in $scripts) {
-        $scriptPath = Join-Path -Path $baseDirectory -ChildPath $script
+        $scriptPath = Join-Path $baseDir $script
         if (Test-Path $scriptPath) {
-            Write-Output "Executing $script for $ownership ownership..."
-            & "$scriptPath"
+            Write-Output "Running $script for $ownership ownership..."
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$scriptPath`"" -Verb RunAs -Wait
         }
         else {
-            Write-Warning "Script not found: $scriptPath"
+            Write-Warning "Script $scriptPath not found."
         }
     }
 }
 
 # Main execution
-param (
-    [string]$purpose,
-    [string]$ownership
-)
-
-# Check if required parameters are provided
-if (-not $PSCmdlet.MyInvocation.BoundParameters["purpose"] -or -not $PSCmdlet.MyInvocation.BoundParameters["ownership"]) {
-    Write-Error "Error: Both 'purpose' and 'ownership' parameters must be provided."
+if (-not $systemPurpose -or -not $systemOwnership) {
+    Write-Error "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
     exit
 }
 
-# Convert purpose to lowercase
-$purpose = $purpose.ToLower()
-
-if (-not $applicationScripts.ContainsKey($purpose)) {
-    Write-Error "Invalid purpose provided. Exiting."
+$systemPurpose = $systemPurpose.ToLower()
+if (-not $appScripts.ContainsKey($systemPurpose)) {
+    Write-Error "Invalid 'systemPurpose': $systemPurpose. Exiting."
     exit
 }
 
-Write-Output "Installing applications for $purpose purpose with $ownership ownership..."
-Install-Application -purpose $purpose -ownership $ownership
-Write-Output "Application installation complete."
+Write-Output "Installing apps for '$systemPurpose' with '$systemOwnership' ownership..."
+Install-Apps -purpose $systemPurpose -ownership $systemOwnership
+Write-Output "Installation complete."

@@ -2,85 +2,105 @@
 # Windows 11 Baseline for Streekomroep ZuidWest
 #===============================================================
 
-# Function to prompt for user input
-function Get-UserInput {
-    param (
-        [string]$PromptMessage
-    )
-    return Read-Host -Prompt $PromptMessage
-}
-
 # Function to check for admin rights
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
-    $isAdmin = (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
-    return $isAdmin
+    (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
 }
 
-# Check if running as admin
+# Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
     Write-Error "This script must be run as an administrator. Exiting..."
     exit
 }
 
-# Prompt for system purpose
-$purpose = Get-UserInput -PromptMessage "Enter the system purpose:"
-[System.Environment]::SetEnvironmentVariable("_deploy_purpose", $purpose, [System.EnvironmentVariableTarget]::Machine)
+# Get user inputs
+$systemPurpose = Read-Host -Prompt "Enter the system purpose:"
+$systemOwnership = Read-Host -Prompt "Enter the system ownership:"
+$userPassword = Read-Host -Prompt "Enter the user password:"
+$computerName = Read-Host -Prompt "Enter the computer name:"
+$workgroupName = Read-Host -Prompt "Enter the workgroup name:"
 
-# Prompt for system ownership
-$ownership = Get-UserInput -PromptMessage "Enter the system ownership:"
-[System.Environment]::SetEnvironmentVariable("_deploy_ownership", $ownership, [System.EnvironmentVariableTarget]::Machine)
+# Set deployment directory
+$deployDir = "C:\Windows\deploy"
+$zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
+$zipFilePath = "$deployDir\main.zip"
+$sourceDir = "$deployDir\windows11-baseline-main"
 
-# Prompt for user password
-$deploy_user_password = Get-UserInput -PromptMessage "Enter the user password:"
-[System.Environment]::SetEnvironmentVariable("_deploy_user_password", $deploy_user_password, [System.EnvironmentVariableTarget]::Machine)
-
-# Prompt for computer name
-$deploy_computer_name = Get-UserInput -PromptMessage "Enter the computer name:"
-[System.Environment]::SetEnvironmentVariable("_deploy_computer_name", $deploy_computer_name, [System.EnvironmentVariableTarget]::Machine)
-
-# Prompt for workgroup
-$workgroup = Get-UserInput -PromptMessage "Enter the workgroup name:"
-[System.Environment]::SetEnvironmentVariable("_deploy_workgroup", $workgroup, [System.EnvironmentVariableTarget]::Machine)
-
-#===============================================================
-# Cleanup directory
-#===============================================================
-
-$deployDirectory = "C:\Windows\deploy"
-
-# Recreate the directory forcefully
-if (Test-Path $deployDirectory) {
-    Remove-Item -Path $deployDirectory -Recurse -Force
+# Clean up and recreate deployment directory
+if (Test-Path $deployDir) {
+    Remove-Item -Path $deployDir -Recurse -Force
 }
-New-Item -Path $deployDirectory -ItemType Directory -Force
+New-Item -Path $deployDir -ItemType Directory -Force
 
-#===============================================================
-# Call all sub-scripts with admin rights and bypass execution policy
-#===============================================================
+# Download and extract ZIP file
+try {
+    Write-Output "Downloading ZIP file from $zipUrl..."
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath
+    Write-Output "Download complete. Extracting ZIP file..."
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
+    Write-Output "Extraction complete."
+}
+catch {
+    Write-Error "Failed to download or extract ZIP file. Exiting..."
+    exit
+}
 
-$scriptDirectory = "C:\Windows\deploy\scripts"
+# Clean up the downloaded ZIP file
+Remove-Item -Path $zipFilePath -Force
 
-if (Test-Path $scriptDirectory) {
-    # Get all .ps1 files in the directory
-    $scriptFiles = Get-ChildItem -Path $scriptDirectory -Filter *.ps1
-
-    foreach ($scriptFile in $scriptFiles) {
-        Write-Output "Executing script: $($scriptFile.FullName)"
-        try {
-            $arguments = "-ExecutionPolicy Bypass -File `"$($scriptFile.FullName)`" -purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
-            Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Wait -NoNewWindow -Verb RunAs
-            Write-Output "Successfully executed: $($scriptFile.FullName)"
-        }
-        catch {
-            Write-Output "Failed to execute: $($scriptFile.FullName) - Error: $_"
-        }
-    }
+# Move extracted contents to root of deployDir
+if (Test-Path $sourceDir) {
+    Write-Output "Moving contents from $sourceDir to $deployDir..."
+    Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
+    Remove-Item -Path $sourceDir -Recurse -Force
+    Write-Output "Contents moved and $sourceDir removed."
 }
 else {
-    Write-Output "Script directory does not exist: $scriptDirectory"
+    Write-Error "$sourceDir does not exist. Exiting..."
+    exit
 }
 
-Write-Output "Script execution completed."
+#===============================================================
+# Execute all scripts in the scripts directory
+#===============================================================
 
+$scriptsDir = "$deployDir\scripts"
+
+# Check if the scripts directory exists
+if (Test-Path $scriptsDir) {
+    Write-Output "Found script directory: $scriptsDir"
+
+    # Get all .ps1 files in the scripts directory
+    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1
+
+    foreach ($scriptFile in $scriptFiles) {
+        # Display a message before executing each script
+        Write-Output "Executing script: $($scriptFile.FullName)"
+
+        try {
+            # Execute the script
+            & $scriptFile.FullName `
+                -systemPurpose $systemPurpose `
+                -systemOwnership $systemOwnership `
+                -userPassword $userPassword `
+                -computerName $computerName `
+                -workgroupName $workgroupName
+
+            Write-Output "Successfully executed script: $($scriptFile.FullName)"
+        }
+        catch {
+            Write-Error "Failed to execute script: $($scriptFile.FullName) - Error: $_"
+        }
+    }
+
+    Write-Output "All scripts executed."
+}
+else {
+    Write-Error "Script directory does not exist: $scriptsDir"
+}
+
+# Prevent the script from closing immediately
+Read-Host -Prompt "Press Enter to exit..."
