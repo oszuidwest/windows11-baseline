@@ -3,8 +3,8 @@ param (
     [string]$purpose,
     [string]$ownership,
     [string]$password,
-    [string]$computername, # Ignore: PSReviewUnusedParameter
-    [string]$workgroup # Ignore: PSReviewUnusedParameter
+    [string]$computername, # pragma: allow(PSReviewUnusedParameter)
+    [string]$workgroup    # pragma: allow(PSReviewUnusedParameter)
 )
 
 # Map purpose to username
