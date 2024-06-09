@@ -30,7 +30,7 @@ This repository is a comprehensive refactor of [Windows 10 Baseline](https://git
 
 ### System Policy Mapping
 
-|                              | Shared     | Owned      | Dedicated  |
+|                              | Shared     | Personal   | Dedicated  |
 |------------------------------|------------|------------|------------|
 | Windows Update               | Hard       | Hard       | Disabled   |
 | Edge                         | Restricted | Flexible   | Flexible   |

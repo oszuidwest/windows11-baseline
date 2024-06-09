@@ -1,17 +1,29 @@
-# Application scripts for each purpose
+<#
+This script installs a set of applications based on the specified purpose and ownership type. 
+The 'purpose' parameter should be one of "radio", "tv", "editorial", or "plain".
+The 'ownership' parameter should specify the type of ownership, such as "shared", "personal", or "dedicated". 
+Both parameters are required for the script to run. 
+If they are not provided, the script will print an error message and exit.
+#>
+
+# Application scripts for each purpose in lowercase
 $applicationScripts = @{
-    "Radio"     = @("app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1")
-    "TV"        = @("app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1")
-    "Editorial" = @("app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1")
-    "Plain"     = @()
+    "radio"     = @("app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1")
+    "tv"        = @("app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1")
+    "editorial" = @("app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1")
+    "plain"     = @()
 }
 
-# Function to install an application based on the purpose
+# Function to install applications based on the purpose
 function Install-Application {
     param (
-        [string]$purpose
+        [string]$purpose,
+        [string]$ownership
     )
     
+    # Ensure purpose is lowercase
+    $purpose = $purpose.ToLower()
+
     # Base directory where scripts are located
     $baseDirectory = "C:\Windows\deploy\install"
     
@@ -27,7 +39,7 @@ function Install-Application {
     foreach ($script in $scripts) {
         $scriptPath = Join-Path -Path $baseDirectory -ChildPath $script
         if (Test-Path $scriptPath) {
-            Write-Output "Executing $script..."
+            Write-Output "Executing $script for $ownership ownership..."
             & "$scriptPath"
         }
         else {
@@ -37,25 +49,25 @@ function Install-Application {
 }
 
 # Main execution
-Write-Output "Choose the purpose for this computer:"
-Write-Output "1. Radio"
-Write-Output "2. TV"
-Write-Output "3. Editorial"
-Write-Output "4. Plain"
+param (
+    [string]$purpose,
+    [string]$ownership
+)
 
-$choice = Read-Host "Enter your choice (1-4)"
-
-switch ($choice) {
-    "1" { $purpose = "Radio" }
-    "2" { $purpose = "TV" }
-    "3" { $purpose = "Editorial" }
-    "4" { $purpose = "Plain" }
-    default {
-        Write-Output "Invalid choice. Exiting."
-        exit
-    }
+# Check if required parameters are provided
+if (-not $PSCmdlet.MyInvocation.BoundParameters["purpose"] -or -not $PSCmdlet.MyInvocation.BoundParameters["ownership"]) {
+    Write-Error "Error: Both 'purpose' and 'ownership' parameters must be provided."
+    exit
 }
 
-Write-Output "Setting up the computer for $purpose purpose..."
-Install-Application -purpose $purpose
-Write-Output "Setup complete."
+# Convert purpose to lowercase
+$purpose = $purpose.ToLower()
+
+if (-not $applicationScripts.ContainsKey($purpose)) {
+    Write-Error "Invalid purpose provided. Exiting."
+    exit
+}
+
+Write-Output "Installing applications for $purpose purpose with $ownership ownership..."
+Install-Application -purpose $purpose -ownership $ownership
+Write-Output "Application installation complete."
