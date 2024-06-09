@@ -10,9 +10,9 @@ param (
 # Map purpose to username
 $userName = switch ($purpose) {
     'editorial' { "Redactie Gebruiker" }
-    'tv'        { "Studio Gebruiker" }
-    'radio'     { "Studio Gebruiker" }
-    default     { "" }
+    'tv' { "Studio Gebruiker" }
+    'radio' { "Studio Gebruiker" }
+    default { "" }
 }
 
 # Add user if ownership is shared and userName is specified
