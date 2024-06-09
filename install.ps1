@@ -55,7 +55,8 @@ if (Test-Path $scriptDirectory) {
     foreach ($scriptFile in $scriptFiles) {
         Write-Output "Executing script: $($scriptFile.FullName)"
         try {
-            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$($scriptFile.FullName)`" -Wait -NoNewWindow
+            $arguments = "-purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
+            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$($scriptFile.FullName)`" $arguments" -Wait -NoNewWindow
             Write-Output "Successfully executed: $($scriptFile.FullName)"
         } catch {
             Write-Output "Failed to execute: $($scriptFile.FullName) - Error: $_"
