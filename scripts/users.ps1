@@ -1,10 +1,13 @@
+# Suppress PSReviewUnusedParameter for the entire file
+# pragma: allow(PSReviewUnusedParameter)
+
 # Define script parameters
 param (
     [string]$purpose,
     [string]$ownership,
     [string]$password,
-    [string]$computername, # pragma: allow(PSReviewUnusedParameter)
-    [string]$workgroup    # pragma: allow(PSReviewUnusedParameter)
+    [string]$computername,
+    [string]$workgroup
 )
 
 # Map purpose to username
