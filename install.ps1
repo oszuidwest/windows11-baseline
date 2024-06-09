@@ -42,7 +42,8 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
     Write-Output "Extraction complete."
-} catch {
+}
+catch {
     Write-Error "Failed to download or extract ZIP file. Exiting..."
     exit
 }
@@ -56,7 +57,8 @@ if (Test-Path $sourceDir) {
     Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
     Remove-Item -Path $sourceDir -Recurse -Force
     Write-Output "Contents moved and $sourceDir removed."
-} else {
+}
+else {
     Write-Error "$sourceDir does not exist. Exiting..."
     exit
 }
@@ -93,13 +95,15 @@ if (Test-Path $scriptsDir) {
             # Execute the script
             Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Wait -NoNewWindow -Verb RunAs
             Write-Output "Successfully executed script: $($scriptFile.FullName)"
-        } catch {
+        }
+        catch {
             Write-Error "Failed to execute script: $($scriptFile.FullName) - Error: $_"
         }
     }
 
     Write-Output "All scripts executed."
-} else {
+}
+else {
     Write-Error "Script directory does not exist: $scriptsDir"
 }
 
