@@ -1,1 +1,1 @@
-sudo choco install vlc -y
+choco install vlc -y

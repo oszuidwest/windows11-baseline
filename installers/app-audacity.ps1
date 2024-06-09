@@ -1,1 +1,1 @@
-sudo choco install audacity -y
+choco install audacity -y

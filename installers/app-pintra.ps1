@@ -1,1 +1,1 @@
-sudo choco install pintra -y
+choco install pintra -y
