@@ -58,11 +58,13 @@ if (Test-Path $scriptDirectory) {
             $arguments = "-purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
             Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$($scriptFile.FullName)`" $arguments" -Wait -NoNewWindow
             Write-Output "Successfully executed: $($scriptFile.FullName)"
-        } catch {
+        }
+        catch {
             Write-Output "Failed to execute: $($scriptFile.FullName) - Error: $_"
         }
     }
-} else {
+}
+else {
     Write-Output "Script directory does not exist: $scriptDirectory"
 }
 
