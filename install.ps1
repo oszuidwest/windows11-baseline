@@ -57,7 +57,7 @@ if (Test-Path $deployDirectory) {
 New-Item -Path $deployDirectory -ItemType Directory -Force
 
 #===============================================================
-# Call all sub-scripts
+# Call all sub-scripts with admin rights
 #===============================================================
 
 $scriptDirectory = "C:\Windows\deploy\scripts"
@@ -69,8 +69,8 @@ if (Test-Path $scriptDirectory) {
     foreach ($scriptFile in $scriptFiles) {
         Write-Output "Executing script: $($scriptFile.FullName)"
         try {
-            $arguments = "-purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
-            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$($scriptFile.FullName)`" $arguments" -Wait -NoNewWindow
+            $arguments = "-File `"$($scriptFile.FullName)`" -purpose `"$purpose`" -ownership `"$ownership`" -password `"$deploy_user_password`" -computername `"$deploy_computer_name`" -workgroup `"$workgroup`""
+            Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Wait -NoNewWindow -Verb RunAs
             Write-Output "Successfully executed: $($scriptFile.FullName)"
         }
         catch {
