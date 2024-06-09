@@ -63,3 +63,6 @@ if (-not $appScripts.ContainsKey($systemPurpose)) {
 Write-Output "Installing apps for '$systemPurpose' with '$systemOwnership' ownership..."
 Install-Apps -purpose $systemPurpose -ownership $systemOwnership
 Write-Output "Installation complete."
+
+# Prevent the script from closing immediately
+Read-Host -Prompt "Press Enter to exit..."

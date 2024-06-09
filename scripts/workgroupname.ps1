@@ -16,9 +16,18 @@ if ($currentComputerName -ne $computerName) {
     Write-Output "Changing computer name from $currentComputerName to $computerName..."
     Rename-Computer -NewName $computerName -Force
 }
+else {
+    Write-Output "Computer name is already $computerName. No change needed."
+}
 
 # Check and update the workgroup if necessary
-if ($currentWorkgroup -ne $workgroup) {
+if ($currentWorkgroup -ne $workgroupName) {
     Write-Output "Changing workgroup from $currentWorkgroup to $workgroupName..."
     Add-Computer -WorkGroupName $workgroupName
 }
+else {
+    Write-Output "Workgroup is already $workgroupName. No change needed."
+}
+
+# Prevent the script from closing immediately
+Read-Host -Prompt "Press Enter to exit..."

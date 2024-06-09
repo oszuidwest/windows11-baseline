@@ -64,6 +64,12 @@ else {
 }
 
 #===============================================================
+# Install Chocolatey
+#===============================================================
+
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+#===============================================================
 # Execute all scripts in the scripts directory
 #===============================================================
 
@@ -81,13 +87,21 @@ if (Test-Path $scriptsDir) {
         Write-Output "Executing script: $($scriptFile.FullName)"
 
         try {
-            # Execute the script
-            & $scriptFile.FullName `
-                -systemPurpose $systemPurpose `
-                -systemOwnership $systemOwnership `
-                -userPassword $userPassword `
-                -computerName $computerName `
-                -workgroupName $workgroupName
+            # Construct the argument list
+            $arguments = @(
+                "-File `"$($scriptFile.FullName)`"",
+                "-systemPurpose `"$systemPurpose`"",
+                "-systemOwnership `"$systemOwnership`"",
+                "-userPassword `"$userPassword`"",
+                "-computerName `"$computerName`"",
+                "-workgroupName `"$workgroupName`""
+            )
+
+            # Join the arguments into a single string
+            $argumentString = $arguments -join ' '
+
+            # Execute the script as an administrator in a new process and window
+            Start-Process -FilePath "powershell.exe" -ArgumentList $argumentString -Verb RunAs -WindowStyle Normal
 
             Write-Output "Successfully executed script: $($scriptFile.FullName)"
         }
@@ -96,7 +110,7 @@ if (Test-Path $scriptsDir) {
         }
     }
 
-    Write-Output "All scripts executed."
+    Write-Output "All scripts spawned."
 }
 else {
     Write-Error "Script directory does not exist: $scriptsDir"
