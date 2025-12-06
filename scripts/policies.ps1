@@ -27,7 +27,7 @@ param (
 
 # Paths
 $deployPath = "C:\Windows\deploy"
-$lgpoPath = Join-Path $deployPath "LGPO.exe"
+$lgpoPath = Join-Path $deployPath "bin\LGPO.exe"
 $policiesPath = Join-Path $deployPath "policies"
 $configPath = Join-Path $policiesPath "config.json"
 $tempPath = Join-Path $deployPath "temp"
