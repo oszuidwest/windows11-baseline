@@ -26,6 +26,11 @@
       "ownership": ["all"],
       "description": "Skip privacy wizard during Windows setup"
     },
+    "system/privacy/disable-tracking.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable telemetry, location, advertising ID and tracking"
+    },
     "system/windows-feeds/disable-feeds-widgets.txt": {
       "purposes": ["all"],
       "ownership": ["all"],

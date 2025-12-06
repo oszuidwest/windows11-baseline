@@ -14,6 +14,7 @@ policies/
 │   ├── microsoft-account/
 │   ├── onedrive/
 │   ├── oobe/
+│   ├── privacy/
 │   ├── windows-feeds/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU)
