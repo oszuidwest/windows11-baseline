@@ -80,7 +80,8 @@ if ($systemOwnership -eq "shared") {
     $iconPath = "C:\Windows\deploy\whatsapp.ico"
     $edgePath = if (Test-Path "C:\Program Files\Microsoft\Edge\Application\msedge.exe") {
         "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
-    } else {
+    }
+    else {
         "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
     }
     $arguments = "--inprivate --window-size=640,360 https://web.whatsapp.com"
@@ -89,7 +90,8 @@ if ($systemOwnership -eq "shared") {
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
     try {
         Invoke-WebRequest -Uri $iconUrl -OutFile $iconPath -ErrorAction Stop
-    } catch {
+    }
+    catch {
         Write-Warning "Could not download WhatsApp icon"
     }
 
