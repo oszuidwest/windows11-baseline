@@ -22,9 +22,30 @@ Disables Windows Spotlight features.
 |---------|-------|-------------|
 | `DisableWindowsSpotlightFeatures` | 1 | Disable tips, suggestions, and spotlight content |
 
+### `disable-widgets.txt`
+
+Disables Windows 11 Widgets panel.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `AllowNewsAndInterests` | 0 | Disable Widgets panel |
+| `TaskbarDa` | 0 | Hide Widgets button from taskbar |
+
+### `disable-game-bar.txt`
+
+Disables Xbox Game Bar and DVR functionality.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `AllowGameDVR` | 0 | Disable Game DVR/recording |
+| `AppCaptureEnabled` | 0 | Disable app capture |
+
+Note: Game Bar is not installed on Windows 11 LTSC, but these settings suppress "broken Game Bar" popup messages.
+
 ## Why
 
 - Makes Start menu search fast and local-only
 - Prevents accidental web searches when looking for local files/apps
-- Removes Windows tips and suggestions
+- Removes Windows tips, suggestions, and Widgets
+- Suppresses Game Bar popups on LTSC
 - Reduces bandwidth usage and improves privacy

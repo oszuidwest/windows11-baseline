@@ -21,7 +21,7 @@
       "ownership": ["shared"],
       "description": "Disable OneDrive file synchronization"
     },
-    "system/oobe/disable-privacy-experience.txt": {
+    "system/oobe/skip-privacy-wizard.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Skip privacy wizard during Windows setup"
@@ -31,7 +31,7 @@
       "ownership": ["all"],
       "description": "Disable telemetry, location, advertising ID and tracking"
     },
-    "system/windows-feeds/disable-feeds-widgets.txt": {
+    "system/bloatware/disable-widgets.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Windows 11 Widgets panel"
@@ -46,10 +46,10 @@
       "ownership": ["all"],
       "description": "Disable autorun for USB, CD and other drives"
     },
-    "system/power/disable-shutdown.txt": {
+    "system/security/hide-shutdown-button.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
-      "description": "Hide shutdown option, only allow restart"
+      "description": "Hide shutdown button, only allow restart"
     },
     "system/bloatware/disable-spotlight.txt": {
       "purposes": ["all"],
@@ -61,17 +61,17 @@
       "ownership": ["shared"],
       "description": "Set and lock desktop wallpaper for non-admin users"
     },
-    "user/restrictions/disable-cmd.txt": {
+    "user/restrictions/disable-command-prompt.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Disable Command Prompt for non-admin users"
     },
-    "user/restrictions/disable-regedit.txt": {
+    "user/restrictions/disable-registry-editor.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Disable Registry Editor for non-admin users"
     },
-    "system/gaming/disable-game-bar.txt": {
+    "system/bloatware/disable-game-bar.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Game Bar popups and DVR (not installed on LTSC)"

@@ -74,15 +74,12 @@ windows11-baseline/
 │   ├── config.schema.json     # JSON schema for validation
 │   ├── system/                # Computer policies (HKLM)
 │   │   ├── bloatware/
-│   │   ├── gaming/
 │   │   ├── logon-experience/
 │   │   ├── microsoft-account/
 │   │   ├── onedrive/
 │   │   ├── oobe/
-│   │   ├── power/
 │   │   ├── privacy/
 │   │   ├── security/
-│   │   ├── windows-feeds/
 │   │   └── windows-update/
 │   └── user/                  # User policies (HKCU, non-admin only)
 │       ├── restrictions/

@@ -10,15 +10,12 @@ policies/
 ├── config.schema.json           # JSON schema for validation
 ├── system/                      # Computer-level policies (HKLM)
 │   ├── bloatware/
-│   ├── gaming/
 │   ├── logon-experience/
 │   ├── microsoft-account/
 │   ├── onedrive/
 │   ├── oobe/
-│   ├── power/
 │   ├── privacy/
 │   ├── security/
-│   ├── windows-feeds/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU, non-admin only)
     ├── restrictions/
@@ -65,17 +62,17 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | Policy | Description | Shared | Personal | Dedicated |
 |--------|-------------|:------:|:--------:|:---------:|
 | Disable web search | Remove Bing from Start menu | x | x | x |
+| Disable Spotlight | Remove tips and suggestions | x | x | x |
+| Disable Widgets | Remove Widgets panel | x | x | x |
+| Disable Game Bar | Suppress Game Bar popups and DVR | x | x | x |
 | Disable logon animations | Skip first-run animations | x | x | x |
 | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
 | Disable OneDrive sync | Prevent cloud sync | x | | |
-| Disable OOBE privacy | Skip privacy wizard | x | x | x |
+| Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
 | Disable tracking | Telemetry, location, ads | x | x | x |
-| Disable Widgets | Remove Widgets panel and lock screen widgets | x | x | x |
-| Windows Update | Auto-update daily at 3 AM | x | x | x |
-| Disable autorun | Block USB/CD autorun (security) | x | x | x |
-| Disable Spotlight | Remove tips and suggestions (bloatware) | x | x | x |
-| Disable shutdown | Hide shutdown, only allow restart | x | | |
-| Disable Game Bar | Suppress Game Bar popups and DVR | x | x | x |
+| Disable autorun | Block USB/CD autorun | x | x | x |
+| Hide shutdown button | Only allow restart | x | | |
+| Configure auto-update | Windows Update daily at 3 AM | x | x | x |
 | Disable Command Prompt | Block cmd.exe access | x | | |
 | Disable Registry Editor | Block regedit.exe access | x | | |
 | Set wallpaper | Lock desktop wallpaper | x | | |

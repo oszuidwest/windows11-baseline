@@ -4,9 +4,9 @@ These policies customize the Windows setup and first-run experience.
 
 ## Policies
 
-### `disable-privacy-experience.txt`
+### `skip-privacy-wizard.txt`
 
-Disables the privacy settings screen during Windows setup.
+Skips the privacy settings screen during Windows setup.
 
 | Setting | Value | Description |
 |---------|-------|-------------|

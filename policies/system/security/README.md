@@ -21,8 +21,20 @@ Value 255 (0xFF) disables autorun for all drive types:
 - CD-ROM drives
 - RAM disks
 
+### `hide-shutdown-button.txt`
+
+Hides the shutdown button, only allowing restart.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `HidePowerOptions` | 1 | Hide shutdown/sleep options |
+| `DisableShutdownMenu` | 1 | Disable shutdown menu entries |
+
+Only applied to **shared** systems to ensure workstations are restarted (applying updates) rather than shut down.
+
 ## Why
 
 - Prevents malware from auto-executing when USB drives are inserted
 - Blocks autorun.inf exploits
+- Ensures shared workstations are restarted, not shut down
 - Standard security hardening measure

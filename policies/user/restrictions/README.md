@@ -4,7 +4,7 @@ Security restrictions applied to non-admin users on shared systems.
 
 ## Policies
 
-### `disable-cmd.txt`
+### `disable-command-prompt.txt`
 
 Disables Command Prompt access for non-admin users.
 
@@ -19,7 +19,7 @@ Disables Command Prompt access for non-admin users.
 
 Value 2 is used to prevent breaking installers and scripts that rely on batch files.
 
-### `disable-regedit.txt`
+### `disable-registry-editor.txt`
 
 Disables Registry Editor access for non-admin users.
 
