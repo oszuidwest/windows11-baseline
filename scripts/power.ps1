@@ -1,4 +1,4 @@
-Write-Output "Setting power schemes"
+Write-Output "Configuring power settings..."
 
 # Set monitor timeout for AC and DC power
 powercfg /change monitor-timeout-ac 30
@@ -19,5 +19,4 @@ powercfg /change hibernate-timeout-dc 0
 # Turn off hibernation
 powercfg /hibernate off
 
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."
+Write-Output "Power settings configured."

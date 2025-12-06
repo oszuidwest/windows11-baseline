@@ -51,6 +51,3 @@ Set-RegistryValue -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\HandwritingEr
 Set-RegistryValue -Path "HKLM:\SOFTWARE\Policies\Microsoft\InputPersonalization" -Name "AllowInputPersonalization" -Value 0
 
 Write-Output "Privacy settings configured."
-
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."

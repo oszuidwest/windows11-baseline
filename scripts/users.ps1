@@ -7,6 +7,8 @@ param (
     [string]$workgroupName
 )
 
+Write-Output "Configuring user settings..."
+
 # Map purpose to username
 $userName = switch ($systemPurpose) {
     'editorial' { "Redactie Gebruiker" }
@@ -37,5 +39,4 @@ if ($userName -ne "") {
 # Set maximum password age to unlimited
 net accounts /maxpwage:unlimited | Out-Null
 
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."
+Write-Output "User settings configured."

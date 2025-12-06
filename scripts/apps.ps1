@@ -83,7 +83,7 @@ if ($systemOwnership -eq "shared") {
     } else {
         "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
     }
-    $arguments = "--inprivate https://web.whatsapp.com"
+    $arguments = "--inprivate --window-size=640,360 https://web.whatsapp.com"
 
     # Download WhatsApp icon
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
@@ -105,6 +105,3 @@ if ($systemOwnership -eq "shared") {
 
     Write-Output "WhatsApp Web shortcut created on Public Desktop."
 }
-
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."

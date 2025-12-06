@@ -7,6 +7,8 @@ param (
     [string]$workgroupName
 )
 
+Write-Output "Configuring computer name and workgroup..."
+
 # Fetch current system properties
 $currentComputerName = (Get-CimInstance -ClassName Win32_ComputerSystem).Name
 $currentWorkgroup = (Get-CimInstance -ClassName Win32_ComputerSystem).Domain
@@ -29,5 +31,4 @@ else {
     Write-Output "Workgroup is already $workgroupName. No change needed."
 }
 
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."
+Write-Output "Computer name and workgroup configured."

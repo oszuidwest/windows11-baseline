@@ -1,3 +1,5 @@
+Write-Output "Configuring time settings..."
+
 # Ensure the Windows Time Service is running
 if ((Get-Service -Name w32time).Status -ne 'Running') {
     Start-Service -Name w32time
@@ -21,3 +23,5 @@ Set-Service -Name w32time -StartupType Automatic
 
 # Confirm the time synchronization status
 w32tm /query /status
+
+Write-Output "Time settings configured."

@@ -66,6 +66,3 @@ foreach ($app in $appsToRemove) {
 }
 
 Write-Output "Bloatware removal complete."
-
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."

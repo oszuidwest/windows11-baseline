@@ -88,40 +88,27 @@ $scriptsDir = "$deployDir\scripts"
 
 # Check if the scripts directory exists
 if (Test-Path $scriptsDir) {
-    Write-Output "Found script directory: $scriptsDir"
-
-    # Get all .ps1 files in the scripts directory
-    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1
+    # Get all .ps1 files in the scripts directory (sorted alphabetically)
+    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 | Sort-Object Name
 
     foreach ($scriptFile in $scriptFiles) {
-        # Display a message before executing each script
-        Write-Output "Executing script: $($scriptFile.FullName)"
+        Write-Output ""
+        Write-Output "=========================================="
+        Write-Output "Running: $($scriptFile.Name)"
+        Write-Output "=========================================="
 
         try {
-            # Construct the argument list
-            $arguments = @(
-                "-File `"$($scriptFile.FullName)`"",
-                "-systemPurpose `"$systemPurpose`"",
-                "-systemOwnership `"$systemOwnership`"",
-                "-userPassword `"$userPassword`"",
-                "-computerName `"$computerName`"",
-                "-workgroupName `"$workgroupName`""
-            )
-
-            # Join the arguments into a single string
-            $argumentString = $arguments -join ' '
-
-            # Execute the script as an administrator in a new process and window
-            Start-Process -FilePath "powershell.exe" -ArgumentList $argumentString -Verb RunAs -WindowStyle Normal
-
-            Write-Output "Successfully executed script: $($scriptFile.FullName)"
+            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName
         }
         catch {
-            Write-Error "Failed to execute script: $($scriptFile.FullName) - Error: $_"
+            Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"
         }
     }
 
-    Write-Output "All scripts spawned."
+    Write-Output ""
+    Write-Output "=========================================="
+    Write-Output "All scripts completed."
+    Write-Output "=========================================="
 }
 else {
     Write-Error "Script directory does not exist: $scriptsDir"
