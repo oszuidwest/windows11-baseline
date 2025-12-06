@@ -1,0 +1,4 @@
+User
+Software\Policies\Microsoft\Windows\System
+DisableCMD
+DWORD:2

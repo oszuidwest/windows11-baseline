@@ -1,0 +1,4 @@
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+DisableRegistryTools
+DWORD:1

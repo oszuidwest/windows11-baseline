@@ -69,14 +69,35 @@ try {
     Write-Output "System sounds disabled successfully."
 }
 finally {
-    # Unload the registry hive
+    # Force release of all registry handles
     [gc]::Collect()
-    Start-Sleep -Milliseconds 500
-    $result = reg unload $tempKey 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Failed to unload Default User hive: $result"
+    [gc]::WaitForPendingFinalizers()
+    [gc]::Collect()
+    Start-Sleep -Seconds 1
+
+    # Try to unload with retries
+    $maxRetries = 5
+    $retryCount = 0
+    $unloaded = $false
+
+    while (-not $unloaded -and $retryCount -lt $maxRetries) {
+        $retryCount++
+        $result = reg unload $tempKey 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            $unloaded = $true
+            Write-Output "Default User registry hive unloaded."
+        }
+        else {
+            if ($retryCount -lt $maxRetries) {
+                Write-Output "  Retry $retryCount/$maxRetries - waiting for handles to release..."
+                Start-Sleep -Seconds 2
+                [gc]::Collect()
+                [gc]::WaitForPendingFinalizers()
+            }
+        }
     }
-    else {
-        Write-Output "Default User registry hive unloaded."
+
+    if (-not $unloaded) {
+        Write-Warning "Could not unload registry hive. It will be released on reboot."
     }
 }

@@ -43,6 +43,19 @@ The installer prompts for: computer name, workgroup name, user password, system 
 | Thunderbird     | x     |    |           |       |
 | VLC             | x     | x  | x         |       |
 
+### Shared Systems
+
+Shared systems also receive:
+- **WhatsApp Web shortcut** on desktop (Edge InPrivate mode, no data stored)
+
+## Studio Configuration
+
+Radio and TV systems receive additional configuration for broadcast environments:
+
+| Setting | Description |
+|---------|-------------|
+| System sounds disabled | All Windows sounds muted to prevent audio leaks during broadcasts |
+
 ## Policy Framework
 
 Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`.
@@ -61,24 +74,28 @@ windows11-baseline/
 │   ├── config.schema.json     # JSON schema for validation
 │   ├── system/                # Computer policies (HKLM)
 │   │   ├── bloatware/
+│   │   ├── gaming/
 │   │   ├── logon-experience/
 │   │   ├── microsoft-account/
 │   │   ├── onedrive/
 │   │   ├── oobe/
+│   │   ├── power/
 │   │   ├── privacy/
+│   │   ├── security/
 │   │   ├── windows-feeds/
 │   │   └── windows-update/
 │   └── user/                  # User policies (HKCU, non-admin only)
+│       ├── restrictions/
 │       └── wallpaper/
 ├── scripts/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps
 │   ├── apps.ps1               # Install apps based on purpose
 │   ├── policies.ps1           # Apply policies via LGPO
 │   ├── power.ps1              # Power settings (30min monitor, no standby)
+│   ├── sounds.ps1             # Disable system sounds (Radio/TV only)
 │   ├── time.ps1               # NTP config (nl.pool.ntp.org)
 │   ├── users.ps1              # Create user, configure auto-login
 │   └── workgroupname.ps1      # Set computer/workgroup name
-└── installers/                 # App installer scripts
 ```
 
 ## Execution Flow

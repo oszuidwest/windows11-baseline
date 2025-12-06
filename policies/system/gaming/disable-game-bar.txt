@@ -1,0 +1,9 @@
+Computer
+SOFTWARE\Policies\Microsoft\Windows\GameDVR
+AllowGameDVR
+DWORD:0
+
+Computer
+SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR
+AppCaptureEnabled
+DWORD:0

@@ -10,6 +10,7 @@ policies/
 ├── config.schema.json           # JSON schema for validation
 ├── system/                      # Computer-level policies (HKLM)
 │   ├── bloatware/
+│   ├── gaming/
 │   ├── logon-experience/
 │   ├── microsoft-account/
 │   ├── onedrive/
@@ -20,6 +21,7 @@ policies/
 │   ├── windows-feeds/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU, non-admin only)
+    ├── restrictions/
     └── wallpaper/
 ```
 
@@ -73,6 +75,9 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | Disable autorun | Block USB/CD autorun (security) | x | x | x |
 | Disable Spotlight | Remove tips and suggestions (bloatware) | x | x | x |
 | Disable shutdown | Hide shutdown, only allow restart | x | | |
+| Disable Game Bar | Suppress Game Bar popups and DVR | x | x | x |
+| Disable Command Prompt | Block cmd.exe access | x | | |
+| Disable Registry Editor | Block regedit.exe access | x | | |
 | Set wallpaper | Lock desktop wallpaper | x | | |
 
 ## File Format

@@ -60,6 +60,21 @@
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Set and lock desktop wallpaper for non-admin users"
+    },
+    "user/restrictions/disable-cmd.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Command Prompt for non-admin users"
+    },
+    "user/restrictions/disable-regedit.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Registry Editor for non-admin users"
+    },
+    "system/gaming/disable-game-bar.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Game Bar popups and DVR (not installed on LTSC)"
     }
   }
 }
