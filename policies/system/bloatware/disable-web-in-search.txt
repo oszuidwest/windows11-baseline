@@ -1,0 +1,14 @@
+Computer
+Software\Policies\Microsoft\Windows\Windows Search
+DisableWebSearch
+DWORD:1
+
+Computer
+Software\Policies\Microsoft\Windows\Windows Search
+AllowCloudSearch
+DWORD:0
+
+Computer
+Software\Policies\Microsoft\Windows\Explorer
+DisableSearchBoxSuggestions
+DWORD:1

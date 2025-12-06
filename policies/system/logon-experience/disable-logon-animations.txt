@@ -1,0 +1,9 @@
+Computer
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+EnableFirstLogonAnimation
+DWORD:0
+
+Computer
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+HideFastUserSwitching
+DWORD:1
