@@ -75,6 +75,26 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Game Bar popups and DVR (not installed on LTSC)"
+    },
+    "user/browser/edge-profile.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Edge ephemeral profiles, no history, no sync"
+    },
+    "user/browser/edge-privacy.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Edge tracking prevention and security"
+    },
+    "user/browser/edge-autofill.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Edge autofill and data import"
+    },
+    "user/browser/edge-ui.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Edge bloatware UI elements"
     }
   }
 }

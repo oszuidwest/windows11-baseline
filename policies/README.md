@@ -18,6 +18,7 @@ policies/
 │   ├── security/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU, non-admin only)
+    ├── browser/
     ├── personalization/
     └── security/
 ```
@@ -73,6 +74,10 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | security | Disable autorun | Block USB/CD autorun | x | x | x |
 | system | security | Hide shutdown button | Only allow restart | x | | |
 | system | windows-update | Configure auto-update | Daily at 3 AM | x | x | x |
+| user | browser | Edge profile | Ephemeral profiles, no history/sync | x | | |
+| user | browser | Edge privacy | Tracking prevention, no telemetry | x | x | x |
+| user | browser | Edge autofill | No passwords, creditcards, import | x | | |
+| user | browser | Edge UI | No Copilot, rewards, shopping, games | x | x | x |
 | user | personalization | Set wallpaper | Lock desktop wallpaper | x | | |
 | user | security | Disable Command Prompt | Block cmd.exe access | x | | |
 | user | security | Disable Registry Editor | Block regedit.exe access | x | | |

@@ -82,6 +82,7 @@ windows11-baseline/
 │   │   ├── security/
 │   │   └── windows-update/
 │   └── user/                  # User policies (HKCU, non-admin only)
+│       ├── browser/
 │       ├── personalization/
 │       └── security/
 ├── scripts/
