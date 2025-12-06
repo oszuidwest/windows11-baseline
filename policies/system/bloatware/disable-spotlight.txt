@@ -1,0 +1,4 @@
+Computer
+Software\Policies\Microsoft\Windows\CloudContent
+DisableWindowsSpotlightFeatures
+DWORD:1

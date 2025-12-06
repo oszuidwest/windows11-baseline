@@ -41,6 +41,16 @@
       "ownership": ["all"],
       "description": "Configure automatic updates daily at 3:00 AM"
     },
+    "system/security/disable-autorun.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable autorun for USB, CD and other drives"
+    },
+    "system/bloatware/disable-spotlight.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Windows Spotlight tips and suggestions"
+    },
     "user/wallpaper/set-wallpaper.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],

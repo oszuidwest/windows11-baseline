@@ -15,6 +15,7 @@ policies/
 │   ├── onedrive/
 │   ├── oobe/
 │   ├── privacy/
+│   ├── security/
 │   ├── windows-feeds/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU, non-admin only)
@@ -66,8 +67,10 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | Disable OneDrive sync | Prevent cloud sync | x | | |
 | Disable OOBE privacy | Skip privacy wizard | x | x | x |
 | Disable tracking | Telemetry, location, ads | x | x | x |
-| Disable Widgets | Remove Widgets panel | x | x | x |
+| Disable Widgets | Remove Widgets panel and lock screen widgets | x | x | x |
 | Windows Update | Auto-update daily at 3 AM | x | x | x |
+| Disable autorun | Block USB/CD autorun (security) | x | x | x |
+| Disable Spotlight | Remove tips and suggestions (bloatware) | x | x | x |
 | Set wallpaper | Lock desktop wallpaper | x | | |
 
 ## File Format

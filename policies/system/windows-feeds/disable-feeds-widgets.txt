@@ -2,3 +2,8 @@ Computer
 Software\Policies\Microsoft\Dsh
 AllowNewsAndInterests
 DWORD:0
+
+Computer
+Software\Policies\Microsoft\Dsh
+DisableWidgetsOnLockScreen
+DWORD:1

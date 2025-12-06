@@ -11,6 +11,7 @@ Disables the Windows 11 Widgets panel.
 | Setting | Value | Description |
 |---------|-------|-------------|
 | `AllowNewsAndInterests` | 0 | Disables Windows 11 Widgets panel and news feed |
+| `DisableWidgetsOnLockScreen` | 1 | Disables widgets on the lock screen |
 
 ## Why
 
