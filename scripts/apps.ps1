@@ -14,13 +14,13 @@ This script installs applications based on the specified purpose.
 
 # Winget package IDs
 $appDefinitions = @{
-    "audacity"       = "Audacity.Audacity"
-    "creativecloud"  = "Adobe.CreativeCloud"
-    "libreoffice"    = "TheDocumentFoundation.LibreOffice"
-    "msteams"        = "Microsoft.Teams"
-    "pinta"          = "Pinta.Pinta"
-    "thunderbird"    = "Mozilla.Thunderbird"
-    "vlc"            = "VideoLAN.VLC"
+    "audacity"      = "Audacity.Audacity"
+    "creativecloud" = "Adobe.CreativeCloud"
+    "libreoffice"   = "TheDocumentFoundation.LibreOffice"
+    "msteams"       = "Microsoft.Teams"
+    "pinta"         = "Pinta.Pinta"
+    "thunderbird"   = "Mozilla.Thunderbird"
+    "vlc"           = "VideoLAN.VLC"
 }
 
 # Applications by purpose
