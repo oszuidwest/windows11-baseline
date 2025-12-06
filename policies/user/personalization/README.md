@@ -1,6 +1,6 @@
-# Wallpaper Policy
+# Personalization Policies
 
-Sets and locks the desktop wallpaper for non-admin users.
+User personalization and branding settings for non-admin users.
 
 ## Policies
 

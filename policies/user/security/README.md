@@ -1,4 +1,4 @@
-# User Restrictions
+# User Security Policies
 
 Security restrictions applied to non-admin users on shared systems.
 

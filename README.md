@@ -82,8 +82,8 @@ windows11-baseline/
 │   │   ├── security/
 │   │   └── windows-update/
 │   └── user/                  # User policies (HKCU, non-admin only)
-│       ├── restrictions/
-│       └── wallpaper/
+│       ├── personalization/
+│       └── security/
 ├── scripts/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps
 │   ├── apps.ps1               # Install apps based on purpose

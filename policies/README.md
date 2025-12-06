@@ -18,8 +18,8 @@ policies/
 │   ├── security/
 │   └── windows-update/
 └── user/                        # User-level policies (HKCU, non-admin only)
-    ├── restrictions/
-    └── wallpaper/
+    ├── personalization/
+    └── security/
 ```
 
 ## Conditional Policy Application
@@ -73,9 +73,9 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | security | Disable autorun | Block USB/CD autorun | x | x | x |
 | system | security | Hide shutdown button | Only allow restart | x | | |
 | system | windows-update | Configure auto-update | Daily at 3 AM | x | x | x |
-| user | restrictions | Disable Command Prompt | Block cmd.exe access | x | | |
-| user | restrictions | Disable Registry Editor | Block regedit.exe access | x | | |
-| user | wallpaper | Set wallpaper | Lock desktop wallpaper | x | | |
+| user | personalization | Set wallpaper | Lock desktop wallpaper | x | | |
+| user | security | Disable Command Prompt | Block cmd.exe access | x | | |
+| user | security | Disable Registry Editor | Block regedit.exe access | x | | |
 
 ## File Format
 

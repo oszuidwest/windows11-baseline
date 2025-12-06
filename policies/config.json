@@ -56,17 +56,17 @@
       "ownership": ["all"],
       "description": "Disable Windows Spotlight tips and suggestions"
     },
-    "user/wallpaper/set-wallpaper.txt": {
+    "user/personalization/set-wallpaper.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Set and lock desktop wallpaper for non-admin users"
     },
-    "user/restrictions/disable-command-prompt.txt": {
+    "user/security/disable-command-prompt.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Disable Command Prompt for non-admin users"
     },
-    "user/restrictions/disable-registry-editor.txt": {
+    "user/security/disable-registry-editor.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Disable Registry Editor for non-admin users"
