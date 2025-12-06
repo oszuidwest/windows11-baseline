@@ -49,7 +49,7 @@ function Get-ApplicablePolicies {
 
     $applicable = @{
         Computer = @()
-        User = @()
+        User     = @()
     }
 
     foreach ($policyPath in $config.policies.PSObject.Properties.Name) {
