@@ -62,7 +62,7 @@ foreach ($app in $apps) {
     }
 
     Write-Output "Installing $app ($packageId)..."
-    $wingetArgs = "install --id=$packageId -e --silent --accept-package-agreements --accept-source-agreements"
+    $wingetArgs = "install --id=$packageId -e --silent --source winget --accept-package-agreements --accept-source-agreements"
     $process = Start-Process -FilePath "winget" -ArgumentList $wingetArgs -NoNewWindow -Wait -PassThru
 
     if ($process.ExitCode -ne 0) {
