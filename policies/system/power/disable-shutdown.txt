@@ -1,0 +1,4 @@
+Computer
+Software\Microsoft\PolicyManager\default\Start\HideShutDown
+value
+DWORD:1

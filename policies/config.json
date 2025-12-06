@@ -46,6 +46,11 @@
       "ownership": ["all"],
       "description": "Disable autorun for USB, CD and other drives"
     },
+    "system/power/disable-shutdown.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Hide shutdown option, only allow restart"
+    },
     "system/bloatware/disable-spotlight.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
