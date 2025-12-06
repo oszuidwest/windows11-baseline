@@ -14,6 +14,7 @@ policies/
 │   ├── microsoft-account/
 │   ├── onedrive/
 │   ├── oobe/
+│   ├── power/
 │   ├── privacy/
 │   ├── security/
 │   ├── windows-feeds/
@@ -71,6 +72,7 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | Windows Update | Auto-update daily at 3 AM | x | x | x |
 | Disable autorun | Block USB/CD autorun (security) | x | x | x |
 | Disable Spotlight | Remove tips and suggestions (bloatware) | x | x | x |
+| Disable shutdown | Hide shutdown, only allow restart | x | | |
 | Set wallpaper | Lock desktop wallpaper | x | | |
 
 ## File Format
