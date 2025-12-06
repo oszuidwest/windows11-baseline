@@ -8,61 +8,68 @@ param (
 )
 
 <#
-This script installs applications based on the specified purpose and ownership type.
+This script installs applications based on the specified purpose.
 'systemPurpose' should be "radio", "tv", "editorial", or "plain".
-'systemOwnership' should be "shared", "personal", or "dedicated".
-Both parameters are mandatory.
 #>
 
-# Application scripts by purpose
-$appScripts = @{
-    "radio"     = @("app-audacity.ps1", "app-libreoffice.ps1", "app-thunderbird.ps1", "app-vlc.ps1")
-    "tv"        = @("app-creativecloud.ps1", "app-libreoffice.ps1", "app-vlc.ps1")
-    "editorial" = @("app-audacity.ps1", "app-libreoffice.ps1", "app-msteams.ps1", "app-pintra.ps1", "app-vlc.ps1")
+# Winget package IDs
+$appDefinitions = @{
+    "audacity"       = "Audacity.Audacity"
+    "creativecloud"  = "Adobe.CreativeCloud"
+    "libreoffice"    = "TheDocumentFoundation.LibreOffice"
+    "msteams"        = "Microsoft.Teams"
+    "pinta"          = "Pinta.Pinta"
+    "thunderbird"    = "Mozilla.Thunderbird"
+    "vlc"            = "VideoLAN.VLC"
+}
+
+# Applications by purpose
+$appsByPurpose = @{
+    "radio"     = @("audacity", "libreoffice", "thunderbird", "vlc")
+    "tv"        = @("creativecloud", "libreoffice", "vlc")
+    "editorial" = @("audacity", "libreoffice", "msteams", "pinta", "vlc")
     "plain"     = @()
 }
 
-# Function to install applications
-function Install-App {
-    param (
-        [string]$purpose,
-        [string]$ownership
-    )
-    $purpose = $purpose.ToLower()
-    $scripts = $appScripts[$purpose]
-
-    if ($scripts.Count -eq 0) {
-        Write-Output "No apps to install for '$purpose'."
-        return
-    }
-
-    $baseDir = "C:\Windows\deploy\installers"
-    foreach ($script in $scripts) {
-        $scriptPath = Join-Path $baseDir $script
-        if (Test-Path $scriptPath) {
-            Write-Output "Running $script for $ownership ownership..."
-            Start-Process -FilePath "powershell.exe" -ArgumentList "-File `"$scriptPath`"" -Verb RunAs -Wait
-        }
-        else {
-            Write-Warning "Script $scriptPath not found."
-        }
-    }
-}
-
-# Main execution
-if (-not $systemPurpose -or -not $systemOwnership) {
-    Write-Error "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
-    exit
+# Validate parameters
+if (-not $systemPurpose) {
+    Write-Error "'systemPurpose' parameter must be provided."
+    exit 1
 }
 
 $systemPurpose = $systemPurpose.ToLower()
-if (-not $appScripts.ContainsKey($systemPurpose)) {
-    Write-Error "Invalid 'systemPurpose': $systemPurpose. Exiting."
-    exit
+if (-not $appsByPurpose.ContainsKey($systemPurpose)) {
+    Write-Error "Invalid 'systemPurpose': $systemPurpose. Valid values: radio, tv, editorial, plain"
+    exit 1
 }
 
-Write-Output "Installing apps for '$systemPurpose' with '$systemOwnership' ownership..."
-Install-App -purpose $systemPurpose -ownership $systemOwnership
+# Get apps for this purpose
+$apps = $appsByPurpose[$systemPurpose]
+
+if ($apps.Count -eq 0) {
+    Write-Output "No apps to install for '$systemPurpose'."
+    exit 0
+}
+
+Write-Output "Installing apps for '$systemPurpose'..."
+
+foreach ($app in $apps) {
+    $packageId = $appDefinitions[$app]
+
+    if (-not $packageId) {
+        Write-Warning "Skipping '$app': not defined"
+        continue
+    }
+
+    Write-Output "Installing $app ($packageId)..."
+    $wingetArgs = "install --id=$packageId -e --silent --accept-package-agreements --accept-source-agreements"
+    $process = Start-Process -FilePath "winget" -ArgumentList $wingetArgs -NoNewWindow -Wait -PassThru
+
+    if ($process.ExitCode -ne 0) {
+        Write-Warning "Failed to install $app (exit code: $($process.ExitCode))"
+    }
+}
+
 Write-Output "Installation complete."
 
 # Prevent the script from closing immediately

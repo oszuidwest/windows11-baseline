@@ -1,1 +1,0 @@
-choco install pintra -y

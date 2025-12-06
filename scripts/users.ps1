@@ -7,15 +7,6 @@ param (
     [string]$workgroupName
 )
 
-# Function to convert plain text password to SecureString
-function ConvertTo-SecureStringFromPlainText {
-    param (
-        [string]$plainTextPassword
-    )
-    $securePassword = ConvertTo-SecureString -String $plainTextPassword -AsPlainText -Force
-    return $securePassword
-}
-
 # Map purpose to username
 $userName = switch ($systemPurpose) {
     'editorial' { "Redactie Gebruiker" }
@@ -27,7 +18,7 @@ $userName = switch ($systemPurpose) {
 # Add user if ownership is shared and userName is specified
 if ($systemOwnership -eq "shared" -and $userName -ne "") {
     if (-not (Get-LocalUser -Name $userName -ErrorAction SilentlyContinue)) {
-        $securePassword = ConvertTo-SecureStringFromPlainText -plainTextPassword $userPassword
+        $securePassword = ConvertTo-SecureString -String $userPassword -AsPlainText -Force
         New-LocalUser -Name $userName -Password $securePassword -FullName $userName -Description "User created by deployment script"
     }
 }
@@ -44,7 +35,7 @@ if ($userName -ne "") {
 }
 
 # Set maximum password age to unlimited
-Start-Process -FilePath "cmd.exe" -ArgumentList "/c net accounts /maxpwage:unlimited" -NoNewWindow -Wait
+net accounts /maxpwage:unlimited | Out-Null
 
 # Prevent the script from closing immediately
 Read-Host -Prompt "Press Enter to exit..."
