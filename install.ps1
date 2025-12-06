@@ -15,12 +15,29 @@ if (-not (Test-Admin)) {
     exit
 }
 
+# Welcome message
+Write-Output ""
+Write-Output "=========================================="
+Write-Output " Windows 11 Baseline - Streekomroep ZuidWest"
+Write-Output "=========================================="
+Write-Output ""
+Write-Output "This script will configure a Windows 11 system with the specified settings."
+Write-Output ""
+
 # Get user inputs
-$systemPurpose = Read-Host -Prompt "Enter the system purpose:"
-$systemOwnership = Read-Host -Prompt "Enter the system ownership:"
-$userPassword = Read-Host -Prompt "Enter the user password:"
-$computerName = Read-Host -Prompt "Enter the computer name:"
-$workgroupName = Read-Host -Prompt "Enter the workgroup name:"
+Write-Output "System purpose options: radio, tv, editorial, plain"
+$systemPurpose = Read-Host -Prompt "Enter the system purpose"
+
+Write-Output ""
+Write-Output "System ownership options: shared, personal, dedicated"
+$systemOwnership = Read-Host -Prompt "Enter the system ownership"
+
+Write-Output ""
+$computerName = Read-Host -Prompt "Enter the computer name"
+$workgroupName = Read-Host -Prompt "Enter the workgroup name"
+$userPassword = Read-Host -Prompt "Enter the user password"
+
+Write-Output ""
 
 # Set deployment directory
 $deployDir = "C:\Windows\deploy"
