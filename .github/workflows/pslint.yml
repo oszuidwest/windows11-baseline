@@ -5,6 +5,8 @@ on:
 
 jobs:
   lint_and_format:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:

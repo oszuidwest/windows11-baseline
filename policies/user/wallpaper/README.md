@@ -12,6 +12,7 @@ Configures the desktop wallpaper.
 |---------|-------|-------------|
 | `Wallpaper` | `C:\Windows\deploy\wallpaper.png` | Path to wallpaper image |
 | `WallpaperStyle` | 10 | Fill (scales to fill screen) |
+| `TileWallpaper` | 0 | Disable tiling (required for Fill) |
 | `NoChangingWallPaper` | 1 | Prevent users from changing wallpaper |
 
 ### WallpaperStyle Values

@@ -4,9 +4,14 @@ Wallpaper
 SZ:C:\Windows\deploy\wallpaper.png
 
 User
-Software\Microsoft\Windows\CurrentVersion\Policies\System
+Control Panel\Desktop
 WallpaperStyle
 SZ:10
+
+User
+Control Panel\Desktop
+TileWallpaper
+SZ:0
 
 User
 Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop
