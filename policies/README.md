@@ -17,7 +17,8 @@ policies/
 │   ├── privacy/
 │   ├── windows-feeds/
 │   └── windows-update/
-└── user/                        # User-level policies (HKCU)
+└── user/                        # User-level policies (HKCU, non-admin only)
+    └── wallpaper/
 ```
 
 ## Conditional Policy Application
@@ -54,6 +55,20 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | `shared` | Shared workstations (multiple users, auto-login) |
 | `personal` | Personal workstations (single user) |
 | `dedicated` | Dedicated workstations (specific function) |
+
+## Policy Matrix
+
+| Policy | Description | Shared | Personal | Dedicated |
+|--------|-------------|:------:|:--------:|:---------:|
+| Disable web search | Remove Bing from Start menu | x | x | x |
+| Disable logon animations | Skip first-run animations | x | x | x |
+| Disable Microsoft Account | Block MS/Work/School accounts | x | | |
+| Disable OneDrive sync | Prevent cloud sync | x | | |
+| Disable OOBE privacy | Skip privacy wizard | x | x | x |
+| Disable tracking | Telemetry, location, ads | x | x | x |
+| Disable Widgets | Remove Widgets panel | x | x | x |
+| Windows Update | Auto-update daily at 3 AM | x | x | x |
+| Set wallpaper | Lock desktop wallpaper | x | | |
 
 ## File Format
 

@@ -190,6 +190,23 @@ if (-not (Test-Path $configPath)) {
 Write-Output "Purpose: $systemPurpose"
 Write-Output "Ownership: $systemOwnership"
 Write-Output ""
+
+# Download wallpaper for shared systems
+if ($systemOwnership -eq "shared") {
+    $wallpaperUrl = "https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png"
+    $wallpaperPath = Join-Path $deployPath "wallpaper.png"
+
+    Write-Output "Downloading wallpaper..."
+    try {
+        Invoke-WebRequest -Uri $wallpaperUrl -OutFile $wallpaperPath -UseBasicParsing
+        Write-Output "  Wallpaper saved to $wallpaperPath"
+    }
+    catch {
+        Write-Warning "Failed to download wallpaper: $_"
+    }
+    Write-Output ""
+}
+
 Write-Output "Finding applicable policies..."
 
 # Load configuration

@@ -1,0 +1,14 @@
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+Wallpaper
+SZ:C:\Windows\deploy\wallpaper.png
+
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+WallpaperStyle
+SZ:10
+
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop
+NoChangingWallPaper
+DWORD:1

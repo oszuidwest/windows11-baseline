@@ -47,26 +47,7 @@ The installer prompts for: computer name, workgroup name, user password, system 
 
 Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`.
 
-### Policy Matrix
-
-| Policy | Description | Shared | Personal | Dedicated |
-|--------|-------------|:------:|:--------:|:---------:|
-| Disable web search | Remove Bing from Start menu | x | x | x |
-| Disable logon animations | Skip first-run animations | x | x | x |
-| Disable Microsoft Account | Block MS account login | x | | |
-| Disable OneDrive sync | Prevent cloud sync | x | | |
-| Disable OOBE privacy | Skip privacy wizard | x | x | x |
-| Disable tracking | Telemetry, location, ads | x | x | x |
-| Disable Widgets | Remove Widgets panel | x | x | x |
-| Windows Update | Auto-update daily at 3 AM | x | x | x |
-
-### Adding Policies
-
-1. Create policy file in `policies/system/<category>/<name>.txt` (LGPO format)
-2. Add README.md documenting the policy
-3. Register in `policies/config.json` with purpose/ownership scopes
-
-See `policies/README.md` for detailed documentation.
+See [`policies/README.md`](policies/README.md) for the full policy matrix and documentation.
 
 ## Repository Structure
 
@@ -78,15 +59,17 @@ windows11-baseline/
 ├── policies/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
-│   └── system/                # Computer policies (HKLM)
-│       ├── bloatware/
-│       ├── logon-experience/
-│       ├── microsoft-account/
-│       ├── onedrive/
-│       ├── oobe/
-│       ├── privacy/
-│       ├── windows-feeds/
-│       └── windows-update/
+│   ├── system/                # Computer policies (HKLM)
+│   │   ├── bloatware/
+│   │   ├── logon-experience/
+│   │   ├── microsoft-account/
+│   │   ├── onedrive/
+│   │   ├── oobe/
+│   │   ├── privacy/
+│   │   ├── windows-feeds/
+│   │   └── windows-update/
+│   └── user/                  # User policies (HKCU, non-admin only)
+│       └── wallpaper/
 ├── scripts/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps
 │   ├── apps.ps1               # Install apps based on purpose

@@ -40,6 +40,11 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Configure automatic updates daily at 3:00 AM"
+    },
+    "user/wallpaper/set-wallpaper.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Set and lock desktop wallpaper for non-admin users"
     }
   }
 }
