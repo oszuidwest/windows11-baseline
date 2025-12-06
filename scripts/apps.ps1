@@ -72,5 +72,39 @@ foreach ($app in $apps) {
 
 Write-Output "Installation complete."
 
+# Create WhatsApp Web shortcut (InPrivate mode) for shared computers
+if ($systemOwnership -eq "shared") {
+    Write-Output "Creating WhatsApp Web shortcut (InPrivate mode)..."
+
+    $shortcutPath = "C:\Users\Public\Desktop\WhatsApp.lnk"
+    $iconPath = "C:\Windows\deploy\whatsapp.ico"
+    $edgePath = if (Test-Path "C:\Program Files\Microsoft\Edge\Application\msedge.exe") {
+        "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+    } else {
+        "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+    }
+    $arguments = "--inprivate https://web.whatsapp.com"
+
+    # Download WhatsApp icon
+    $iconUrl = "https://web.whatsapp.com/favicon.ico"
+    try {
+        Invoke-WebRequest -Uri $iconUrl -OutFile $iconPath -ErrorAction Stop
+    } catch {
+        Write-Warning "Could not download WhatsApp icon"
+    }
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $edgePath
+    $shortcut.Arguments = $arguments
+    $shortcut.Description = "WhatsApp Web (InPrivate - geen data wordt opgeslagen)"
+    if (Test-Path $iconPath) {
+        $shortcut.IconLocation = "$iconPath,0"
+    }
+    $shortcut.Save()
+
+    Write-Output "WhatsApp Web shortcut created on Public Desktop."
+}
+
 # Prevent the script from closing immediately
 Read-Host -Prompt "Press Enter to exit..."
