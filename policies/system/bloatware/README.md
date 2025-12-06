@@ -1,3 +1,21 @@
-These policies disable bloatware system wide:
+# Bloatware Policies
 
-- `disable-web-in-search.txt` ensures search is fast by disabling searching on the web with bing from the start menu. It also disables all Cortana related suggestions.
+These policies disable Windows bloatware features system-wide.
+
+## Policies
+
+### `disable-web-in-search.txt`
+
+Disables web search in Windows Search.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `DisableWebSearch` | 1 | Disable web search in Start menu |
+| `AllowCloudSearch` | 0 | Disable cloud/Bing search integration |
+| `DisableSearchBoxSuggestions` | 1 | Disable search suggestions from the web |
+
+## Why
+
+- Makes Start menu search fast and local-only
+- Prevents accidental web searches when looking for local files/apps
+- Reduces bandwidth usage and improves privacy

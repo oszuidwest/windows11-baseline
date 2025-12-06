@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Policy Configuration",
+  "description": "Configuration for conditional policy application based on system purpose and ownership",
+  "type": "object",
+  "properties": {
+    "policies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "purposes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["all", "radio", "tv", "editorial", "plain"]
+            },
+            "minItems": 1,
+            "description": "System purposes this policy applies to. Use 'all' for universal application."
+          },
+          "ownership": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["all", "shared", "personal", "dedicated"]
+            },
+            "minItems": 1,
+            "description": "System ownership types this policy applies to. Use 'all' for universal application."
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description of what this policy does"
+          }
+        },
+        "required": ["purposes", "ownership"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["policies"],
+  "additionalProperties": false
+}

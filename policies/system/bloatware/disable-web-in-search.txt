@@ -5,23 +5,8 @@ DWORD:1
 
 Computer
 Software\Policies\Microsoft\Windows\Windows Search
-ConnectedSearchUseWeb
-DWORD:0
-
-Computer
-Software\Policies\Microsoft\Windows\Windows Search
-AllowCortana
-DWORD:0
-
-Computer
-Software\Policies\Microsoft\Windows\Windows Search
-AllowCortanaAboveLock
-DWORD:0
-
-Computer
-Software\Policies\Microsoft\Windows\Windows Search
 AllowCloudSearch
-DELETE
+DWORD:0
 
 Computer
 Software\Policies\Microsoft\Windows\Explorer

@@ -1,0 +1,40 @@
+{
+  "$schema": "./config.schema.json",
+  "policies": {
+    "system/bloatware/disable-web-in-search.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable web search and suggestions in Start menu"
+    },
+    "system/logon-experience/disable-logon-animations.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable first logon animation and fast user switching"
+    },
+    "system/microsoft-account/disable-microsoft-account.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Microsoft Account authentication"
+    },
+    "system/onedrive/disable-onedrive-sync.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable OneDrive file synchronization"
+    },
+    "system/oobe/disable-privacy-experience.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Skip privacy wizard during Windows setup"
+    },
+    "system/windows-feeds/disable-feeds-widgets.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Windows 11 Widgets panel"
+    },
+    "system/windows-update/configure-auto-update.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Configure automatic updates daily at 3:00 AM"
+    }
+  }
+}
