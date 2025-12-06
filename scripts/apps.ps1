@@ -27,7 +27,7 @@ $appDefinitions = @{
 $appsByPurpose = @{
     "radio"     = @("audacity", "libreoffice", "thunderbird", "vlc")
     "tv"        = @("creativecloud", "libreoffice", "vlc")
-    "editorial" = @("audacity", "libreoffice", "msteams", "pinta", "vlc")
+    "editorial" = @("audacity", "msteams", "pinta", "vlc")
     "plain"     = @()
 }
 

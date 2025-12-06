@@ -37,7 +37,7 @@ The installer prompts for: computer name, workgroup name, user password, system 
 |-----------------|:-----:|:--:|:---------:|:-----:|
 | Audacity        | x     |    | x         |       |
 | Creative Cloud  |       | x  |           |       |
-| LibreOffice     | x     | x  | x         |       |
+| LibreOffice     | x     | x  |           |       |
 | MS Teams        |       |    | x         |       |
 | Pinta           |       |    | x         |       |
 | Thunderbird     | x     |    |           |       |
