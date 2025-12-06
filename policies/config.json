@@ -13,12 +13,12 @@
     },
     "system/microsoft-account/disable-microsoft-account.txt": {
       "purposes": ["all"],
-      "ownership": ["all"],
+      "ownership": ["shared"],
       "description": "Disable Microsoft Account authentication"
     },
     "system/onedrive/disable-onedrive-sync.txt": {
       "purposes": ["all"],
-      "ownership": ["all"],
+      "ownership": ["shared"],
       "description": "Disable OneDrive file synchronization"
     },
     "system/oobe/disable-privacy-experience.txt": {
