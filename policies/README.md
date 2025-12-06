@@ -59,23 +59,23 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 
 ## Policy Matrix
 
-| Policy | Description | Shared | Personal | Dedicated |
-|--------|-------------|:------:|:--------:|:---------:|
-| Disable web search | Remove Bing from Start menu | x | x | x |
-| Disable Spotlight | Remove tips and suggestions | x | x | x |
-| Disable Widgets | Remove Widgets panel | x | x | x |
-| Disable Game Bar | Suppress Game Bar popups and DVR | x | x | x |
-| Disable logon animations | Skip first-run animations | x | x | x |
-| Disable Microsoft Account | Block MS/Work/School accounts | x | | |
-| Disable OneDrive sync | Prevent cloud sync | x | | |
-| Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
-| Disable tracking | Telemetry, location, ads | x | x | x |
-| Disable autorun | Block USB/CD autorun | x | x | x |
-| Hide shutdown button | Only allow restart | x | | |
-| Configure auto-update | Windows Update daily at 3 AM | x | x | x |
-| Disable Command Prompt | Block cmd.exe access | x | | |
-| Disable Registry Editor | Block regedit.exe access | x | | |
-| Set wallpaper | Lock desktop wallpaper | x | | |
+| Scope | Category | Policy | Description | Shared | Personal | Dedicated |
+|:-----:|----------|--------|-------------|:------:|:--------:|:---------:|
+| system | bloatware | Disable web search | Remove Bing from Start menu | x | x | x |
+| system | bloatware | Disable Spotlight | Remove tips and suggestions | x | x | x |
+| system | bloatware | Disable Widgets | Remove Widgets panel | x | x | x |
+| system | bloatware | Disable Game Bar | Suppress Game Bar popups | x | x | x |
+| system | logon-experience | Disable logon animations | Skip first-run animations | x | x | x |
+| system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
+| system | onedrive | Disable OneDrive sync | Prevent cloud sync | x | | |
+| system | oobe | Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
+| system | privacy | Disable tracking | Telemetry, location, ads | x | x | x |
+| system | security | Disable autorun | Block USB/CD autorun | x | x | x |
+| system | security | Hide shutdown button | Only allow restart | x | | |
+| system | windows-update | Configure auto-update | Daily at 3 AM | x | x | x |
+| user | restrictions | Disable Command Prompt | Block cmd.exe access | x | | |
+| user | restrictions | Disable Registry Editor | Block regedit.exe access | x | | |
+| user | wallpaper | Set wallpaper | Lock desktop wallpaper | x | | |
 
 ## File Format
 
