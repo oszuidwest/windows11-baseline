@@ -61,35 +61,31 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     $ProgressPreference = 'SilentlyContinue'
 
     try {
-        # Install VCLibs dependency
-        Write-Output "  Installing VCLibs dependency..."
-        $vcLibsPath = Join-Path $tempDir "vclibs.appx"
-        Invoke-WebRequest -Uri "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx" -OutFile $vcLibsPath -UseBasicParsing
-        Add-AppxPackage -Path $vcLibsPath -ErrorAction Stop
-
-        # Install UI.Xaml dependency
-        Write-Output "  Installing UI.Xaml dependency..."
-        $xamlPath = Join-Path $tempDir "xaml.zip"
-        Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.8.7" -OutFile $xamlPath -UseBasicParsing
-        Expand-Archive -Path $xamlPath -DestinationPath (Join-Path $tempDir "xaml") -Force
-        Add-AppxPackage -Path (Join-Path $tempDir "xaml\tools\AppX\x64\Release\Microsoft.UI.Xaml.2.8.appx") -ErrorAction Stop
-
-        # Install Windows App Runtime dependency
-        Write-Output "  Installing Windows App Runtime dependency..."
-        $runtimeUrl = "https://aka.ms/windowsappsdk/1.8/latest/windowsappruntimeinstall-x64.exe"
-        $runtimePath = Join-Path $tempDir "windowsappruntime.exe"
-        Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath -UseBasicParsing
-        Start-Process -FilePath $runtimePath -ArgumentList "--quiet" -Wait -NoNewWindow
-
-        # Get latest winget release from GitHub
-        Write-Output "  Downloading Winget from GitHub..."
+        # Get latest winget release info from GitHub
+        Write-Output "  Fetching latest Winget release..."
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/winget-cli/releases/latest" -UseBasicParsing
         $msixUrl = ($release.assets | Where-Object { $_.name -match "\.msixbundle$" }).browser_download_url
         $licenseUrl = ($release.assets | Where-Object { $_.name -match "License.*\.xml$" }).browser_download_url
+        $depsUrl = ($release.assets | Where-Object { $_.name -eq "DesktopAppInstaller_Dependencies.zip" }).browser_download_url
 
+        # Download dependencies zip (contains VCLibs + WindowsAppRuntime)
+        Write-Output "  Downloading dependencies..."
+        $depsZip = Join-Path $tempDir "deps.zip"
+        $depsDir = Join-Path $tempDir "deps"
+        Invoke-WebRequest -Uri $depsUrl -OutFile $depsZip -UseBasicParsing
+        Expand-Archive -Path $depsZip -DestinationPath $depsDir -Force
+
+        # Detect architecture and install matching dependencies
+        $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
+        Write-Output "  Installing dependencies for $arch..."
+        Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | ForEach-Object {
+            Add-AppxPackage -Path $_.FullName -ErrorAction SilentlyContinue
+        }
+
+        # Download winget msixbundle and license
+        Write-Output "  Downloading Winget..."
         $msixPath = Join-Path $tempDir "winget.msixbundle"
         $licensePath = Join-Path $tempDir "license.xml"
-
         Invoke-WebRequest -Uri $msixUrl -OutFile $msixPath -UseBasicParsing
         Invoke-WebRequest -Uri $licenseUrl -OutFile $licensePath -UseBasicParsing
 
