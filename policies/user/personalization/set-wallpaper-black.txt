@@ -1,0 +1,19 @@
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\System
+Wallpaper
+SZ:
+
+User
+Control Panel\Desktop
+WallpaperStyle
+SZ:0
+
+User
+Control Panel\Colors
+Background
+SZ:0 0 0
+
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop
+NoChangingWallPaper
+DWORD:1

@@ -56,10 +56,15 @@
       "ownership": ["all"],
       "description": "Disable Windows Spotlight tips and suggestions"
     },
-    "user/personalization/set-wallpaper.txt": {
+    "user/personalization/set-wallpaper-branded.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
-      "description": "Set and lock desktop wallpaper for non-admin users"
+      "description": "Set branded ZuidWest wallpaper for shared systems"
+    },
+    "user/personalization/set-wallpaper-black.txt": {
+      "purposes": ["all"],
+      "ownership": ["dedicated"],
+      "description": "Set solid black wallpaper for dedicated systems"
     },
     "user/security/disable-command-prompt.txt": {
       "purposes": ["all"],
