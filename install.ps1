@@ -38,6 +38,10 @@ $workgroupName = Read-Host -Prompt "Enter the workgroup name"
 $userPassword = Read-Host -Prompt "Enter the user password"
 
 Write-Output ""
+Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
+$dwAgentCode = Read-Host -Prompt "Enter the DWService agent code"
+
+Write-Output ""
 
 # Set deployment directory
 $deployDir = "C:\Windows\deploy"
@@ -98,7 +102,7 @@ if (Test-Path $scriptsDir) {
         Write-Output "=========================================="
 
         try {
-            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName
+            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName -dwAgentCode $dwAgentCode
         }
         catch {
             Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"

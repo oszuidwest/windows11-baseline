@@ -1,3 +1,12 @@
+param (
+    [string]$systemPurpose,
+    [string]$systemOwnership,
+    [string]$userPassword,
+    [string]$computerName,
+    [string]$workgroupName,
+    [string]$dwAgentCode
+)
+
 Write-Output "Configuring power settings..."
 
 # Set monitor timeout for AC and DC power

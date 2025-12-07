@@ -10,7 +10,7 @@ Run as Administrator:
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -UseBasicParsing).Content | Invoke-Expression }`"" -Verb RunAs
 ```
 
-The installer prompts for: computer name, workgroup name, user password, system purpose, and system ownership.
+The installer prompts for: computer name, workgroup name, user password, system purpose, system ownership, and optionally a DWService agent code.
 
 ## Configuration Options
 
@@ -47,6 +47,30 @@ The installer prompts for: computer name, workgroup name, user password, system 
 
 Shared systems also receive:
 - **WhatsApp Web shortcut** on desktop (Edge InPrivate mode, no data stored)
+- **Branded wallpaper** (ZuidWest branding, locked)
+
+### Dedicated Systems
+
+Dedicated systems (e.g., playout servers) receive:
+- **BGInfo desktop overlay** showing computer name, IP addresses, network config, system specs
+- **Black wallpaper** (clean, distraction-free)
+
+## Remote Management
+
+### DWService
+
+[DWService](https://www.dwservice.net/) provides free remote access to managed systems. When a DWService agent code is provided during installation:
+
+1. The DWAgent installer is downloaded from dwservice.net
+2. Agent is installed silently with the provided code
+3. System appears in your DWService dashboard for remote access
+
+To get an agent code:
+1. Create an account at [dwservice.net](https://www.dwservice.net/)
+2. Add a new agent and select "Create an installation with the following code"
+3. Copy the code and provide it during baseline installation
+
+Leave the agent code empty during installation to skip DWService.
 
 ## Studio Configuration
 
@@ -69,6 +93,8 @@ windows11-baseline/
 ├── install.ps1                 # Main installer (downloads repo, runs scripts)
 ├── bin/
 │   └── LGPO.exe               # Microsoft Local Group Policy Object utility
+├── config/
+│   └── bginfo.bgi             # BGInfo layout configuration (optional)
 ├── policies/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
@@ -88,6 +114,8 @@ windows11-baseline/
 ├── scripts/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps
 │   ├── apps.ps1               # Install apps based on purpose
+│   ├── bginfo.ps1             # BGInfo system info overlay (dedicated only)
+│   ├── dwservice.ps1          # DWService remote access agent
 │   ├── policies.ps1           # Apply policies via LGPO
 │   ├── power.ps1              # Power settings (30min monitor, no standby)
 │   ├── sounds.ps1             # Disable system sounds (Radio/TV only)
@@ -101,7 +129,9 @@ windows11-baseline/
 1. `install.ps1` downloads repository to `C:\Windows\deploy`
 2. Executes all scripts in `scripts/` alphabetically with user-provided parameters
 3. `apps.ps1` installs applications using winget
-4. `policies.ps1` reads `config.json`, filters by purpose/ownership, applies via LGPO
+4. `bginfo.ps1` sets up desktop system info (dedicated systems only)
+5. `dwservice.ps1` installs remote access agent (if agent code provided)
+6. `policies.ps1` reads `config.json`, filters by purpose/ownership, applies via LGPO
 
 ## Development
 

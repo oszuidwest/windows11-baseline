@@ -3,7 +3,8 @@ param (
     [string]$systemOwnership,
     [string]$userPassword,
     [string]$computerName,
-    [string]$workgroupName
+    [string]$workgroupName,
+    [string]$dwAgentCode
 )
 
 <#

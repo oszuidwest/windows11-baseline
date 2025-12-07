@@ -4,7 +4,8 @@ param (
     [string]$systemOwnership,
     [string]$userPassword,
     [string]$computerName,
-    [string]$workgroupName
+    [string]$workgroupName,
+    [string]$dwAgentCode
 )
 
 Write-Output "Configuring computer name and workgroup..."

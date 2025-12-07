@@ -3,7 +3,8 @@ param (
     [string]$systemOwnership,
     [string]$userPassword,
     [string]$computerName,
-    [string]$workgroupName
+    [string]$workgroupName,
+    [string]$dwAgentCode
 )
 
 <#
@@ -66,7 +67,7 @@ if (Test-Path $bgInfoConfig) {
 }
 else {
     # Run without config - will use defaults
-    & $bgInfoExe /silent /timer:0 /nolicprompt /all
+    & $bgInfoExe /silent /timer:0 /nolicprompt
 }
 
 # Create startup shortcut for all users
@@ -79,7 +80,7 @@ try {
         $shortcut.Arguments = "`"$bgInfoConfig`" /silent /timer:0 /nolicprompt"
     }
     else {
-        $shortcut.Arguments = "/silent /timer:0 /nolicprompt /all"
+        $shortcut.Arguments = "/silent /timer:0 /nolicprompt"
     }
     $shortcut.Description = "BGInfo - Display system information on desktop"
     $shortcut.Save()

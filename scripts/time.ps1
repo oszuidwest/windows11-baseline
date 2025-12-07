@@ -1,3 +1,12 @@
+param (
+    [string]$systemPurpose,
+    [string]$systemOwnership,
+    [string]$userPassword,
+    [string]$computerName,
+    [string]$workgroupName,
+    [string]$dwAgentCode
+)
+
 Write-Output "Configuring time settings..."
 
 # Ensure the Windows Time Service is running
