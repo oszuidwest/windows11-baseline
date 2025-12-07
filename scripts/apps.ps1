@@ -58,6 +58,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
     $tempDir = Join-Path $env:TEMP "winget-install"
     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    $ProgressPreference = 'SilentlyContinue'
 
     try {
         # Install VCLibs dependency
@@ -149,7 +150,7 @@ if ($systemOwnership -eq "shared") {
     # Download WhatsApp icon
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
     try {
-        Invoke-WebRequest -Uri $iconUrl -OutFile $iconPath -ErrorAction Stop
+        Invoke-WebRequest -Uri $iconUrl -OutFile $iconPath -UseBasicParsing -ErrorAction Stop
     }
     catch {
         Write-Warning "Could not download WhatsApp icon"

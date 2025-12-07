@@ -76,7 +76,8 @@ New-Item -Path $deployDir -ItemType Directory -Force
 # Download and extract ZIP file
 try {
     Write-Output "Downloading ZIP file from $zipUrl..."
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath -UseBasicParsing
     Write-Output "Download complete. Extracting ZIP file..."
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
