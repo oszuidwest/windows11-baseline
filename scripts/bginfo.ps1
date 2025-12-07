@@ -54,10 +54,22 @@ if (-not (Test-Path $bgInfoExe)) {
     }
 }
 
-# Check if config exists
+# Download default config if not present
 if (-not (Test-Path $bgInfoConfig)) {
-    Write-Warning "BGInfo config not found at $bgInfoConfig"
-    Write-Warning "BGInfo will run with default settings. Create a custom .bgi file for specific layout."
+    Write-Output "Downloading default BGInfo config..."
+    $configUrl = "https://raw.githubusercontent.com/ncorrare/bginfo/master/files/default.bgi"
+    $configDir = Split-Path $bgInfoConfig -Parent
+    if (-not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    }
+    try {
+        Invoke-WebRequest -Uri $configUrl -OutFile $bgInfoConfig -UseBasicParsing
+        Write-Output "  Config downloaded successfully."
+    }
+    catch {
+        Write-Warning "Could not download config: $_"
+        Write-Warning "BGInfo will run with built-in defaults."
+    }
 }
 
 # Run BGInfo now to set initial wallpaper

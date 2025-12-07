@@ -74,7 +74,7 @@ function Get-ApplicablePolicies {
                 else {
                     Write-Warning "Unknown policy type in $policyPath - skipping"
                 }
-                Write-Host "  [+] $policyPath"
+                Write-Output "  [+] $policyPath"
             }
             else {
                 Write-Warning "Policy file not found: $fullPath"
@@ -120,12 +120,19 @@ function Apply-Policies {
         Merge-PolicyFiles -policyFiles $policies.Computer -outputPath $computerTxt
 
         # Convert txt to pol
-        & $lgpoPath /r $computerTxt /w $computerPol 2>&1 | Out-Null
+        $result = & $lgpoPath /r $computerTxt /w $computerPol 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "LGPO conversion error: $result"
+        }
 
         # Apply to machine
-        & $lgpoPath /m $computerPol
-
-        Write-Output "  Computer policies applied successfully"
+        $result = & $lgpoPath /m $computerPol 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "LGPO apply error: $result"
+        }
+        else {
+            Write-Output "  Computer policies applied successfully"
+        }
     }
 
     # Process User policies
@@ -138,12 +145,19 @@ function Apply-Policies {
         Merge-PolicyFiles -policyFiles $policies.User -outputPath $userTxt
 
         # Convert txt to pol
-        & $lgpoPath /r $userTxt /w $userPol 2>&1 | Out-Null
+        $result = & $lgpoPath /r $userTxt /w $userPol 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "LGPO conversion error: $result"
+        }
 
         # Apply to non-administrator accounts only
-        & $lgpoPath /un $userPol
-
-        Write-Output "  User policies applied successfully"
+        $result = & $lgpoPath /un $userPol 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "LGPO apply error: $result"
+        }
+        else {
+            Write-Output "  User policies applied successfully"
+        }
     }
 
     # Cleanup temp files

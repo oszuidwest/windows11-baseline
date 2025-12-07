@@ -17,7 +17,13 @@ $currentWorkgroup = (Get-CimInstance -ClassName Win32_ComputerSystem).Domain
 # Check and update the computer name if necessary
 if ($currentComputerName -ne $computerName) {
     Write-Output "Changing computer name from $currentComputerName to $computerName..."
-    Rename-Computer -NewName $computerName -Force
+    try {
+        Rename-Computer -NewName $computerName -Force -ErrorAction Stop
+        Write-Output "  Computer name changed successfully."
+    }
+    catch {
+        Write-Error "Failed to rename computer: $_"
+    }
 }
 else {
     Write-Output "Computer name is already $computerName. No change needed."
@@ -26,7 +32,13 @@ else {
 # Check and update the workgroup if necessary
 if ($currentWorkgroup -ne $workgroupName) {
     Write-Output "Changing workgroup from $currentWorkgroup to $workgroupName..."
-    Add-Computer -WorkGroupName $workgroupName
+    try {
+        Add-Computer -WorkGroupName $workgroupName -ErrorAction Stop
+        Write-Output "  Workgroup changed successfully."
+    }
+    catch {
+        Write-Error "Failed to change workgroup: $_"
+    }
 }
 else {
     Write-Output "Workgroup is already $workgroupName. No change needed."

@@ -42,17 +42,26 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 try {
+    $errorCount = 0
+
     # Set sound scheme to None
     $schemePath = "Registry::$tempKey\AppEvents\Schemes"
     if (Test-Path $schemePath) {
-        Set-ItemProperty -Path $schemePath -Name "(Default)" -Value ".None" -ErrorAction SilentlyContinue
-        Write-Output "  Set sound scheme to None"
+        try {
+            Set-ItemProperty -Path $schemePath -Name "(Default)" -Value ".None" -ErrorAction Stop
+            Write-Output "  Set sound scheme to None"
+        }
+        catch {
+            Write-Warning "  Failed to set sound scheme: $_"
+            $errorCount++
+        }
     }
 
     # Clear all individual sound events
     $basePath = "Registry::$tempKey\AppEvents\Schemes\Apps"
     if (Test-Path $basePath) {
         $apps = Get-ChildItem -Path $basePath -ErrorAction SilentlyContinue
+        $clearedCount = 0
 
         foreach ($app in $apps) {
             $events = Get-ChildItem -Path $app.PSPath -ErrorAction SilentlyContinue
@@ -60,14 +69,25 @@ try {
             foreach ($event in $events) {
                 $currentPath = Join-Path $event.PSPath ".Current"
                 if (Test-Path $currentPath) {
-                    Set-ItemProperty -Path $currentPath -Name "(Default)" -Value "" -ErrorAction SilentlyContinue
+                    try {
+                        Set-ItemProperty -Path $currentPath -Name "(Default)" -Value "" -ErrorAction Stop
+                        $clearedCount++
+                    }
+                    catch {
+                        $errorCount++
+                    }
                 }
             }
         }
-        Write-Output "  Cleared all sound event associations"
+        Write-Output "  Cleared $clearedCount sound event associations"
     }
 
-    Write-Output "System sounds disabled successfully."
+    if ($errorCount -gt 0) {
+        Write-Warning "Completed with $errorCount errors."
+    }
+    else {
+        Write-Output "System sounds disabled successfully."
+    }
 }
 finally {
     # Force release of all registry handles

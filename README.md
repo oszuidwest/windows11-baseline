@@ -119,7 +119,8 @@ windows11-baseline/
 │   ├── policies.ps1           # Apply policies via LGPO
 │   ├── power.ps1              # Power settings (30min monitor, no standby)
 │   ├── sounds.ps1             # Disable system sounds (Radio/TV only)
-│   ├── time.ps1               # NTP config (nl.pool.ntp.org)
+│   ├── time.ps1               # NTP config (nl.pool.ntp.org), timezone, regional settings
+│   ├── updates.ps1            # Check and install Windows updates
 │   ├── users.ps1              # Create user, configure auto-login
 │   └── workgroupname.ps1      # Set computer/workgroup name
 ```
@@ -132,6 +133,7 @@ windows11-baseline/
 4. `bginfo.ps1` sets up desktop system info (dedicated systems only)
 5. `dwservice.ps1` installs remote access agent (if agent code provided)
 6. `policies.ps1` reads `config.json`, filters by purpose/ownership, applies via LGPO
+7. `updates.ps1` checks for and installs Windows updates
 
 ## Development
 
