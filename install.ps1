@@ -24,13 +24,31 @@ Write-Output ""
 Write-Output "This script will configure a Windows 11 system with the specified settings."
 Write-Output ""
 
-# Get user inputs
-Write-Output "System purpose options: radio, tv, editorial, plain"
-$systemPurpose = Read-Host -Prompt "Enter the system purpose"
+# Valid options
+$validPurposes = @("radio", "tv", "editorial", "plain")
+$validOwnership = @("shared", "personal", "dedicated")
+
+# Get and validate system purpose
+do {
+    Write-Output "System purpose options: $($validPurposes -join ', ')"
+    $systemPurpose = (Read-Host -Prompt "Enter the system purpose").ToLower().Trim()
+    if ($systemPurpose -notin $validPurposes) {
+        Write-Warning "Invalid purpose '$systemPurpose'. Please enter one of: $($validPurposes -join ', ')"
+        Write-Output ""
+    }
+} while ($systemPurpose -notin $validPurposes)
 
 Write-Output ""
-Write-Output "System ownership options: shared, personal, dedicated"
-$systemOwnership = Read-Host -Prompt "Enter the system ownership"
+
+# Get and validate system ownership
+do {
+    Write-Output "System ownership options: $($validOwnership -join ', ')"
+    $systemOwnership = (Read-Host -Prompt "Enter the system ownership").ToLower().Trim()
+    if ($systemOwnership -notin $validOwnership) {
+        Write-Warning "Invalid ownership '$systemOwnership'. Please enter one of: $($validOwnership -join ', ')"
+        Write-Output ""
+    }
+} while ($systemOwnership -notin $validOwnership)
 
 Write-Output ""
 $computerName = Read-Host -Prompt "Enter the computer name"
