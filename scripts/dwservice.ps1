@@ -49,7 +49,7 @@ catch {
 # Install DWService silently with agent code
 Write-Output "Installing DWService with agent code..."
 try {
-    $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "-key=$dwAgentCode" -Wait -PassThru -NoNewWindow
+    $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "key=$dwAgentCode" -Wait -PassThru -NoNewWindow
 
     if ($process.ExitCode -eq 0) {
         Write-Output "  DWService installed successfully."
