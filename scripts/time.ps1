@@ -9,6 +9,17 @@ param (
 
 Write-Output "Configuring time settings..."
 
+# Set timezone to Amsterdam
+Write-Output "Setting timezone to W. Europe Standard Time (Amsterdam)..."
+Set-TimeZone -Id "W. Europe Standard Time"
+
+# Set regional settings to Netherlands (nl-NL)
+Write-Output "Setting regional format to Dutch (Netherlands)..."
+Set-WinSystemLocale -SystemLocale "nl-NL"
+Set-WinUserLanguageList -LanguageList "nl-NL" -Force
+Set-Culture -CultureInfo "nl-NL"
+Set-WinHomeLocation -GeoId 176  # Netherlands
+
 # Ensure the Windows Time Service is running
 if ((Get-Service -Name w32time).Status -ne 'Running') {
     Start-Service -Name w32time
