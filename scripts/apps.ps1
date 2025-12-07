@@ -70,9 +70,16 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         # Install UI.Xaml dependency
         Write-Output "  Installing UI.Xaml dependency..."
         $xamlPath = Join-Path $tempDir "xaml.zip"
-        Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.8.6" -OutFile $xamlPath -UseBasicParsing
+        Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.8.7" -OutFile $xamlPath -UseBasicParsing
         Expand-Archive -Path $xamlPath -DestinationPath (Join-Path $tempDir "xaml") -Force
         Add-AppxPackage -Path (Join-Path $tempDir "xaml\tools\AppX\x64\Release\Microsoft.UI.Xaml.2.8.appx") -ErrorAction Stop
+
+        # Install Windows App Runtime dependency
+        Write-Output "  Installing Windows App Runtime dependency..."
+        $runtimeUrl = "https://aka.ms/windowsappsdk/1.8/latest/windowsappruntimeinstall-x64.exe"
+        $runtimePath = Join-Path $tempDir "windowsappruntime.exe"
+        Invoke-WebRequest -Uri $runtimeUrl -OutFile $runtimePath -UseBasicParsing
+        Start-Process -FilePath $runtimePath -ArgumentList "--quiet" -Wait -NoNewWindow
 
         # Get latest winget release from GitHub
         Write-Output "  Downloading Winget from GitHub..."
