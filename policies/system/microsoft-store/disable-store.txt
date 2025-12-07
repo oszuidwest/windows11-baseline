@@ -1,0 +1,4 @@
+Computer
+SOFTWARE\Policies\Microsoft\WindowsStore
+RemoveWindowsStore
+DWORD:1

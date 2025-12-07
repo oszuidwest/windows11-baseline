@@ -105,6 +105,11 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Edge bloatware UI elements"
+    },
+    "system/microsoft-store/disable-store.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Microsoft Store to prevent app installations"
     }
   }
 }
