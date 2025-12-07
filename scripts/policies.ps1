@@ -74,7 +74,7 @@ function Get-ApplicablePolicies {
                 else {
                     Write-Warning "Unknown policy type in $policyPath - skipping"
                 }
-                Write-Output "  [+] $policyPath"
+                Write-Host "  [+] $policyPath"
             }
             else {
                 Write-Warning "Policy file not found: $fullPath"
