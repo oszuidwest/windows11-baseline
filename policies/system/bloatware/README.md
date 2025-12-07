@@ -29,7 +29,7 @@ Disables Windows 11 Widgets panel.
 | Setting | Value | Description |
 |---------|-------|-------------|
 | `AllowNewsAndInterests` | 0 | Disable Widgets panel |
-| `TaskbarDa` | 0 | Hide Widgets button from taskbar |
+| `DisableWidgetsOnLockScreen` | 1 | Disable widgets on lock screen |
 
 ### `disable-game-bar.txt`
 

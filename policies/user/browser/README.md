@@ -63,10 +63,10 @@ Remove bloatware and distractions from Edge UI. Applied to all systems.
 | `NewTabPageQuickLinksEnabled` | 0 | No quick links on new tab |
 | `HubsSidebarEnabled` | 0 | No Copilot/Bing sidebar |
 | `Microsoft365CopilotChatIconEnabled` | 0 | No Copilot icon in toolbar |
-| `HomepageLocation` | zuidwestupdate.nl | Set homepage |
+| `HomepageLocation` | https://www.zuidwestupdate.nl/ | Set homepage |
 | `HomepageIsNewTabPage` | 0 | Use custom homepage |
 | `RestoreOnStartup` | 4 | Open specific URLs on startup |
-| `RestoreOnStartupURLs` | zuidwestupdate.nl | Open on startup |
+| `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | Open on startup |
 
 ## Why
 

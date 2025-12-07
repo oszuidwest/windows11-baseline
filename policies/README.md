@@ -34,7 +34,7 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
   "policies": {
     "system/onedrive/disable-onedrive-sync.txt": {
       "purposes": ["all"],
-      "ownership": ["shared", "dedicated"],
+      "ownership": ["shared"],
       "description": "Disable OneDrive file synchronization"
     }
   }

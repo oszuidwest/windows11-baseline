@@ -25,6 +25,16 @@ Configures automatic updates to download and install automatically at 3:00 AM da
 | `ScheduledInstallTime` | 3 | Install at 3:00 AM |
 | `ScheduledInstallEveryWeek` | 1 | Install updates every week |
 
+The policy also removes week-specific scheduling settings:
+
+| Setting | Action | Description |
+|---------|--------|-------------|
+| `ScheduledInstallFirstWeek` | DELETE | Remove first week only scheduling |
+| `ScheduledInstallSecondWeek` | DELETE | Remove second week only scheduling |
+| `ScheduledInstallThirdWeek` | DELETE | Remove third week only scheduling |
+| `ScheduledInstallFourthWeek` | DELETE | Remove fourth week only scheduling |
+| `AllowMUUpdateService` | DELETE | Remove Microsoft Update Service option |
+
 ## Schedule
 
 - **Installation time**: Daily at 3:00 AM

@@ -23,12 +23,11 @@ Value 255 (0xFF) disables autorun for all drive types:
 
 ### `hide-shutdown-button.txt`
 
-Hides the shutdown button, only allowing restart.
+Hides the shutdown button from Start menu, only allowing restart.
 
 | Setting | Value | Description |
 |---------|-------|-------------|
-| `HidePowerOptions` | 1 | Hide shutdown/sleep options |
-| `DisableShutdownMenu` | 1 | Disable shutdown menu entries |
+| `HideShutDown` | 1 | Hide shutdown button from Start menu |
 
 Only applied to **shared** systems to ensure workstations are restarted (applying updates) rather than shut down.
 

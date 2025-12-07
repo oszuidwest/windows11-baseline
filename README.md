@@ -99,8 +99,8 @@ windows11-baseline/
 ## Execution Flow
 
 1. `install.ps1` downloads repository to `C:\Windows\deploy`
-2. Installs Chocolatey package manager
-3. Executes all scripts in `scripts/` with user-provided parameters
+2. Executes all scripts in `scripts/` alphabetically with user-provided parameters
+3. `apps.ps1` installs applications using winget
 4. `policies.ps1` reads `config.json`, filters by purpose/ownership, applies via LGPO
 
 ## Development

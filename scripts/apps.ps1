@@ -51,6 +51,12 @@ if ($apps.Count -eq 0) {
     exit 0
 }
 
+# Check if winget is available
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    Write-Error "Winget is not installed. Please install App Installer from the Microsoft Store."
+    exit 1
+}
+
 Write-Output "Installing apps for '$systemPurpose'..."
 
 foreach ($app in $apps) {

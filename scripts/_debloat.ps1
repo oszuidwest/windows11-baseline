@@ -49,20 +49,40 @@ foreach ($app in $appsToRemove) {
     Write-Output "Removing: $app"
 
     # Remove for all users
-    Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like "*$app*" } |
-        ForEach-Object {
-            Write-Output "  Removing package: $($_.Name)"
-            Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue
-        }
+    try {
+        Get-AppxPackage -AllUsers -ErrorAction Stop |
+            Where-Object { $_.Name -like "*$app*" } |
+            ForEach-Object {
+                Write-Output "  Removing package: $($_.Name)"
+                try {
+                    Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction Stop
+                }
+                catch {
+                    Write-Warning "  Failed to remove $($_.Name): $_"
+                }
+            }
+    }
+    catch {
+        Write-Warning "  Could not query packages for $app"
+    }
 
     # Remove provisioned package (prevents reinstallation for new users/updates)
-    Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
-        Where-Object { $_.DisplayName -like "*$app*" -or $_.PackageName -like "*$app*" } |
-        ForEach-Object {
-            Write-Output "  Removing provisioned package: $($_.DisplayName)"
-            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue
-        }
+    try {
+        Get-AppxProvisionedPackage -Online -ErrorAction Stop |
+            Where-Object { $_.DisplayName -like "*$app*" -or $_.PackageName -like "*$app*" } |
+            ForEach-Object {
+                Write-Output "  Removing provisioned package: $($_.DisplayName)"
+                try {
+                    Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction Stop | Out-Null
+                }
+                catch {
+                    Write-Warning "  Failed to remove provisioned $($_.DisplayName): $_"
+                }
+            }
+    }
+    catch {
+        Write-Warning "  Could not query provisioned packages for $app"
+    }
 }
 
 Write-Output "Bloatware removal complete."
