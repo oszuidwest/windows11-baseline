@@ -104,7 +104,7 @@
     "user/browser/edge-ui.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Disable Edge bloatware UI elements"
+      "description": "Disable Edge bloatware UI elements and set homepage to zuidwestupdate.nl"
     },
     "system/microsoft-store/disable-store.txt": {
       "purposes": ["all"],
