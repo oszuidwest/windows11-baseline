@@ -56,8 +56,10 @@ Applications are installed via **winget**. On LTSC systems (which lack Microsoft
 Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
 - **Branded wallpaper** at `C:\Windows\deploy\wallpaper.png` (locked, cannot be changed)
-- **Microsoft Store disabled** to prevent unauthorized app installations
-- **Edge ephemeral profiles** (no browsing history or sync)
+- **Microsoft Store disabled** including web-based app installer protocol
+- **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
+- **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R)
+- **Privacy hardening** - clipboard history disabled, no data persistence
 
 ### Dedicated Systems
 
@@ -124,12 +126,14 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | | Disable Spotlight tips | x | x | x |
 | | Disable Game Bar | x | x | x |
 | | Disable Copilot | x | x | x |
-| **Microsoft Store** | Disable Store | x | | |
+| **Microsoft Store** | Disable Store + app installer protocol | x | | |
 | **Microsoft Account** | Disable MS Account auth | x | | |
 | **OneDrive** | Disable sync | x | | |
 | **Security** | Disable autorun | x | x | x |
 | | Hide shutdown button | x | | |
 | **Privacy** | Disable tracking/telemetry | x | x | x |
+| | Disable clipboard history | x | | |
+| | Disable activity history | x | x | x |
 | **Logon** | Disable logon animations | x | x | x |
 | **OOBE** | Skip privacy wizard | x | x | x |
 | **Updates** | Auto-update daily 3:00 AM | x | x | x |
@@ -138,10 +142,14 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | | Disable Copilot in Edge | x | x | x |
 | | Ephemeral profiles | x | | |
 | | Disable autofill | x | | |
+| | Disable developer tools (F12) | x | | |
+| | Block extension installs | x | | |
 | **Wallpaper** | Branded (ZuidWest) | x | | |
 | | Black background | | | x |
 | **User Security** | Disable Command Prompt | x | | |
 | | Disable Registry Editor | x | | |
+| | Disable PowerShell | x | | |
+| | Disable Run dialog (Win+R) | x | | |
 
 See [`policies/README.md`](policies/README.md) for the full policy matrix and documentation.
 
@@ -172,7 +180,7 @@ windows11-baseline/
 │       ├── personalization/
 │       └── security/
 ├── scripts/
-│   ├── _debloat.ps1           # Remove 45+ Windows bloatware apps
+│   ├── _debloat.ps1           # Remove Windows bloatware apps (Copilot, Store, etc.)
 │   ├── apps.ps1               # Install winget (if needed) + apps based on purpose
 │   ├── bginfo.ps1             # BGInfo system info overlay (dedicated only)
 │   ├── dwservice.ps1          # DWService remote access agent
@@ -190,7 +198,7 @@ windows11-baseline/
 1. `install.ps1` downloads repository to `C:\Windows\deploy`
 2. Validates user input (purpose/ownership must be valid)
 3. Executes all scripts in `scripts/` alphabetically:
-   - `_debloat.ps1` - Removes bloatware apps and Copilot
+   - `_debloat.ps1` - Removes 29 bloatware apps (Copilot, Store, Teams, etc.)
    - `apps.ps1` - Installs winget (LTSC) + applications via winget
    - `bginfo.ps1` - Sets up BGInfo (dedicated systems only)
    - `dwservice.ps1` - Installs remote access (if agent code provided)
