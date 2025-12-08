@@ -70,7 +70,7 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | bloatware | Disable Copilot | Disable Windows Copilot | x | x | x |
 | system | logon-experience | Disable logon animations | Skip first-run animations | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
-| system | microsoft-store | Disable Store | Block Store + app installer protocol | x | | |
+| system | microsoft-store | Disable Store | Block Store, app installer, auto-downloads | x | | |
 | system | onedrive | Disable OneDrive sync | Prevent cloud sync | x | | |
 | system | oobe | Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
 | system | privacy | Disable tracking | Telemetry, location, ads | x | x | x |

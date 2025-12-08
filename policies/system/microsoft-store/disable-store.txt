@@ -4,6 +4,21 @@ RemoveWindowsStore
 DWORD:1
 
 Computer
+SOFTWARE\Policies\Microsoft\WindowsStore
+RequirePrivateStoreOnly
+DWORD:1
+
+Computer
+SOFTWARE\Policies\Microsoft\WindowsStore
+AutoDownload
+DWORD:4
+
+Computer
 SOFTWARE\Policies\Microsoft\Windows\AppInstaller
 EnableMSAppInstallerProtocol
 DWORD:0
+
+Computer
+SOFTWARE\Policies\Microsoft\Windows\CloudContent
+DisableWindowsConsumerFeatures
+DWORD:1

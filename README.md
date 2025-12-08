@@ -56,7 +56,7 @@ Applications are installed via **winget**. On LTSC systems (which lack Microsoft
 Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
 - **Branded wallpaper** at `C:\Windows\deploy\wallpaper.png` (locked, cannot be changed)
-- **Microsoft Store disabled** including web-based app installer protocol
+- **Microsoft Store disabled** including app installer protocol and auto-downloads blocked
 - **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
 - **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R)
 - **Privacy hardening** - clipboard history disabled, no data persistence
@@ -126,7 +126,7 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | | Disable Spotlight tips | x | x | x |
 | | Disable Game Bar | x | x | x |
 | | Disable Copilot | x | x | x |
-| **Microsoft Store** | Disable Store + app installer protocol | x | | |
+| **Microsoft Store** | Disable Store, block installs, no auto-downloads | x | | |
 | **Microsoft Account** | Disable MS Account auth | x | | |
 | **OneDrive** | Disable sync | x | | |
 | **Security** | Disable autorun | x | x | x |
