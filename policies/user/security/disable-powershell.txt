@@ -1,0 +1,10 @@
+User
+Software\Policies\Microsoft\Windows\PowerShell
+EnableScripts
+DWORD:0
+
+User
+Software\Policies\Microsoft\Windows\PowerShell
+ExecutionPolicy
+SZ:Restricted
+

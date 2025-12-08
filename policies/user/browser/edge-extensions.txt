@@ -1,0 +1,5 @@
+User
+Software\Policies\Microsoft\Edge\ExtensionInstallBlocklist
+1
+SZ:*
+

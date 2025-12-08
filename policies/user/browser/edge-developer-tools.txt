@@ -1,0 +1,5 @@
+User
+Software\Policies\Microsoft\Edge
+DeveloperToolsAvailability
+DWORD:2
+

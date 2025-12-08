@@ -1,0 +1,10 @@
+Computer
+Software\Policies\Microsoft\Windows\System
+AllowClipboardHistory
+DWORD:0
+
+Computer
+Software\Policies\Microsoft\Windows\System
+AllowCrossDeviceClipboard
+DWORD:0
+

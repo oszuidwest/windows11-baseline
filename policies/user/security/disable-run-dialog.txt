@@ -1,0 +1,5 @@
+User
+Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
+NoRun
+DWORD:1
+

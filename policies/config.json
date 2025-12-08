@@ -109,7 +109,37 @@
     "system/microsoft-store/disable-store.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
-      "description": "Disable Microsoft Store to prevent app installations"
+      "description": "Disable Microsoft Store and block ms-appinstaller protocol"
+    },
+    "user/security/disable-powershell.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable PowerShell for non-admin users"
+    },
+    "user/security/disable-run-dialog.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Run dialog (Win+R) for non-admin users"
+    },
+    "system/privacy/disable-clipboard-history.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable clipboard history and cross-device clipboard"
+    },
+    "user/browser/edge-developer-tools.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Edge Developer Tools (F12)"
+    },
+    "user/browser/edge-extensions.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Block all Edge extension installations"
+    },
+    "system/privacy/disable-activity-history.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Windows Activity History and Timeline"
     }
   }
 }

@@ -2,3 +2,8 @@ Computer
 SOFTWARE\Policies\Microsoft\WindowsStore
 RemoveWindowsStore
 DWORD:1
+
+Computer
+SOFTWARE\Policies\Microsoft\Windows\AppInstaller
+EnableMSAppInstallerProtocol
+DWORD:0
