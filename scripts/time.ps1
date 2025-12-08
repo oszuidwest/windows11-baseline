@@ -27,6 +27,11 @@ try {
     Set-Culture -CultureInfo "nl-NL" -ErrorAction Stop
     Set-WinHomeLocation -GeoId 176 -ErrorAction Stop
     Write-Output "  Regional settings configured."
+
+    # Copy settings to new user profiles and welcome screen
+    Write-Output "  Copying regional settings to default user profile..."
+    Copy-UserInternationalSettingsToSystem -WelcomeScreen $true -NewUser $true -ErrorAction Stop
+    Write-Output "  Regional settings will apply to new users."
 }
 catch {
     Write-Error "Failed to set regional settings: $_"
