@@ -42,21 +42,12 @@ Disables Xbox Game Bar and DVR functionality.
 
 Note: Game Bar is not installed on Windows 11 LTSC, but these settings suppress "broken Game Bar" popup messages.
 
-### `disable-copilot.txt`
-
-Disables Windows Copilot system-wide.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `TurnOffWindowsCopilot` | 1 | Disable Windows Copilot |
-
-Note: This policy is deprecated by Microsoft in favor of AppLocker rules. It still works but may be removed in future Windows updates.
-
 ## Why
 
 - Makes Start menu search fast and local-only
 - Prevents accidental web searches when looking for local files/apps
 - Removes Windows tips, suggestions, and Widgets
-- Disables Copilot AI assistant (prevents reinstallation after updates)
 - Suppresses Game Bar popups on LTSC
 - Reduces bandwidth usage and improves privacy
+
+Note: Copilot is blocked via AppLocker (see `policies/applocker/`) since the GPO is deprecated in Windows 11 24H2.

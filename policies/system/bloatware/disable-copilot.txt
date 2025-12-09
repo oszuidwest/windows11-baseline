@@ -1,4 +1,0 @@
-Computer
-SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot
-TurnOffWindowsCopilot
-DWORD:1

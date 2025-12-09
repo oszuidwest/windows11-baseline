@@ -70,22 +70,21 @@ Shared systems also receive:
 Dedicated systems (e.g., playout servers) receive:
 - **Black wallpaper** (clean, distraction-free, locked)
 
-### AppLocker (Shared Systems)
+### AppLocker
 
-On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Users can bypass Store policies by downloading `StoreInstaller.exe` from `get.microsoft.com`.
+On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Additionally, Copilot cannot be reliably blocked via GPO in 24H2. This baseline uses **AppLocker** to block unwanted apps based on ownership. The policy XML is generated dynamically at runtime:
 
-This baseline uses **AppLocker** to block Store installations on shared systems:
-
-| Blocked | Method |
-|---------|--------|
-| Microsoft Store app | Packaged app deny rule for `Microsoft.WindowsStore` |
-| StoreInstaller.exe | Executable deny rule (blocks web installer from get.microsoft.com) |
+| Ownership | Blocked Apps |
+|-----------|--------------|
+| Shared | Store, Copilot, StoreInstaller.exe |
+| Dedicated | Copilot only |
+| Personal | Nothing blocked |
 
 **Requirements:**
 - Windows Enterprise or Education edition (LTSC qualifies)
 - Application Identity service (AppIdSvc) - automatically enabled by the script
 
-The AppLocker policy allows all other executables and packaged apps to run normally. Only Store-related installation vectors are blocked.
+The AppLocker policy allows all other executables and packaged apps to run normally. Only Store and Copilot are blocked.
 
 ## Regional Settings
 
@@ -145,7 +144,6 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | | Disable Widgets | x | x | x |
 | | Disable Spotlight tips | x | x | x |
 | | Disable Game Bar | x | x | x |
-| | Disable Copilot | x | x | x |
 | **Microsoft Store** | Disable Store, block installs, no auto-downloads | x | | |
 | **Microsoft Account** | Disable MS Account auth | x | | |
 | **OneDrive** | Disable sync | x | | |
@@ -187,8 +185,7 @@ windows11-baseline/
 ├── policies/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
-│   ├── applocker/             # AppLocker XML policies (shared systems)
-│   │   └── block-store-installs.xml
+│   ├── applocker/             # AppLocker policies (generated at runtime)
 │   ├── system/                # Computer policies (HKLM)
 │   │   ├── bloatware/
 │   │   ├── logon-experience/

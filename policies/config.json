@@ -81,11 +81,6 @@
       "ownership": ["all"],
       "description": "Disable Game Bar popups and DVR (not installed on LTSC)"
     },
-    "system/bloatware/disable-copilot.txt": {
-      "purposes": ["all"],
-      "ownership": ["all"],
-      "description": "Disable Windows Copilot"
-    },
     "user/browser/edge-profile.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],

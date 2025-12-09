@@ -13,7 +13,7 @@ Blocks app installation vectors on shared systems.
 | `EnableMSAppInstallerProtocol` | 0 | Blocks `ms-appinstaller://` protocol (prevents web-based app installs) |
 | `DisableWindowsConsumerFeatures` | 1 | Disables Windows consumer features (suggestions, tips, Store promotions) |
 
-**Note:** On Windows 11 24H2, the traditional "Turn off the Store application" GPO is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). This baseline uses AppLocker (`policies/applocker/block-store-installs.xml`) to block the Store app and `StoreInstaller.exe` from `get.microsoft.com`.
+**Note:** On Windows 11 24H2, the traditional "Turn off the Store application" GPO is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). This baseline uses AppLocker (dynamically generated policy) to block the Store app, Copilot, and `StoreInstaller.exe` from `get.microsoft.com`.
 
 ## Why
 
