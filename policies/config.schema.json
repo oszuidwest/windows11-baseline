@@ -4,6 +4,10 @@
   "description": "Configuration for conditional policy application based on system purpose and ownership",
   "type": "object",
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
     "policies": {
       "type": "object",
       "additionalProperties": {
