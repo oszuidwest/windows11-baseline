@@ -1,14 +1,4 @@
 Computer
-SOFTWARE\Policies\Microsoft\WindowsStore
-RequirePrivateStoreOnly
-DWORD:1
-
-Computer
-SOFTWARE\Policies\Microsoft\WindowsStore
-AutoDownload
-DWORD:2
-
-Computer
 SOFTWARE\Policies\Microsoft\Windows\AppInstaller
 EnableMSAppInstallerProtocol
 DWORD:0
@@ -16,9 +6,4 @@ DWORD:0
 Computer
 SOFTWARE\Policies\Microsoft\Windows\CloudContent
 DisableWindowsConsumerFeatures
-DWORD:1
-
-Computer
-SOFTWARE\Policies\Microsoft\Windows\Appx
-BlockNonAdminUserInstall
 DWORD:1
