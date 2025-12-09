@@ -46,6 +46,7 @@ The installer prompts for:
 | LibreOffice     | x     | x  |           |       |
 | MS Teams        |       |    | x         |       |
 | Pinta           |       |    | x         |       |
+| Spotify         | x     |    |           |       |
 | Thunderbird     | x     |    |           |       |
 | VLC             | x     | x  | x         |       |
 

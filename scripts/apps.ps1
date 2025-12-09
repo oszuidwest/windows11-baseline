@@ -20,13 +20,14 @@ $appDefinitions = @{
     "libreoffice"   = "TheDocumentFoundation.LibreOffice"
     "msteams"       = "Microsoft.Teams"
     "pinta"         = "Pinta.Pinta"
+    "spotify"       = "Spotify.Spotify"
     "thunderbird"   = "Mozilla.Thunderbird"
     "vlc"           = "VideoLAN.VLC"
 }
 
 # Applications by purpose
 $appsByPurpose = @{
-    "radio"     = @("audacity", "libreoffice", "thunderbird", "vlc")
+    "radio"     = @("audacity", "libreoffice", "spotify", "thunderbird", "vlc")
     "tv"        = @("creativecloud", "libreoffice", "vlc")
     "editorial" = @("audacity", "msteams", "pinta", "vlc")
     "plain"     = @()
