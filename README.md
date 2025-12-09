@@ -68,7 +68,6 @@ Shared systems also receive:
 ### Dedicated Systems
 
 Dedicated systems (e.g., playout servers) receive:
-- **BGInfo desktop overlay** showing computer name, IP addresses, network config, system specs (auto-starts at login)
 - **Black wallpaper** (clean, distraction-free, locked)
 
 ### AppLocker (Shared Systems)
@@ -208,7 +207,6 @@ windows11-baseline/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps (Copilot, Store, etc.)
 │   ├── applocker.ps1          # Block Store/StoreInstaller via AppLocker (shared only)
 │   ├── apps.ps1               # Install winget (if needed) + apps based on purpose
-│   ├── bginfo.ps1             # BGInfo system info overlay (dedicated only)
 │   ├── dwservice.ps1          # DWService remote access agent
 │   ├── policies.ps1           # Apply policies via LGPO
 │   ├── power.ps1              # Power settings (monitor, standby, hibernate)
@@ -227,7 +225,6 @@ windows11-baseline/
    - `_debloat.ps1` - Removes 29 bloatware apps (Copilot, Store, Teams, etc.)
    - `applocker.ps1` - Blocks Store installations via AppLocker (shared only)
    - `apps.ps1` - Installs winget (LTSC) + applications via winget
-   - `bginfo.ps1` - Sets up BGInfo (dedicated systems only)
    - `dwservice.ps1` - Installs remote access (if agent code provided)
    - `policies.ps1` - Downloads wallpaper, applies Group Policies
    - `power.ps1` - Configures power settings
