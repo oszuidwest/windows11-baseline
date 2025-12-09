@@ -12,11 +12,6 @@ Disables Command Prompt access for non-admin users.
 |---------|-------|-------------|
 | `DisableCMD` | 2 | Disable Command Prompt but allow batch files |
 
-### DisableCMD Values
-
-- `1` = Disable Command Prompt and batch files
-- `2` = Disable Command Prompt only, batch files still work (recommended)
-
 Value 2 is used to prevent breaking installers and scripts that rely on batch files.
 
 ### `disable-registry-editor.txt`
@@ -26,6 +21,49 @@ Disables Registry Editor access for non-admin users.
 | Setting | Value | Description |
 |---------|-------|-------------|
 | `DisableRegistryTools` | 1 | Disable regedit.exe |
+
+### `disable-powershell.txt`
+
+Disables PowerShell script execution for non-admin users.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `EnableScripts` | 0 | Disable script execution |
+| `ExecutionPolicy` | Restricted | Most restrictive policy |
+
+### `disable-run-dialog.txt`
+
+Disables the Run dialog (Win+R) for non-admin users.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `NoRun` | 1 | Disable Run dialog |
+
+### `disable-task-manager.txt`
+
+Disables Task Manager access for non-admin users.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `DisableTaskMgr` | 1 | Disable Task Manager |
+
+### `disable-control-panel.txt`
+
+Disables Control Panel and Settings app access for non-admin users.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `NoControlPanel` | 1 | Disable Control Panel and Settings |
+
+### `disable-network-settings.txt`
+
+Disables network connection property changes for non-admin users.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `NC_LanProperties` | 0 | Disable LAN properties access |
+| `NC_LanChangeProperties` | 0 | Disable LAN component changes |
+| `NC_LanConnect` | 0 | Disable new LAN connections |
 
 ## Why
 

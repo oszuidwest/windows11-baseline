@@ -31,4 +31,4 @@ BGInfo configuration file for dedicated systems. This file defines which system 
 - Font: Lucida Console, 9pt
 - Background: Copy user's current wallpaper
 
-**If no .bgi file is present**, BGInfo runs with `/all` flag showing all default fields.
+**If no .bgi file is present**, BGInfo downloads a default configuration from GitHub and uses that. Without any configuration, it runs with built-in defaults.

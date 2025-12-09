@@ -21,7 +21,7 @@ policies/
 └── user/                        # User-level policies (HKCU, non-admin only)
     ├── browser/                 # Edge: profile, privacy, autofill, UI, devtools, extensions
     ├── personalization/         # Wallpaper settings
-    └── security/                # CMD, Registry, PowerShell, Run dialog
+    └── security/                # CMD, Registry, PowerShell, Run, Task Manager, Control Panel, Network
 ```
 
 ## Conditional Policy Application
@@ -91,6 +91,9 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | user | security | Disable Registry Editor | Block regedit.exe access | x | | |
 | user | security | Disable PowerShell | Block PowerShell access | x | | |
 | user | security | Disable Run dialog | Block Win+R access | x | | |
+| user | security | Disable Task Manager | Block Task Manager access | x | | |
+| user | security | Disable Control Panel | Block Control Panel and Settings | x | | |
+| user | security | Disable network settings | Block network property changes | x | | |
 
 ## File Format
 

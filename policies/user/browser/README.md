@@ -28,7 +28,7 @@ Tracking prevention and security settings. Applied to all systems.
 | `PersonalizationReportingEnabled` | 0 | No usage analytics |
 | `SitePerProcess` | 1 | Site isolation enabled |
 | `TyposquattingCheckerEnabled` | 1 | Phishing protection |
-| `BingSafeSearchMode` | 1 | Moderate safe search |
+| `ForceBingSafeSearch` | 1 | Moderate safe search |
 | `UserFeedbackAllowed` | 0 | No feedback prompts |
 | `DiagnosticData` | 0 | Minimal diagnostic data |
 
@@ -67,6 +67,22 @@ Remove bloatware and distractions from Edge UI. Applied to all systems.
 | `HomepageIsNewTabPage` | 0 | Use custom homepage |
 | `RestoreOnStartup` | 4 | Open specific URLs on startup |
 | `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | Open on startup |
+
+### `edge-developer-tools.txt`
+
+Disable developer tools. Shared systems only.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `DeveloperToolsAvailability` | 2 | Completely disable F12 developer tools |
+
+### `edge-extensions.txt`
+
+Block extension installations. Shared systems only.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `ExtensionInstallBlocklist` | * | Block all extension installs |
 
 ## Why
 
