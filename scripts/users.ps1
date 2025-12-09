@@ -5,21 +5,35 @@ param (
     [string]$userPassword,
     [string]$computerName,
     [string]$workgroupName,
-    [string]$dwAgentCode
+    [string]$dwAgentCode,
+    [string]$dedicatedUserName
 )
 
 Write-Output "Configuring user settings..."
 
-# Map purpose to username
-$userName = switch ($systemPurpose) {
-    'editorial' { "Redactie Gebruiker" }
-    'tv' { "Studio Gebruiker" }
-    'radio' { "Studio Gebruiker" }
-    default { "" }
+# Determine username based on ownership and purpose
+if ($systemOwnership -eq "dedicated" -and $dedicatedUserName -ne "") {
+    # Dedicated system with custom user
+    $userName = $dedicatedUserName
+    $enableAutoLogin = $true
+}
+elseif ($systemOwnership -eq "shared") {
+    # Shared system with purpose-based user
+    $userName = switch ($systemPurpose) {
+        'editorial' { "Redactie Gebruiker" }
+        'tv' { "Studio Gebruiker" }
+        'radio' { "Studio Gebruiker" }
+        default { "" }
+    }
+    $enableAutoLogin = ($systemPurpose -ne "plain")
+}
+else {
+    $userName = ""
+    $enableAutoLogin = $false
 }
 
-# Add user if ownership is shared and userName is specified
-if ($systemOwnership -eq "shared" -and $userName -ne "") {
+# Add user if userName is specified
+if ($userName -ne "") {
     if (-not (Get-LocalUser -Name $userName -ErrorAction SilentlyContinue)) {
         Write-Output "Creating local user: $userName"
         try {
@@ -36,17 +50,14 @@ if ($systemOwnership -eq "shared" -and $userName -ne "") {
     }
 }
 
-# Set registry values if userName is specified
+# Set registry values for auto-login if enabled
 $regPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
-if ($userName -ne "") {
+if ($userName -ne "" -and $enableAutoLogin) {
     Write-Output "Configuring auto-login for: $userName"
     try {
         Set-ItemProperty -Path $regPath -Name "DefaultUserName" -Value $userName -Force -ErrorAction Stop
-
-        if ($systemPurpose -ne "plain") {
-            Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $userPassword -Force -ErrorAction Stop
-            Set-ItemProperty -Path $regPath -Name "AutoAdminLogon" -Value 1 -Force -ErrorAction Stop
-        }
+        Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $userPassword -Force -ErrorAction Stop
+        Set-ItemProperty -Path $regPath -Name "AutoAdminLogon" -Value 1 -Force -ErrorAction Stop
         Write-Output "  Auto-login configured."
     }
     catch {

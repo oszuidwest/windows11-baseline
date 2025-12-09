@@ -16,6 +16,8 @@ The installer prompts for:
 - **Computer name**
 - **Workgroup name**
 - **User password**
+- **Create user with auto-login?** (dedicated only, optional)
+- **Username** (if creating user on dedicated system)
 - **DWService agent code** (optional, leave empty to skip)
 
 ## Configuration Options
@@ -35,7 +37,7 @@ The installer prompts for:
 |-----------|-------------|------------|-----------------|
 | Shared | Shared computers with restricted access | Yes (if not plain) | Blocked |
 | Personal | Company-issued laptops for employees | No | Allowed |
-| Dedicated | Single-function systems (e.g., playout servers) | No | Allowed |
+| Dedicated | Single-function systems (e.g., playout servers) | Optional (custom user) | Allowed |
 
 ## Application Matrix
 

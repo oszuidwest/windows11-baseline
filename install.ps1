@@ -55,6 +55,16 @@ $computerName = Read-Host -Prompt "Enter the computer name"
 $workgroupName = Read-Host -Prompt "Enter the workgroup name"
 $userPassword = Read-Host -Prompt "Enter the user password"
 
+# For dedicated systems, ask if a user with auto-login should be created
+$dedicatedUserName = ""
+if ($systemOwnership -eq "dedicated") {
+    Write-Output ""
+    $createUser = (Read-Host -Prompt "Create a user with auto-login? (y/n)").ToLower().Trim()
+    if ($createUser -eq "y" -or $createUser -eq "yes") {
+        $dedicatedUserName = Read-Host -Prompt "Enter the username"
+    }
+}
+
 Write-Output ""
 Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
 $dwAgentCode = Read-Host -Prompt "Enter the DWService agent code"
@@ -121,7 +131,7 @@ if (Test-Path $scriptsDir) {
         Write-Output "=========================================="
 
         try {
-            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName -dwAgentCode $dwAgentCode
+            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName -dwAgentCode $dwAgentCode -dedicatedUserName $dedicatedUserName
         }
         catch {
             Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"
