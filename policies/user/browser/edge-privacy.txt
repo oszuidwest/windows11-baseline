@@ -25,7 +25,7 @@ DWORD:1
 
 User
 Software\Policies\Microsoft\Edge
-BingSafeSearchMode
+ForceBingSafeSearch
 DWORD:1
 
 User

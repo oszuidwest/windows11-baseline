@@ -35,21 +35,6 @@ DWORD:0
 
 User
 Software\Policies\Microsoft\Edge
-MicrosoftOfficeMenuEnabled
-DWORD:0
-
-User
-Software\Policies\Microsoft\Edge
-OutlookHubMenuEnabled
-DWORD:0
-
-User
-Software\Policies\Microsoft\Edge
-AllowGamesMenu
-DWORD:0
-
-User
-Software\Policies\Microsoft\Edge
 NewTabPageContentEnabled
 DWORD:0
 
