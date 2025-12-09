@@ -207,7 +207,7 @@ if ($systemOwnership -eq "shared") {
     else {
         "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
     }
-    $arguments = "--app=https://web.whatsapp.com --inprivate --window-size=800,600"
+    $arguments = "--app=https://web.whatsapp.com --inprivate --mute-audio --window-size=800,600"
 
     # Download WhatsApp icon
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
