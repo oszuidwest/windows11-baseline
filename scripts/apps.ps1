@@ -171,6 +171,15 @@ if ($apps -contains "spotify") {
             $shortcut.Description = "Spotify"
             $shortcut.Save()
             Write-Output "  Start Menu shortcut created"
+
+            # Create Desktop shortcut
+            $desktopPath = "C:\Users\Public\Desktop\Spotify.lnk"
+            $shortcut = $shell.CreateShortcut($desktopPath)
+            $shortcut.TargetPath = "$spotifyPath\Spotify.exe"
+            $shortcut.WorkingDirectory = $spotifyPath
+            $shortcut.Description = "Spotify"
+            $shortcut.Save()
+            Write-Output "  Desktop shortcut created"
         }
         else {
             Write-Warning "Spotify installation failed (exit code: $($process.ExitCode))"
