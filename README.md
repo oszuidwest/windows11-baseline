@@ -183,8 +183,6 @@ windows11-baseline/
 ├── bin/
 │   ├── LGPO.exe               # Microsoft Local Group Policy Object utility
 │   └── AppLockerPolicyTool.exe # AppLocker policy deployment tool
-├── config/
-│   └── bginfo.bgi             # BGInfo layout configuration (optional)
 ├── policies/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
