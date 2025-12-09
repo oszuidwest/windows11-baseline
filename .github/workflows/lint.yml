@@ -1,0 +1,95 @@
+name: Lint and Format
+
+on:
+  push:
+
+jobs:
+  lint_and_format:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Install linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-utils jq
+
+      - name: Lint XML files
+        run: |
+          echo "Validating XML files..."
+          failed=0
+          for file in $(find . -name "*.xml" -type f); do
+            echo "Checking $file"
+            if ! xmllint --noout "$file" 2>&1; then
+              echo "ERROR: $file is not valid XML"
+              failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo "XML validation failed"
+            exit 1
+          fi
+          echo "All XML files are valid"
+
+      - name: Lint JSON files
+        run: |
+          echo "Validating JSON files..."
+          failed=0
+          for file in $(find . -name "*.json" -type f); do
+            echo "Checking $file"
+            if ! jq empty "$file" 2>&1; then
+              echo "ERROR: $file is not valid JSON"
+              failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo "JSON validation failed"
+            exit 1
+          fi
+          echo "All JSON files are valid"
+
+      - name: Validate JSON against schema
+        run: |
+          echo "Validating config.json against schema..."
+          cd policies
+          # Use ajv-cli for JSON schema validation
+          npm install -g ajv-cli ajv-formats
+          ajv validate -s config.schema.json -d config.json --all-errors
+          echo "Schema validation passed"
+
+      - name: Format PowerShell scripts
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Include *.ps1
+          foreach ($file in $files) {
+            Write-Output "Formatting $file"
+            $content = Get-Content -Path $file.FullName -Raw
+            $formatted = Invoke-Formatter -ScriptDefinition $content
+            Set-Content -Path $file.FullName -Value $formatted -NoNewline
+          }
+
+      - name: Lint PowerShell scripts
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Include *.ps1
+          foreach ($file in $files) {
+            Write-Output "Linting $file"
+            Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error -ExcludeRule PSReviewUnusedParameter
+          }
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m "style: auto-format code" || echo "No changes to commit"
+          git push
