@@ -7,6 +7,10 @@ param (
     [string]$dwAgentCode
 )
 
+# TODO: Remove this when done testing
+Write-Output "=== Skipping Windows Updates (disabled for testing) ==="
+exit 0
+
 <#
 .SYNOPSIS
     Checks for and installs Windows updates.
