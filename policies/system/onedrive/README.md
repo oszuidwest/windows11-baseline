@@ -1,21 +1,12 @@
 # OneDrive Policies
 
-These policies disable OneDrive file synchronization system-wide.
+Prevents automatic file sync to Microsoft cloud. Ensures files remain local for broadcast environments.
 
 ## Policies
 
 ### `disable-onedrive-sync.txt`
 
-Prevents OneDrive from automatically syncing files.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableFileSyncNGSC` | 1 | Disables OneDrive Files On-Demand and file sync for users who are signed in to OneDrive |
-| `DisableFileSync` | 1 | Legacy setting that disables OneDrive file sync |
-
-## Why
-
-- Prevents automatic upload of local files to Microsoft cloud
-- Reduces bandwidth usage
-- Ensures files remain local for broadcast/production environments
-- Removes OneDrive integration from File Explorer
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableFileSyncNGSC` | 1 | Prevents OneDrive from starting and syncing files |
+| `DisableFileSync` | 1 | Legacy policy for Windows 8 (no effect on 10/11) |

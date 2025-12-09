@@ -1,27 +1,34 @@
 # Privacy Policies
 
-These policies disable Windows telemetry and tracking features.
+Minimizes data sent to Microsoft: telemetry, location, advertising ID, clipboard sync, activity history.
 
 ## Policies
 
 ### `disable-tracking.txt`
 
-Disables various Windows tracking and data collection features.
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableLocation` | 1 | Turns off location services system-wide |
+| `DisabledByGroupPolicy` | 1 | Prevents apps from using advertising ID |
+| `DisableTailoredExperiencesWithDiagnosticData` | 1 | Stops Windows using diagnostic data for personalization |
+| `AllowTelemetry` | 0 | Disables telemetry (Enterprise/Education only) |
+| `PreventHandwritingDataSharing` | 1 | Blocks handwriting data sharing with Microsoft |
+| `PreventHandwritingErrorReports` | 1 | Disables handwriting recognition error reporting |
+| `AllowInputPersonalization` | 0 | Disables online speech recognition services |
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableLocation` | 1 | Disable location services system-wide |
-| `DisabledByGroupPolicy` | 1 | Disable advertising ID for personalized ads |
-| `DisableTailoredExperiencesWithDiagnosticData` | 1 | Disable personalized tips and recommendations |
-| `AllowTelemetry` | 0 | Set telemetry to Security level only (minimum) |
-| `PreventHandwritingDataSharing` | 1 | Disable handwriting data sharing |
-| `PreventHandwritingErrorReports` | 1 | Disable handwriting error reports |
-| `AllowInputPersonalization` | 0 | Disable text and ink input personalization |
+### `disable-clipboard-history.txt`
 
-## Why
+Shared and dedicated systems only.
 
-- Minimizes data sent to Microsoft
-- Disables location tracking
-- Prevents personalized advertising
-- Reduces telemetry to security-only level
-- Protects user privacy on shared workstations
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `AllowClipboardHistory` | 0 | Prevents clipboard from storing multiple items |
+| `AllowCrossDeviceClipboard` | 0 | Blocks clipboard sync across devices |
+
+### `disable-activity-history.txt`
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `EnableActivityFeed` | 0 | Disables Timeline activity publishing and sync |
+| `PublishUserActivities` | 0 | Prevents user activities from being published |
+| `UploadUserActivities` | 0 | Blocks user activities from uploading to cloud |

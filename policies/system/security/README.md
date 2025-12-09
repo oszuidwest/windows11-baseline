@@ -1,39 +1,19 @@
 # Security Policies
 
-Security restrictions applied system-wide.
+Disables autorun (malware prevention) and hides shutdown button (forces restart for updates).
 
 ## Policies
 
 ### `disable-autorun.txt`
 
-Disables autorun for all drive types.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `NoDriveTypeAutoRun` | 255 | Disable autorun for all drive types |
-
-### NoDriveTypeAutoRun Values
-
-Value 255 (0xFF) disables autorun for all drive types:
-- Removable drives (USB)
-- Fixed drives
-- Network drives
-- CD-ROM drives
-- RAM disks
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `NoDriveTypeAutoRun` | 255 | Disables AutoRun/AutoPlay for all drive types |
 
 ### `hide-shutdown-button.txt`
 
-Hides the shutdown button from Start menu, only allowing restart.
+Shared systems only. Ensures workstations are restarted (applying updates) rather than shut down.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `HideShutDown` | 1 | Hide shutdown button from Start menu |
-
-Only applied to **shared** systems to ensure workstations are restarted (applying updates) rather than shut down.
-
-## Why
-
-- Prevents malware from auto-executing when USB drives are inserted
-- Blocks autorun.inf exploits
-- Ensures shared workstations are restarted, not shut down
-- Standard security hardening measure
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `HideShutDown` | 1 | Removes Shutdown option from Start and login screen |

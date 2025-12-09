@@ -64,17 +64,17 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 
 | Scope | Category | Policy | Description | Shared | Personal | Dedicated |
 |:-----:|----------|--------|-------------|:------:|:--------:|:---------:|
-| system | bloatware | Disable web search | Remove Bing from Start menu | x | x | x |
+| system | bloatware | Disable web search | No web results or suggestions in Start menu | x | x | x |
 | system | bloatware | Disable Spotlight | Remove tips and suggestions | x | x | x |
 | system | bloatware | Disable Widgets | Remove Widgets panel | x | x | x |
 | system | bloatware | Disable Game Bar | Suppress Game Bar popups | x | x | x |
-| system | logon-experience | Disable logon animations | Skip first-run animations | x | x | x |
+| system | logon-experience | Disable logon animations | Skip first-run animation, hide Switch User | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
-| system | microsoft-store | Disable Store | Block Store, app installer, auto-downloads | x | | |
+| system | microsoft-store | Disable Store | Block ms-appinstaller:// and promotions | x | | |
 | system | onedrive | Disable OneDrive sync | Prevent cloud sync | x | | |
 | system | oobe | Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
 | system | privacy | Disable tracking | Telemetry, location, ads | x | x | x |
-| system | privacy | Disable clipboard history | No clipboard history/cross-device | x | | |
+| system | privacy | Disable clipboard history | No clipboard history/cross-device | x | | x |
 | system | privacy | Disable activity history | No Timeline/activity uploads | x | x | x |
 | system | security | Disable autorun | Block USB/CD autorun | x | x | x |
 | system | security | Hide shutdown button | Only allow restart | x | | |
@@ -82,14 +82,14 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | user | browser | Edge profile | Ephemeral profiles, no history/sync | x | | |
 | user | browser | Edge privacy | Tracking prevention, no telemetry | x | x | x |
 | user | browser | Edge autofill | No passwords, creditcards, import | x | | |
-| user | browser | Edge UI | No Copilot, rewards, shopping, games | x | x | x |
+| user | browser | Edge UI | No Copilot, rewards, shopping; sets homepage | x | x | x |
 | user | browser | Edge developer tools | Disable F12 developer tools | x | | |
 | user | browser | Edge extensions | Block all extension installs | x | | |
 | user | personalization | Branded wallpaper | ZuidWest wallpaper (locked) | x | | |
 | user | personalization | Black wallpaper | Solid black background (locked) | | | x |
-| user | security | Disable Command Prompt | Block cmd.exe access | x | | |
+| user | security | Disable Command Prompt | Block cmd.exe but allow batch files | x | | |
 | user | security | Disable Registry Editor | Block regedit.exe access | x | | |
-| user | security | Disable PowerShell | Block PowerShell access | x | | |
+| user | security | Disable PowerShell | Block scripts, allow interactive shell | x | | |
 | user | security | Disable Run dialog | Block Win+R access | x | | |
 | user | security | Disable Task Manager | Block Task Manager access | x | | |
 | user | security | Disable Control Panel | Block Control Panel and Settings | x | | |

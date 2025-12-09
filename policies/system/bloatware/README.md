@@ -1,53 +1,37 @@
 # Bloatware Policies
 
-These policies disable Windows bloatware features system-wide.
+Disables Windows bloatware: web search, Spotlight, Widgets, and Game Bar.
 
 ## Policies
 
 ### `disable-web-in-search.txt`
 
-Disables web search in Windows Search.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableWebSearch` | 1 | Disable web search in Start menu |
-| `AllowCloudSearch` | 0 | Disable cloud/Bing search integration |
-| `DisableSearchBoxSuggestions` | 1 | Disable search suggestions from the web |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableWebSearch` | 1 | Legacy setting (deprecated since 1803) |
+| `AllowCloudSearch` | 0 | Prevents cloud content search for MS/Work accounts |
+| `DisableSearchBoxSuggestions` | 1 | Removes web results and suggestions from Start menu |
 
 ### `disable-spotlight.txt`
 
-Disables Windows Spotlight features.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableWindowsSpotlightFeatures` | 1 | Disable tips, suggestions, and spotlight content |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableWindowsSpotlightFeatures` | 1 | Disables lock screen images, tips, and suggestions |
 
 ### `disable-widgets.txt`
 
-Disables Windows 11 Widgets panel.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `AllowNewsAndInterests` | 0 | Disable Widgets panel |
-| `DisableWidgetsOnLockScreen` | 1 | Disable widgets on lock screen |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `AllowNewsAndInterests` | 0 | Disables Widgets entirely (taskbar + lock screen) |
+| `DisableWidgetsOnLockScreen` | 1 | Removes widgets from lock screen only |
 
 ### `disable-game-bar.txt`
 
-Disables Xbox Game Bar and DVR functionality.
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `AllowGameDVR` | 0 | Disables Game Bar and game recording/broadcasting |
+| `AppCaptureEnabled` | 0 | Disables screen capture functionality |
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `AllowGameDVR` | 0 | Disable Game DVR/recording |
-| `AppCaptureEnabled` | 0 | Disable app capture |
+Game Bar is not installed on LTSC, but these settings suppress popup messages.
 
-Note: Game Bar is not installed on Windows 11 LTSC, but these settings suppress "broken Game Bar" popup messages.
-
-## Why
-
-- Makes Start menu search fast and local-only
-- Prevents accidental web searches when looking for local files/apps
-- Removes Windows tips, suggestions, and Widgets
-- Suppresses Game Bar popups on LTSC
-- Reduces bandwidth usage and improves privacy
-
-Note: Copilot is blocked via AppLocker (see `policies/applocker/`) since the GPO is deprecated in Windows 11 24H2.
+Copilot is blocked via AppLocker since the GPO is deprecated in Windows 11 24H2.

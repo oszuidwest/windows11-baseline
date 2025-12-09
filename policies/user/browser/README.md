@@ -1,93 +1,94 @@
 # Browser Policies
 
-Privacy and security settings for Microsoft Edge.
+Microsoft Edge: ephemeral profiles, strict privacy, no autofill, clean UI, no extensions.
 
 ## Policies
 
 ### `edge-profile.txt`
 
-Session and profile management for shared systems only.
+Shared systems only. Profiles are deleted on exit.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `ForceEphemeralProfiles` | 1 | Temporary profile, deleted on exit |
-| `SyncDisabled` | 1 | Disable profile sync |
-| `BrowserSignin` | 0 | Disable browser sign-in |
-| `HideFirstRunExperience` | 1 | Skip first-run wizard |
-| `BrowserAddProfileEnabled` | 0 | Block creating new profiles |
-| `BrowserGuestModeEnabled` | 0 | Disable guest mode |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `ForceEphemeralProfiles` | 1 | Profiles deleted when browser session ends |
+| `SyncDisabled` | 1 | Disables data synchronization |
+| `BrowserSignin` | 0 | Disables browser sign-in completely |
+| `HideFirstRunExperience` | 1 | Hides first-run experience and splash screen |
+| `BrowserAddProfileEnabled` | 0 | Prevents users from creating new profiles |
+| `BrowserGuestModeEnabled` | 0 | Disables guest profile browsing mode |
 
 ### `edge-privacy.txt`
 
-Tracking prevention and security settings. Applied to all systems.
+All systems.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `TrackingPrevention` | 2 | Strict tracking prevention |
-| `ConfigureDoNotTrack` | 1 | Send Do Not Track header |
-| `PersonalizationReportingEnabled` | 0 | No usage analytics |
-| `SitePerProcess` | 1 | Site isolation enabled |
-| `TyposquattingCheckerEnabled` | 1 | Phishing protection |
-| `ForceBingSafeSearch` | 1 | Moderate safe search |
-| `UserFeedbackAllowed` | 0 | No feedback prompts |
-| `DiagnosticData` | 0 | Minimal diagnostic data |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `TrackingPrevention` | 2 | Balanced tracking prevention blocks harmful trackers |
+| `ConfigureDoNotTrack` | 1 | Sends Do Not Track requests to websites |
+| `PersonalizationReportingEnabled` | 0 | Prevents browsing history collection for personalization |
+| `SitePerProcess` | 1 | Isolates each site in separate process |
+| `TyposquattingCheckerEnabled` | 1 | Enables website typo protection warnings |
+| `ForceBingSafeSearch` | 1 | Enforces moderate SafeSearch on Bing |
+| `UserFeedbackAllowed` | 0 | Disables Edge Feedback feature |
+| `DiagnosticData` | 0 | Disables required and optional diagnostic data |
 
 ### `edge-autofill.txt`
 
-Disable autofill and data import. Shared systems only.
+Shared systems only.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `PasswordManagerEnabled` | 0 | No password saving |
-| `AutofillCreditCardEnabled` | 0 | No credit card autofill |
-| `AutofillAddressEnabled` | 0 | No address autofill |
-| `Import*` | 0 | Block all data import |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `PasswordManagerEnabled` | 0 | Prevents saving new passwords |
+| `AutofillCreditCardEnabled` | 0 | Blocks saving and filling credit cards |
+| `AutofillAddressEnabled` | 0 | Blocks saving and filling addresses |
+| `ImportAutofillFormData` | 0 | Prevents importing browser data at first run |
+| `ImportBrowserSettings` | 0 | Prevents importing browser data at first run |
+| `ImportCookies` | 0 | Prevents importing browser data at first run |
+| `ImportExtensions` | 0 | Prevents importing browser data at first run |
+| `ImportFavorites` | 0 | Prevents importing browser data at first run |
+| `ImportHistory` | 0 | Prevents importing browser data at first run |
+| `ImportHomepage` | 0 | Prevents importing browser data at first run |
+| `ImportPaymentInfo` | 0 | Prevents importing browser data at first run |
+| `ImportSavedPasswords` | 0 | Prevents importing browser data at first run |
+| `ImportSearchEngine` | 0 | Prevents importing browser data at first run |
+| `ImportShortcuts` | 0 | Prevents importing browser data at first run |
+| `ImportStartupPageSettings` | 0 | Prevents importing browser data at first run |
+| `ImportOpenTabs` | 0 | Prevents importing browser data at first run |
 
 ### `edge-ui.txt`
 
-Remove bloatware and distractions from Edge UI. Applied to all systems.
+All systems. Removes bloatware from Edge UI.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DefaultNotificationsSetting` | 2 | Block notifications |
-| `ShowRecommendationsEnabled` | 0 | No recommendations |
-| `SpotlightExperiencesAndRecommendationsEnabled` | 0 | No spotlight tips |
-| `ShowMicrosoftRewards` | 0 | Hide rewards |
-| `EdgeShoppingAssistantEnabled` | 0 | No shopping assistant |
-| `EdgeWalletCheckoutEnabled` | 0 | No wallet checkout |
-| `WalletDonationEnabled` | 0 | No wallet donations |
-| `MicrosoftOfficeMenuEnabled` | 0 | No Office menu |
-| `OutlookHubMenuEnabled` | 0 | No Outlook hub |
-| `AllowGamesMenu` | 0 | No games menu |
-| `NewTabPageContentEnabled` | 0 | Clean new tab page |
-| `NewTabPageQuickLinksEnabled` | 0 | No quick links on new tab |
-| `HubsSidebarEnabled` | 0 | No Copilot/Bing sidebar |
-| `Microsoft365CopilotChatIconEnabled` | 0 | No Copilot icon in toolbar |
-| `HomepageLocation` | https://www.zuidwestupdate.nl/ | Set homepage |
-| `HomepageIsNewTabPage` | 0 | Use custom homepage |
-| `RestoreOnStartup` | 4 | Open specific URLs on startup |
-| `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | Open on startup |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DefaultNotificationsSetting` | 2 | Blocks all website desktop notifications |
+| `ShowRecommendationsEnabled` | 0 | Disables browser feature recommendations |
+| `SpotlightExperiencesAndRecommendationsEnabled` | 0 | Turns off customized backgrounds and tips |
+| `ShowMicrosoftRewards` | 0 | Hides Microsoft Rewards from profile |
+| `EdgeShoppingAssistantEnabled` | 0 | Disables price comparison and coupons |
+| `EdgeWalletCheckoutEnabled` | 0 | Disables Wallet checkout feature |
+| `WalletDonationEnabled` | 0 | Disables Wallet donation feature |
+| `NewTabPageContentEnabled` | 0 | Hides Microsoft content on new tab page |
+| `NewTabPageQuickLinksEnabled` | 0 | Hides quick links on new tab page |
+| `HubsSidebarEnabled` | 0 | Completely hides Edge sidebar |
+| `Microsoft365CopilotChatIconEnabled` | 0 | Hides Copilot Chat icon from toolbar |
+| `HomepageLocation` | https://www.zuidwestupdate.nl/ | Sets homepage URL |
+| `HomepageIsNewTabPage` | 0 | Uses custom homepage instead of new tab |
+| `RestoreOnStartup` | 4 | Opens specific URLs on startup |
+| `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | URL to open on startup |
 
 ### `edge-developer-tools.txt`
 
-Disable developer tools. Shared systems only.
+Shared systems only.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DeveloperToolsAvailability` | 2 | Completely disable F12 developer tools |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DeveloperToolsAvailability` | 2 | Blocks F12 developer tools and view source |
 
 ### `edge-extensions.txt`
 
-Block extension installations. Shared systems only.
+Shared systems only.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `ExtensionInstallBlocklist` | * | Block all extension installs |
-
-## Why
-
-- **Ephemeral profiles**: No user data persists between sessions
-- **No autofill**: Prevents accidental storage of sensitive data
-- **Clean UI**: Removes distractions and promotional content
-- **Privacy**: Strict tracking prevention, no analytics
-- **Security**: Site isolation, phishing protection
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `ExtensionInstallBlocklist` | * | Blocks all extensions unless explicitly allowed |

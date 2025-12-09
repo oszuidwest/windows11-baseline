@@ -1,73 +1,50 @@
 # User Security Policies
 
-Security restrictions applied to non-admin users on shared systems.
+Shared systems only. Blocks system tools for non-admin users.
 
 ## Policies
 
 ### `disable-command-prompt.txt`
 
-Disables Command Prompt access for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableCMD` | 2 | Disable Command Prompt but allow batch files |
-
-Value 2 is used to prevent breaking installers and scripts that rely on batch files.
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableCMD` | 2 | Disables Command Prompt but allows batch files |
 
 ### `disable-registry-editor.txt`
 
-Disables Registry Editor access for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableRegistryTools` | 1 | Disable regedit.exe |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableRegistryTools` | 1 | Blocks access to Registry Editor (regedit.exe) |
 
 ### `disable-powershell.txt`
 
-Disables PowerShell script execution for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `EnableScripts` | 0 | Disable script execution |
-| `ExecutionPolicy` | Restricted | Most restrictive policy |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `EnableScripts` | 0 | Sets execution policy to Restricted |
+| `ExecutionPolicy` | Restricted | PowerShell operates as interactive shell only |
 
 ### `disable-run-dialog.txt`
 
-Disables the Run dialog (Win+R) for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `NoRun` | 1 | Disable Run dialog |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `NoRun` | 1 | Removes Run command from Start menu and Task Manager |
 
 ### `disable-task-manager.txt`
 
-Disables Task Manager access for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `DisableTaskMgr` | 1 | Disable Task Manager |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableTaskMgr` | 1 | Prevents users from starting Task Manager |
 
 ### `disable-control-panel.txt`
 
-Disables Control Panel and Settings app access for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `NoControlPanel` | 1 | Disable Control Panel and Settings |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `NoControlPanel` | 1 | Blocks access to Control Panel and Settings |
 
 ### `disable-network-settings.txt`
 
-Disables network connection property changes for non-admin users.
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `NC_LanProperties` | 0 | Disable LAN properties access |
-| `NC_LanChangeProperties` | 0 | Disable LAN component changes |
-| `NC_LanConnect` | 0 | Disable new LAN connections |
-
-## Why
-
-- Prevents users from running potentially harmful commands
-- Blocks access to system configuration tools
-- Reduces attack surface on shared workstations
-- Standard security hardening for kiosk-style deployments
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `NC_LanProperties` | 0 | Disables Properties menu for LAN connections |
+| `NC_LanChangeProperties` | 0 | Disables Properties button for LAN components |
+| `NC_LanConnect` | 0 | Disables Connect and Disconnect buttons for LAN |

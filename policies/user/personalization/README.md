@@ -1,51 +1,26 @@
 # Personalization Policies
 
-User personalization and branding settings for non-admin users.
+Wallpaper settings: branded for shared systems, black for dedicated, user choice for personal.
 
 ## Policies
 
 ### `set-wallpaper-branded.txt`
 
-Sets the branded ZuidWest wallpaper for shared systems.
+Shared systems only.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `Wallpaper` | `C:\Windows\deploy\wallpaper.png` | Path to wallpaper image |
-| `WallpaperStyle` | 10 | Fill (scales to fill screen) |
-| `TileWallpaper` | 0 | Disable tiling (required for Fill) |
-| `NoChangingWallPaper` | 1 | Prevent users from changing wallpaper |
-
-The wallpaper image is downloaded during deployment from:
-https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `Wallpaper` | `C:\Windows\deploy\wallpaper.png` | Sets desktop background image path |
+| `WallpaperStyle` | 10 | Fills screen with image, cropping to fit |
+| `TileWallpaper` | 0 | Disables tiling |
+| `NoChangingWallPaper` | 1 | Prevents users from changing wallpaper |
 
 ### `set-wallpaper-black.txt`
 
-Sets a solid black wallpaper for dedicated systems.
+Dedicated systems only.
 
-| Setting | Value | Description |
-|---------|-------|-------------|
-| `Wallpaper` | (empty) | No wallpaper image |
-| `WallpaperStyle` | 0 | Centered (not used) |
-| `Background` | `0 0 0` | RGB black color |
-| `NoChangingWallPaper` | 1 | Prevent users from changing wallpaper |
-
-### WallpaperStyle Values
-
-- `0` = Centered
-- `2` = Stretched
-- `6` = Fit
-- `10` = Fill (recommended for images)
-
-## Ownership Matrix
-
-| Ownership | Wallpaper |
-|-----------|-----------|
-| Shared | Branded ZuidWest image |
-| Dedicated | Solid black |
-| Personal | No policy (user choice) |
-
-## Why
-
-- **Shared**: Consistent branding, prevents inappropriate backgrounds
-- **Dedicated**: Clean, distraction-free for focused work
-- **Personal**: User freedom to personalize
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `Wallpaper` | (empty) | Clears wallpaper image |
+| `Background` | `0 0 0` | Sets solid black background using RGB |
+| `NoChangingWallPaper` | 1 | Prevents users from changing wallpaper |
