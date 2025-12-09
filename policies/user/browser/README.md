@@ -68,6 +68,22 @@ Remove bloatware and distractions from Edge UI. Applied to all systems.
 | `RestoreOnStartup` | 4 | Open specific URLs on startup |
 | `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | Open on startup |
 
+### `edge-developer-tools.txt`
+
+Disable developer tools. Shared systems only.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `DeveloperToolsAvailability` | 2 | Completely disable F12 developer tools |
+
+### `edge-extensions.txt`
+
+Block extension installations. Shared systems only.
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `ExtensionInstallBlocklist` | * | Block all extension installs |
+
 ## Why
 
 - **Ephemeral profiles**: No user data persists between sessions
