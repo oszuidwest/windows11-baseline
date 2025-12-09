@@ -121,6 +121,21 @@
       "ownership": ["shared"],
       "description": "Disable Run dialog (Win+R) for non-admin users"
     },
+    "user/security/disable-task-manager.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Task Manager for non-admin users"
+    },
+    "user/security/disable-control-panel.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Control Panel and Settings app for non-admin users"
+    },
+    "user/security/disable-network-settings.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable network connection property changes for non-admin users"
+    },
     "system/privacy/disable-clipboard-history.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],

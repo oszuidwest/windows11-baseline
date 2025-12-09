@@ -1,0 +1,14 @@
+User
+SOFTWARE\Policies\Microsoft\Windows\Network Connections
+NC_LanProperties
+DWORD:0
+
+User
+SOFTWARE\Policies\Microsoft\Windows\Network Connections
+NC_LanChangeProperties
+DWORD:0
+
+User
+SOFTWARE\Policies\Microsoft\Windows\Network Connections
+NC_LanConnect
+DWORD:0

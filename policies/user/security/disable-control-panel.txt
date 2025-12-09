@@ -1,0 +1,4 @@
+User
+SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer
+NoControlPanel
+DWORD:1
