@@ -9,7 +9,7 @@ policies/
 ├── config.json                  # Policy-to-scope mapping
 ├── config.schema.json           # JSON schema for validation
 ├── system/                      # Computer-level policies (HKLM)
-│   ├── bloatware/               # Copilot, Game Bar, Spotlight, Widgets, Web Search
+│   ├── bloatware/               # Game Bar, Spotlight, Widgets, Web Search
 │   ├── logon-experience/        # First-run animations
 │   ├── microsoft-account/       # Block MS Account auth
 │   ├── microsoft-store/         # Block Store + app installer
@@ -67,7 +67,6 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | bloatware | Disable Spotlight | Remove tips and suggestions | x | x | x |
 | system | bloatware | Disable Widgets | Remove Widgets panel | x | x | x |
 | system | bloatware | Disable Game Bar | Suppress Game Bar popups | x | x | x |
-| system | bloatware | Disable Copilot | Disable Windows Copilot | x | x | x |
 | system | logon-experience | Disable logon animations | Skip first-run animations | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
 | system | microsoft-store | Disable Store | Block Store, app installer, auto-downloads | x | | |
