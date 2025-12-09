@@ -15,6 +15,7 @@ param (
 .DESCRIPTION
     This script configures AppLocker to prevent users from:
     - Running the Microsoft Store application
+    - Running the Microsoft Copilot application
     - Installing apps via StoreInstaller.exe (the web installer from get.microsoft.com)
 
     The policy only applies to shared systems where users should not install applications.
@@ -31,7 +32,7 @@ param (
 # Paths
 $deployPath = "C:\Windows\deploy"
 $appLockerToolPath = Join-Path $deployPath "bin\AppLockerPolicyTool.exe"
-$appLockerPolicyPath = Join-Path $deployPath "policies\applocker\block-store-installs.xml"
+$appLockerPolicyPath = Join-Path $deployPath "policies\applocker\block-apps.xml"
 
 Write-Output "=== AppLocker Configuration ==="
 Write-Output ""
@@ -141,4 +142,5 @@ Write-Output "=== AppLocker configuration complete ==="
 Write-Output ""
 Write-Output "The following are now blocked for non-admin users:"
 Write-Output "  - Microsoft Store application"
+Write-Output "  - Microsoft Copilot application"
 Write-Output "  - StoreInstaller.exe (web installer from get.microsoft.com)"

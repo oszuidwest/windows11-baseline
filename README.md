@@ -188,7 +188,7 @@ windows11-baseline/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
 │   ├── applocker/             # AppLocker XML policies (shared systems)
-│   │   └── block-store-installs.xml
+│   │   └── block-apps.xml
 │   ├── system/                # Computer policies (HKLM)
 │   │   ├── bloatware/
 │   │   ├── logon-experience/
