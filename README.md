@@ -198,7 +198,7 @@ windows11-baseline/
 1. `install.ps1` downloads repository to `C:\Windows\deploy`
 2. Validates user input (purpose/ownership must be valid)
 3. Executes all scripts in `scripts/` alphabetically:
-   - `_debloat.ps1` - Removes 29 bloatware apps (Copilot, Store, Teams, etc.)
+   - `_debloat.ps1` - Removes 28 bloatware apps (Copilot, Store, Teams, etc.)
    - `apps.ps1` - Installs winget (LTSC) + applications via winget
    - `bginfo.ps1` - Sets up BGInfo (dedicated systems only)
    - `dwservice.ps1` - Installs remote access (if agent code provided)

@@ -17,3 +17,8 @@ Computer
 SOFTWARE\Policies\Microsoft\Windows\CloudContent
 DisableWindowsConsumerFeatures
 DWORD:1
+
+Computer
+SOFTWARE\Policies\Microsoft\Windows\Appx
+BlockNonAdminUserInstall
+DWORD:1

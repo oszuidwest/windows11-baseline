@@ -109,7 +109,7 @@
     "system/microsoft-store/disable-store.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
-      "description": "Disable Microsoft Store, block app installer protocol, prevent auto-installs"
+      "description": "Block Store access, app installs, and prevent non-admin package installation"
     },
     "user/security/disable-powershell.txt": {
       "purposes": ["all"],
