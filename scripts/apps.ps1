@@ -5,7 +5,8 @@ param (
     [string]$userPassword,
     [string]$computerName,
     [string]$workgroupName,
-    [string]$dwAgentCode
+    [string]$dwAgentCode,
+    [string]$dedicatedUserName
 )
 
 <#

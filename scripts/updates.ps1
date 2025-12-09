@@ -4,7 +4,8 @@ param (
     [string]$userPassword,
     [string]$computerName,
     [string]$workgroupName,
-    [string]$dwAgentCode
+    [string]$dwAgentCode,
+    [string]$dedicatedUserName
 )
 
 # TODO: Remove this when done testing
