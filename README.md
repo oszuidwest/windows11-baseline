@@ -52,7 +52,7 @@ The installer prompts for:
 | Thunderbird     | x     |    |           |       |
 | VLC             | x     | x  | x         |       |
 
-Applications are installed via **winget**. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
+Applications are installed via **winget**, except Spotify which uses a direct download due to winget limitations in admin context. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
 
 ### Shared Systems
 
@@ -153,7 +153,7 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | **Security** | Disable autorun | x | x | x |
 | | Hide shutdown button | x | | |
 | **Privacy** | Disable tracking/telemetry | x | x | x |
-| | Disable clipboard history | x | | |
+| | Disable clipboard history | x | | x |
 | | Disable activity history | x | x | x |
 | **Logon** | Disable logon animations | x | x | x |
 | **OOBE** | Skip privacy wizard | x | x | x |
@@ -214,7 +214,7 @@ windows11-baseline/
 │   ├── power.ps1              # Power settings (monitor, standby, hibernate)
 │   ├── sounds.ps1             # Disable system sounds (Radio/TV only)
 │   ├── time.ps1               # Timezone, regional settings, NTP (Netherlands)
-│   ├── updates.ps1            # Check and install Windows updates
+│   ├── updates.ps1            # Check and install Windows updates (currently disabled)
 │   ├── users.ps1              # Create user, configure auto-login
 │   └── workgroupname.ps1      # Set computer/workgroup name
 ```
@@ -224,7 +224,7 @@ windows11-baseline/
 1. `install.ps1` downloads repository to `C:\Windows\deploy`
 2. Validates user input (purpose/ownership must be valid)
 3. Executes all scripts in `scripts/` alphabetically:
-   - `_debloat.ps1` - Removes 28 bloatware apps (Copilot, Store, Teams, etc.)
+   - `_debloat.ps1` - Removes 29 bloatware apps (Copilot, Store, Teams, etc.)
    - `applocker.ps1` - Blocks Store installations via AppLocker (shared only)
    - `apps.ps1` - Installs winget (LTSC) + applications via winget
    - `bginfo.ps1` - Sets up BGInfo (dedicated systems only)
@@ -233,7 +233,7 @@ windows11-baseline/
    - `power.ps1` - Configures power settings
    - `sounds.ps1` - Disables system sounds (Radio/TV only)
    - `time.ps1` - Sets timezone, locale, NTP to Netherlands
-   - `updates.ps1` - Installs Windows updates
+   - `updates.ps1` - Windows updates (currently disabled for testing)
    - `users.ps1` - Creates user account, configures auto-login
    - `workgroupname.ps1` - Sets computer and workgroup name
 
