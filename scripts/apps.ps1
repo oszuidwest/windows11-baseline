@@ -13,17 +13,19 @@ This script installs applications based on the specified purpose.
 'systemPurpose' should be "radio", "tv", "editorial", or "plain".
 #>
 
-# Winget package IDs
+# Winget package IDs (apps installed via winget)
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
     "creativecloud" = "Adobe.CreativeCloud"
     "libreoffice"   = "TheDocumentFoundation.LibreOffice"
     "msteams"       = "Microsoft.Teams"
     "pinta"         = "Pinta.Pinta"
-    "spotify"       = "Spotify.Spotify"
     "thunderbird"   = "Mozilla.Thunderbird"
     "vlc"           = "VideoLAN.VLC"
 }
+
+# Apps requiring special installation (not via winget)
+$specialApps = @("spotify")
 
 # Applications by purpose
 $appsByPurpose = @{
@@ -118,7 +120,13 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 Write-Output "Installing apps for '$systemPurpose'..."
 
+# Install apps via winget
 foreach ($app in $apps) {
+    # Skip special apps (handled separately)
+    if ($specialApps -contains $app) {
+        continue
+    }
+
     $packageId = $appDefinitions[$app]
 
     if (-not $packageId) {
@@ -132,6 +140,47 @@ foreach ($app in $apps) {
 
     if ($process.ExitCode -ne 0) {
         Write-Warning "Failed to install $app (exit code: $($process.ExitCode))"
+    }
+}
+
+# Install Spotify (requires special handling - winget fails in admin context)
+if ($apps -contains "spotify") {
+    Write-Output "Installing Spotify (direct download)..."
+
+    $spotifyInstaller = Join-Path $env:TEMP "SpotifyFullSetup.exe"
+    $spotifyPath = "C:\Program Files\Spotify"
+
+    try {
+        # Download Spotify installer
+        Write-Output "  Downloading Spotify installer..."
+        Invoke-WebRequest -Uri "https://download.spotify.com/SpotifyFullSetup.exe" -OutFile $spotifyInstaller -UseBasicParsing
+
+        # Extract to Program Files (machine-wide installation)
+        Write-Output "  Extracting to $spotifyPath..."
+        $process = Start-Process -FilePath $spotifyInstaller -ArgumentList "/extract `"$spotifyPath`"" -NoNewWindow -Wait -PassThru
+
+        if ($process.ExitCode -eq 0) {
+            Write-Output "  Spotify installed successfully"
+
+            # Create Start Menu shortcut
+            $startMenuPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk"
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut = $shell.CreateShortcut($startMenuPath)
+            $shortcut.TargetPath = "$spotifyPath\Spotify.exe"
+            $shortcut.WorkingDirectory = $spotifyPath
+            $shortcut.Description = "Spotify"
+            $shortcut.Save()
+            Write-Output "  Start Menu shortcut created"
+        }
+        else {
+            Write-Warning "Spotify installation failed (exit code: $($process.ExitCode))"
+        }
+    }
+    catch {
+        Write-Warning "Failed to install Spotify: $_"
+    }
+    finally {
+        Remove-Item -Path $spotifyInstaller -Force -ErrorAction SilentlyContinue
     }
 }
 
