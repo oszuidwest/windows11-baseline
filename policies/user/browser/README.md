@@ -28,7 +28,7 @@ Tracking prevention and security settings. Applied to all systems.
 | `PersonalizationReportingEnabled` | 0 | No usage analytics |
 | `SitePerProcess` | 1 | Site isolation enabled |
 | `TyposquattingCheckerEnabled` | 1 | Phishing protection |
-| `BingSafeSearchMode` | 1 | Moderate safe search |
+| `ForceBingSafeSearch` | 1 | Moderate safe search |
 | `UserFeedbackAllowed` | 0 | No feedback prompts |
 | `DiagnosticData` | 0 | Minimal diagnostic data |
 
