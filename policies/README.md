@@ -8,6 +8,7 @@ This directory contains Local Group Policy settings in LGPO text format for conf
 policies/
 ├── config.json                  # Policy-to-scope mapping
 ├── config.schema.json           # JSON schema for validation
+├── applocker/                   # AppLocker policies (generated at runtime)
 ├── system/                      # Computer-level policies (HKLM)
 │   ├── bloatware/               # Game Bar, Spotlight, Widgets, Web Search
 │   ├── logon-experience/        # First-run animations
