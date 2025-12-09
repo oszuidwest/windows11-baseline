@@ -56,7 +56,7 @@ Applications are installed via **winget**. On LTSC systems (which lack Microsoft
 Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
 - **Branded wallpaper** at `C:\Windows\deploy\wallpaper.png` (locked, cannot be changed)
-- **Microsoft Store disabled** including app installer protocol and auto-downloads blocked
+- **Microsoft Store blocked** via AppLocker (blocks Store app and web installer from get.microsoft.com)
 - **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
 - **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R)
 - **Privacy hardening** - clipboard history disabled, no data persistence
@@ -66,6 +66,23 @@ Shared systems also receive:
 Dedicated systems (e.g., playout servers) receive:
 - **BGInfo desktop overlay** showing computer name, IP addresses, network config, system specs (auto-starts at login)
 - **Black wallpaper** (clean, distraction-free, locked)
+
+### AppLocker (Shared Systems)
+
+On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Users can bypass Store policies by downloading `StoreInstaller.exe` from `get.microsoft.com`.
+
+This baseline uses **AppLocker** to block Store installations on shared systems:
+
+| Blocked | Method |
+|---------|--------|
+| Microsoft Store app | Packaged app deny rule for `Microsoft.WindowsStore` |
+| StoreInstaller.exe | Executable deny rule (blocks web installer from get.microsoft.com) |
+
+**Requirements:**
+- Windows Enterprise or Education edition (LTSC qualifies)
+- Application Identity service (AppIdSvc) - automatically enabled by the script
+
+The AppLocker policy allows all other executables and packaged apps to run normally. Only Store-related installation vectors are blocked.
 
 ## Regional Settings
 
@@ -159,12 +176,15 @@ See [`policies/README.md`](policies/README.md) for the full policy matrix and do
 windows11-baseline/
 ├── install.ps1                 # Main installer (downloads repo, runs scripts)
 ├── bin/
-│   └── LGPO.exe               # Microsoft Local Group Policy Object utility
+│   ├── LGPO.exe               # Microsoft Local Group Policy Object utility
+│   └── AppLockerPolicyTool.exe # AppLocker policy deployment tool
 ├── config/
 │   └── bginfo.bgi             # BGInfo layout configuration (optional)
 ├── policies/
 │   ├── config.json            # Policy-to-scope mapping
 │   ├── config.schema.json     # JSON schema for validation
+│   ├── applocker/             # AppLocker XML policies (shared systems)
+│   │   └── block-store-installs.xml
 │   ├── system/                # Computer policies (HKLM)
 │   │   ├── bloatware/
 │   │   ├── logon-experience/
@@ -181,6 +201,7 @@ windows11-baseline/
 │       └── security/
 ├── scripts/
 │   ├── _debloat.ps1           # Remove Windows bloatware apps (Copilot, Store, etc.)
+│   ├── applocker.ps1          # Block Store/StoreInstaller via AppLocker (shared only)
 │   ├── apps.ps1               # Install winget (if needed) + apps based on purpose
 │   ├── bginfo.ps1             # BGInfo system info overlay (dedicated only)
 │   ├── dwservice.ps1          # DWService remote access agent
@@ -199,6 +220,7 @@ windows11-baseline/
 2. Validates user input (purpose/ownership must be valid)
 3. Executes all scripts in `scripts/` alphabetically:
    - `_debloat.ps1` - Removes 28 bloatware apps (Copilot, Store, Teams, etc.)
+   - `applocker.ps1` - Blocks Store installations via AppLocker (shared only)
    - `apps.ps1` - Installs winget (LTSC) + applications via winget
    - `bginfo.ps1` - Sets up BGInfo (dedicated systems only)
    - `dwservice.ps1` - Installs remote access (if agent code provided)

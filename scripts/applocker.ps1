@@ -59,21 +59,37 @@ if (-not (Test-Path $appLockerPolicyPath)) {
 }
 
 # Step 1: Enable and start the Application Identity service
+# Note: Using sc.exe because Set-Service can fail on protected services
 Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
 try {
-    # Set service to start automatically
-    Set-Service -Name "AppIDSvc" -StartupType Automatic -ErrorAction Stop
-    Write-Output "  Service startup type set to Automatic"
-
-    # Start the service if not running
-    $service = Get-Service -Name "AppIDSvc"
-    if ($service.Status -ne "Running") {
-        Start-Service -Name "AppIDSvc" -ErrorAction Stop
-        Write-Output "  Service started successfully"
+    # Set service to start automatically using sc.exe (more reliable than Set-Service)
+    $scResult = & sc.exe config AppIDSvc start= auto 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "  Service startup type set to Automatic"
     }
     else {
+        Write-Warning "Failed to set service startup type: $scResult"
+    }
+
+    # Start the service if not running
+    $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
+    if ($service -and $service.Status -ne "Running") {
+        & sc.exe start AppIDSvc | Out-Null
+        Start-Sleep -Seconds 2
+        $service = Get-Service -Name "AppIDSvc"
+        if ($service.Status -eq "Running") {
+            Write-Output "  Service started successfully"
+        }
+        else {
+            Write-Warning "Service may not have started. Status: $($service.Status)"
+        }
+    }
+    elseif ($service) {
         Write-Output "  Service is already running"
+    }
+    else {
+        Write-Warning "AppIDSvc service not found"
     }
 }
 catch {
