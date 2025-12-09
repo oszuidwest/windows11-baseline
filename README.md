@@ -59,7 +59,8 @@ Shared systems also receive:
 - **Branded wallpaper** at `C:\Windows\deploy\wallpaper.png` (locked, cannot be changed)
 - **Microsoft Store blocked** via AppLocker (blocks Store app and web installer from get.microsoft.com)
 - **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
-- **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R)
+- **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R), Task Manager
+- **Settings blocked** - Control Panel, Settings app, network connection properties
 - **Privacy hardening** - clipboard history disabled, no data persistence
 
 ### Dedicated Systems
@@ -168,6 +169,9 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 | | Disable Registry Editor | x | | |
 | | Disable PowerShell | x | | |
 | | Disable Run dialog (Win+R) | x | | |
+| | Disable Task Manager | x | | |
+| | Disable Control Panel/Settings | x | | |
+| | Disable network property changes | x | | |
 
 See [`policies/README.md`](policies/README.md) for the full policy matrix and documentation.
 
