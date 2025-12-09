@@ -138,7 +138,7 @@
     },
     "system/privacy/disable-clipboard-history.txt": {
       "purposes": ["all"],
-      "ownership": ["shared"],
+      "ownership": ["shared", "dedicated"],
       "description": "Disable clipboard history and cross-device clipboard"
     },
     "user/browser/edge-developer-tools.txt": {
