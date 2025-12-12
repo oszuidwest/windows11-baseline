@@ -50,13 +50,26 @@ catch {
 # Install DWService silently with agent code
 Write-Output "Installing DWService with agent code..."
 try {
-    $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "key=$dwAgentCode" -Wait -PassThru -NoNewWindow
+    $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "key=$dwAgentCode" -PassThru
+    Write-Output "  Installer started (PID: $($process.Id))"
 
-    if ($process.ExitCode -eq 0) {
-        Write-Output "  DWService installed successfully."
+    # Poll every 60 seconds, max 5 minutes
+    $maxMinutes = 5
+    for ($i = 1; $i -le $maxMinutes; $i++) {
+        $exited = $process.WaitForExit(60000)
+
+        if ($exited) {
+            Write-Output "  Installer exited with code: $($process.ExitCode)"
+            break
+        }
+        else {
+            Write-Output "  Still running after $i minute(s)..."
+        }
     }
-    else {
-        Write-Warning "DWService installer exited with code: $($process.ExitCode)"
+
+    if (-not $process.HasExited) {
+        Write-Warning "Installer still running after $maxMinutes minutes, killing process..."
+        $process.Kill()
     }
 }
 catch {
