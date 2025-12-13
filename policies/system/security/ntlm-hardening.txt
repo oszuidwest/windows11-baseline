@@ -1,0 +1,4 @@
+Computer
+SYSTEM\CurrentControlSet\Control\Lsa
+LmCompatibilityLevel
+DWORD:5

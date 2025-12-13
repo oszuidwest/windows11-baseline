@@ -17,7 +17,7 @@ policies/
 │   ├── onedrive/                # Disable sync
 │   ├── oobe/                    # Skip privacy wizard
 │   ├── privacy/                 # Tracking, clipboard, activity history
-│   ├── security/                # Autorun, shutdown button
+│   ├── security/                # Autorun, shutdown, NTLM, Defender
 │   └── windows-update/          # Auto-update configuration
 └── user/                        # User-level policies (HKCU, non-admin only)
     ├── browser/                 # Edge: profile, privacy, autofill, UI, devtools, extensions
@@ -78,6 +78,8 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | privacy | Disable activity history | No Timeline/activity uploads | x | x | x |
 | system | security | Disable autorun | Block USB/CD autorun | x | x | x |
 | system | security | Hide shutdown button | Only allow restart | x | | |
+| system | security | NTLM hardening | Force NTLMv2 only, refuse LM/NTLM | x | x | x |
+| system | security | Defender Network Protection | Block malicious domains | x | x | x |
 | system | windows-update | Configure auto-update | Daily at 3 AM | x | x | x |
 | user | browser | Edge profile | Ephemeral profiles, no history/sync | x | | |
 | user | browser | Edge privacy | Tracking prevention, no telemetry | x | x | x |

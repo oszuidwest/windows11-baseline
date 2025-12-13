@@ -150,6 +150,16 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Windows Activity History and Timeline"
+    },
+    "system/security/ntlm-hardening.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Force NTLMv2 only authentication (LmCompatibilityLevel 5)"
+    },
+    "system/security/defender-network-protection.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Enable Defender Network Protection to block malicious domains"
     }
   }
 }

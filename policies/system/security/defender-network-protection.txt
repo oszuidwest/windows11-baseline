@@ -1,0 +1,4 @@
+Computer
+SOFTWARE\Policies\Microsoft\Windows Defender\Windows Defender Exploit Guard\Network Protection
+EnableNetworkProtection
+DWORD:1

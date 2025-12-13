@@ -113,7 +113,7 @@ Radio and TV systems have all Windows sounds disabled to prevent audio leaks in 
 
 ## Policy Framework
 
-Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix.
+Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix. All systems receive security hardening beyond Windows 11 24H2 defaults:
 
 ## LTSC Compatibility
 
