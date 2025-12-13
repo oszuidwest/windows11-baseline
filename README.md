@@ -98,9 +98,9 @@ All systems are configured for the Netherlands:
 
 Optional [DWService](https://www.dwservice.net/) remote access. Provide an agent code during installation to enable, or leave empty to skip.
 
-## Studio Configuration
+## Sound Configuration
 
-Radio and TV systems have all Windows sounds disabled to prevent audio leaks in broadcast environments.
+All systems have Windows sounds disabled.
 
 ## Power Settings
 

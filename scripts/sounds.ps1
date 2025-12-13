@@ -10,25 +10,14 @@ param (
 
 <#
 .SYNOPSIS
-    Disables Windows system sounds for studio environments.
+    Disables Windows system sounds.
 
 .DESCRIPTION
     This script disables all Windows system sounds by modifying the Default User
-    profile. This ensures all new users will have sounds disabled, which is
-    essential for radio and TV studio workstations to prevent unwanted audio
-    during broadcasts.
-
-    Only runs for 'radio' and 'tv' system purposes.
+    profile. This ensures all new users will have sounds disabled.
 #>
 
-# Only apply to radio and tv systems
-$studioPurposes = @("radio", "tv")
-if ($systemPurpose.ToLower() -notin $studioPurposes) {
-    Write-Output "Skipping sound configuration (not a studio system)."
-    exit 0
-}
-
-Write-Output "Disabling Windows system sounds for studio environment..."
+Write-Output "Disabling Windows system sounds..."
 
 # Path to Default User profile
 $defaultUserHive = "C:\Users\Default\NTUSER.DAT"
