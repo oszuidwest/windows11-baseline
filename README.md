@@ -113,7 +113,11 @@ Radio and TV systems have all Windows sounds disabled to prevent audio leaks in 
 
 ## Policy Framework
 
-Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix. All systems receive security hardening beyond Windows 11 24H2 defaults:
+Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix.
+
+## Security Hardening
+
+All systems receive defense-in-depth hardening beyond Windows 11 24H2 defaults. Attack surface reduction is achieved by disabling the Remote Registry service, blocking AutoRun on all drive types, and removing pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
 
 ## LTSC Compatibility
 
