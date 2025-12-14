@@ -33,3 +33,23 @@ Enables Windows Defender Network Protection to block connections to malicious do
 | Setting | Value | Effect |
 |---------|-------|--------|
 | `EnableNetworkProtection` | 1 | Block connections to dangerous domains |
+
+### `defender-pua-protection.txt`
+
+Enables Windows Defender PUA (Potentially Unwanted Application) Protection to block adware, bundleware, and other unwanted software.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `PUAProtection` | 1 | Block potentially unwanted applications |
+
+### `smartscreen.txt`
+
+Enables Windows SmartScreen and Edge PUA protection for apps, files, and downloads.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `EnableSmartScreen` | 1 | Enable SmartScreen filter (policy) |
+| `ShellSmartScreenLevel` | Warn | Warn but allow override |
+| `SmartScreenEnabled` | Warn | Enable Explorer SmartScreen |
+| `SmartScreenEnabled` (Edge) | 1 | Enable SmartScreen in Edge |
+| `SmartScreenPuaEnabled` (Edge) | 1 | Block PUA downloads in Edge |

@@ -160,6 +160,16 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Enable Defender Network Protection to block malicious domains"
+    },
+    "system/security/defender-pua-protection.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Enable Defender PUA (Potentially Unwanted Application) Protection"
+    },
+    "system/security/smartscreen.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Enable Windows SmartScreen for apps and files"
     }
   }
 }

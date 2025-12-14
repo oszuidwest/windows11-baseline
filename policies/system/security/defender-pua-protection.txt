@@ -1,0 +1,4 @@
+Computer
+SOFTWARE\Policies\Microsoft\Windows Defender
+PUAProtection
+DWORD:1
