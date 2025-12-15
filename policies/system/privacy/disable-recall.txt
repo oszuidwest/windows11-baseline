@@ -1,0 +1,4 @@
+Computer
+SOFTWARE\Policies\Microsoft\Windows\WindowsAI
+DisableAIDataAnalysis
+DWORD:1

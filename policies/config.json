@@ -170,6 +170,11 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Enable Windows SmartScreen for apps and files"
+    },
+    "system/privacy/disable-recall.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared", "dedicated"],
+      "description": "Disable Windows Recall AI screenshot feature"
     }
   }
 }

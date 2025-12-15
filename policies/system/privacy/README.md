@@ -32,3 +32,11 @@ Shared and dedicated systems only.
 | `EnableActivityFeed` | 0 | Disables Timeline activity publishing and sync |
 | `PublishUserActivities` | 0 | Prevents user activities from being published |
 | `UploadUserActivities` | 0 | Blocks user activities from uploading to cloud |
+
+### `disable-recall.txt`
+
+Shared and dedicated systems only. Disables Windows Recall, the AI feature that takes periodic screenshots of user activity.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableAIDataAnalysis` | 1 | Disables Recall snapshot saving (Copilot+ PCs only) |
