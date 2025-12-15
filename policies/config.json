@@ -175,6 +175,11 @@
       "purposes": ["all"],
       "ownership": ["shared", "dedicated"],
       "description": "Disable Windows Recall AI screenshot feature"
+    },
+    "system/windows-update/disable-auto-reboot.txt": {
+      "purposes": ["all"],
+      "ownership": ["dedicated"],
+      "description": "Prevent automatic reboot after updates (dedicated systems have auto-login)"
     }
   }
 }

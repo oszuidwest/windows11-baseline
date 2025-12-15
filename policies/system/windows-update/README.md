@@ -21,3 +21,11 @@ Auto-downloads and installs updates daily at 3:00 AM. Users cannot pause updates
 | `ActiveHoursEnd` | 23 | Active hours end at 11:00 PM |
 | `AutoRestartNotificationSchedule` | 15 | Restart reminder shows 15 minutes before reboot |
 | `UpdateNotificationLevel` | 1 | Disables notifications except restart warnings |
+
+### `disable-auto-reboot.txt`
+
+Dedicated systems only. Prevents automatic reboot after updates since dedicated systems use auto-login and always have a user logged in.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `NoAutoRebootWithLoggedOnUsers` | 1 | No automatic reboot while a user is logged in |
