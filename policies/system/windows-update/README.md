@@ -1,6 +1,6 @@
 # Windows Update Policies
 
-Auto-downloads and installs updates daily at 3:00 AM. Users cannot pause updates.
+Auto-downloads and installs updates daily at 3:00 AM. Users cannot pause updates. Active hours (6:00-23:00) prevent restarts during work hours.
 
 ## Policies
 
@@ -16,7 +16,8 @@ Auto-downloads and installs updates daily at 3:00 AM. Users cannot pause updates
 | `AutomaticMaintenanceEnabled` | 1 | Updates install during maintenance window |
 | `SetDisablePauseUXAccess` | 1 | Users cannot pause Windows Update |
 | `NoAUShutdownOption` | 1 | Hides "Install Updates and Shut Down" option |
-| `AlwaysAutoRebootAtScheduledTime` | 1 | Forces restart after update installation |
-| `AlwaysAutoRebootAtScheduledTimeMinutes` | 15 | Device restarts 15 minutes after update |
+| `SetActiveHours` | 1 | Enable active hours (no restart during this period) |
+| `ActiveHoursStart` | 6 | Active hours start at 6:00 AM |
+| `ActiveHoursEnd` | 23 | Active hours end at 11:00 PM |
 | `AutoRestartNotificationSchedule` | 15 | Restart reminder shows 15 minutes before reboot |
 | `UpdateNotificationLevel` | 1 | Disables notifications except restart warnings |

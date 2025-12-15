@@ -30,18 +30,23 @@ DWORD:1
 
 Computer
 Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AlwaysAutoRebootAtScheduledTime
+NoAutoUpdate
+DWORD:0
+
+Computer
+Software\Policies\Microsoft\Windows\WindowsUpdate
+SetActiveHours
 DWORD:1
 
 Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-AlwaysAutoRebootAtScheduledTimeMinutes
-DWORD:15
+Software\Policies\Microsoft\Windows\WindowsUpdate
+ActiveHoursStart
+DWORD:6
 
 Computer
-Software\Policies\Microsoft\Windows\WindowsUpdate\AU
-NoAutoUpdate
-DWORD:0
+Software\Policies\Microsoft\Windows\WindowsUpdate
+ActiveHoursEnd
+DWORD:23
 
 Computer
 Software\Policies\Microsoft\Windows\WindowsUpdate\AU
