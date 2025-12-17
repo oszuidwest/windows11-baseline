@@ -2,6 +2,23 @@
 # Windows 11 Baseline for Streekomroep ZuidWest
 #===============================================================
 
+param(
+    [ValidateSet("radio", "tv", "editorial", "plain")]
+    [string]$systemPurpose,
+
+    [ValidateSet("shared", "personal", "dedicated")]
+    [string]$systemOwnership,
+
+    [string]$computerName,
+    [string]$workgroupName,
+    [string]$userPassword,
+    [string]$dwAgentCode,
+    [string]$dedicatedUserName,
+
+    [ValidateSet("debloat", "applocker", "apps", "dwservice", "hardening", "policies", "power", "sounds", "time", "updates", "users", "workgroupname")]
+    [string[]]$OnlyRun
+)
+
 # Function to check for admin rights
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -12,7 +29,7 @@ function Test-Admin {
 # Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
     Write-Error "This script must be run as an administrator. Exiting..."
-    exit
+    exit 1
 }
 
 # Welcome message
@@ -28,36 +45,73 @@ Write-Output ""
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
 
-# Get and validate system purpose
-do {
-    Write-Output "System purpose options: $($validPurposes -join ', ')"
-    $systemPurpose = (Read-Host -Prompt "Enter the system purpose").ToLower().Trim()
-    if ($systemPurpose -notin $validPurposes) {
-        Write-Warning "Invalid purpose '$systemPurpose'. Please enter one of: $($validPurposes -join ', ')"
-        Write-Output ""
-    }
-} while ($systemPurpose -notin $validPurposes)
+# Script requirements mapping - which parameters each script needs
+$scriptRequirements = @{
+    'debloat'       = @('systemPurpose', 'systemOwnership')
+    'applocker'     = @('systemOwnership')
+    'apps'          = @('systemPurpose')
+    'dwservice'     = @('dwAgentCode')
+    'hardening'     = @()
+    'policies'      = @('systemPurpose', 'systemOwnership')
+    'power'         = @()
+    'sounds'        = @()
+    'time'          = @()
+    'updates'       = @()
+    'users'         = @('systemOwnership', 'userPassword', 'dedicatedUserName')
+    'workgroupname' = @('workgroupName')
+}
 
-Write-Output ""
+# Determine which parameters are required based on -OnlyRun
+if ($OnlyRun) {
+    $requiredParams = @($OnlyRun | ForEach-Object { $scriptRequirements[$_] } | Select-Object -Unique)
+} else {
+    # Full installation: all parameters needed
+    $requiredParams = @('systemPurpose', 'systemOwnership', 'computerName', 'workgroupName', 'userPassword', 'dwAgentCode', 'dedicatedUserName')
+}
 
-# Get and validate system ownership
-do {
-    Write-Output "System ownership options: $($validOwnership -join ', ')"
-    $systemOwnership = (Read-Host -Prompt "Enter the system ownership").ToLower().Trim()
-    if ($systemOwnership -notin $validOwnership) {
-        Write-Warning "Invalid ownership '$systemOwnership'. Please enter one of: $($validOwnership -join ', ')"
-        Write-Output ""
-    }
-} while ($systemOwnership -notin $validOwnership)
+# Get and validate system purpose (if required and not provided via parameter)
+if ('systemPurpose' -in $requiredParams -and -not $systemPurpose) {
+    do {
+        Write-Output "System purpose options: $($validPurposes -join ', ')"
+        $systemPurpose = (Read-Host -Prompt "Enter the system purpose").ToLower().Trim()
+        if ($systemPurpose -notin $validPurposes) {
+            Write-Warning "Invalid purpose '$systemPurpose'. Please enter one of: $($validPurposes -join ', ')"
+            Write-Output ""
+        }
+    } while ($systemPurpose -notin $validPurposes)
+    Write-Output ""
+}
 
-Write-Output ""
-$computerName = Read-Host -Prompt "Enter the computer name"
-$workgroupName = Read-Host -Prompt "Enter the workgroup name"
-$userPassword = Read-Host -Prompt "Enter the user password"
+# Get and validate system ownership (if required and not provided via parameter)
+if ('systemOwnership' -in $requiredParams -and -not $systemOwnership) {
+    do {
+        Write-Output "System ownership options: $($validOwnership -join ', ')"
+        $systemOwnership = (Read-Host -Prompt "Enter the system ownership").ToLower().Trim()
+        if ($systemOwnership -notin $validOwnership) {
+            Write-Warning "Invalid ownership '$systemOwnership'. Please enter one of: $($validOwnership -join ', ')"
+            Write-Output ""
+        }
+    } while ($systemOwnership -notin $validOwnership)
+    Write-Output ""
+}
+
+# Get computer name (if required and not provided via parameter)
+if ('computerName' -in $requiredParams -and -not $computerName) {
+    $computerName = Read-Host -Prompt "Enter the computer name"
+}
+
+# Get workgroup name (if required and not provided via parameter)
+if ('workgroupName' -in $requiredParams -and -not $workgroupName) {
+    $workgroupName = Read-Host -Prompt "Enter the workgroup name"
+}
+
+# Get user password (if required and not provided via parameter)
+if ('userPassword' -in $requiredParams -and -not $userPassword) {
+    $userPassword = Read-Host -Prompt "Enter the user password"
+}
 
 # For dedicated systems, ask if a user with auto-login should be created
-$dedicatedUserName = ""
-if ($systemOwnership -eq "dedicated") {
+if ('dedicatedUserName' -in $requiredParams -and -not $dedicatedUserName -and $systemOwnership -eq "dedicated") {
     Write-Output ""
     $createUser = (Read-Host -Prompt "Create a user with auto-login? (y/n)").ToLower().Trim()
     if ($createUser -eq "y" -or $createUser -eq "yes") {
@@ -65,9 +119,12 @@ if ($systemOwnership -eq "dedicated") {
     }
 }
 
-Write-Output ""
-Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
-$dwAgentCode = Read-Host -Prompt "Enter the DWService agent code"
+# Get DWService agent code (if required and not provided via parameter)
+if ('dwAgentCode' -in $requiredParams -and -not $dwAgentCode) {
+    Write-Output ""
+    Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
+    $dwAgentCode = Read-Host -Prompt "Enter the DWService agent code"
+}
 
 Write-Output ""
 
@@ -94,8 +151,8 @@ try {
     Write-Output "Extraction complete."
 }
 catch {
-    Write-Error "Failed to download or extract ZIP file. Exiting..."
-    exit
+    Write-Error "Failed to download or extract ZIP file: $_"
+    exit 1
 }
 
 # Clean up the downloaded ZIP file
@@ -110,7 +167,7 @@ if (Test-Path $sourceDir) {
 }
 else {
     Write-Error "$sourceDir does not exist. Exiting..."
-    exit
+    exit 1
 }
 
 #===============================================================
@@ -125,13 +182,32 @@ if (Test-Path $scriptsDir) {
     $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 | Sort-Object Name
 
     foreach ($scriptFile in $scriptFiles) {
+        # Get script name without extension and underscore prefix (e.g., "_debloat.ps1" -> "debloat")
+        $scriptName = $scriptFile.BaseName -replace '^_', ''
+
+        # Skip scripts not in -OnlyRun list (if specified)
+        if ($OnlyRun -and $scriptName -notin $OnlyRun) {
+            Write-Output "Skipping: $($scriptFile.Name) (not in -OnlyRun list)"
+            continue
+        }
+
         Write-Output ""
         Write-Output "=========================================="
         Write-Output "Running: $($scriptFile.Name)"
         Write-Output "=========================================="
 
+        $scriptParams = @{
+            systemPurpose     = $systemPurpose
+            systemOwnership   = $systemOwnership
+            userPassword      = $userPassword
+            computerName      = $computerName
+            workgroupName     = $workgroupName
+            dwAgentCode       = $dwAgentCode
+            dedicatedUserName = $dedicatedUserName
+        }
+
         try {
-            & $scriptFile.FullName -systemPurpose $systemPurpose -systemOwnership $systemOwnership -userPassword $userPassword -computerName $computerName -workgroupName $workgroupName -dwAgentCode $dwAgentCode -dedicatedUserName $dedicatedUserName
+            & $scriptFile.FullName @scriptParams
         }
         catch {
             Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"
@@ -140,12 +216,19 @@ if (Test-Path $scriptsDir) {
 
     Write-Output ""
     Write-Output "=========================================="
-    Write-Output "All scripts completed."
+    if ($OnlyRun) {
+        Write-Output "Selected scripts completed: $($OnlyRun -join ', ')"
+    } else {
+        Write-Output "All scripts completed."
+    }
     Write-Output "=========================================="
 }
 else {
     Write-Error "Script directory does not exist: $scriptsDir"
+    exit 1
 }
 
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."
+# Prevent the script from closing immediately (skip for remote/automated execution)
+if (-not $OnlyRun) {
+    Read-Host -Prompt "Press Enter to exit..."
+}

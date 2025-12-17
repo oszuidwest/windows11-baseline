@@ -4,6 +4,8 @@ Baseline configuration for **Windows 11 24H2 Enterprise LTSC** computers at Stre
 
 ## Quick Start
 
+### Fresh Installation
+
 Run as Administrator:
 
 ```powershell
@@ -19,6 +21,29 @@ The installer prompts for:
 - **Create user with auto-login?** (dedicated only)
 - **Username** (if creating user)
 - **DWService agent code** (optional)
+
+### Updating Existing Systems
+
+Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems:
+
+```powershell
+# Update policies only (run locally as Administrator)
+.\install.ps1 -OnlyRun "policies" -systemPurpose "radio" -systemOwnership "shared"
+
+# Update multiple components
+.\install.ps1 -OnlyRun "policies","hardening" -systemPurpose "radio" -systemOwnership "shared"
+```
+
+Remote execution via DWService or other remote shell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "& {
+    Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile 'C:\Windows\Temp\install.ps1'
+    & 'C:\Windows\Temp\install.ps1' -OnlyRun 'policies' -systemPurpose 'radio' -systemOwnership 'shared'
+}"
+```
+
+Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
 
 ## Configuration Options
 
