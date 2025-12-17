@@ -1,25 +1,13 @@
 # Bluetooth Policies
 
-## disable-bluetooth.txt
+Disables Bluetooth functionality system-wide to reduce attack surface and prevent unauthorized wireless connections.
 
-Disables Bluetooth functionality system-wide.
+## Policies
 
-| Setting | Value |
-|---------|-------|
-| Registry Path | `HKLM\SOFTWARE\Policies\Microsoft\Windows\Connectivity` |
-| Value Name | `AllowBluetooth` |
-| Type | DWORD |
-| Value | 0 |
+### `disable-bluetooth.txt`
 
-### AllowBluetooth Values
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `AllowBluetooth` | 0 | Disables Bluetooth completely |
 
-| Value | Effect |
-|-------|--------|
-| 0 | Disable Bluetooth completely |
-| 1 | Reserved (disable except for remote control) |
-| 2 | Allow Bluetooth (default) |
-
-### References
-
-- [NinjaOne - Enable/Disable Bluetooth](https://www.ninjaone.com/blog/how-to-enable-or-disable-bluetooth-windows/)
-- [Block Bluetooth with GPO](https://www.it-server-room.com/en/windows-security-block-bluetooth-connections-with-ad-gpo/)
+AllowBluetooth values: `0` = disabled, `1` = reserved, `2` = allowed (default).

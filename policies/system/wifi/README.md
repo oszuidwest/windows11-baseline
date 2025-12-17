@@ -1,33 +1,15 @@
 # WiFi Policies
 
-## disable-wifi.txt
+Disables WiFi functionality on shared and dedicated systems. Personal systems retain WiFi capability.
 
-Disables WiFi by setting the WLAN AutoConfig service (WlanSvc) startup type to Disabled.
+## Policies
 
-| Setting | Value |
-|---------|-------|
-| Registry Path | `HKLM\SYSTEM\CurrentControlSet\Services\WlanSvc` |
-| Value Name | `Start` |
-| Type | DWORD |
-| Value | 4 |
+### `disable-wifi.txt`
 
-### Service Start Values
+Shared and dedicated systems only.
 
-| Value | Startup Type |
-|-------|--------------|
-| 0 | Boot |
-| 1 | System |
-| 2 | Automatic |
-| 3 | Manual |
-| 4 | Disabled |
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `Start` | 4 | Disables WLAN AutoConfig service (WlanSvc) |
 
-### Notes
-
-- This completely disables WiFi functionality
-- All WLAN adapters become inaccessible from Windows networking UI
-- Applied to shared and dedicated systems only (personal systems retain WiFi)
-
-### References
-
-- [Disable WiFi Group Policy](https://bondy.tech/disable-wifi-group-policy/)
-- [Microsoft Q&A - Disable Wireless LAN using GPO](https://learn.microsoft.com/en-us/answers/questions/1617241/can-i-disable-wireless-lan-using-group-policy)
+Service Start values: `0` = Boot, `1` = System, `2` = Automatic, `3` = Manual, `4` = Disabled.
