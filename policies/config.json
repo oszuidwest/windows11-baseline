@@ -185,6 +185,11 @@
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Disable Bluetooth functionality system-wide"
+    },
+    "system/wifi/disable-wifi.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared", "dedicated"],
+      "description": "Disable WiFi by disabling WLAN AutoConfig service"
     }
   }
 }
