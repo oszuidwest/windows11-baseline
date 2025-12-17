@@ -64,7 +64,8 @@ $scriptRequirements = @{
 # Determine which parameters are required based on -OnlyRun
 if ($OnlyRun) {
     $requiredParams = @($OnlyRun | ForEach-Object { $scriptRequirements[$_] } | Select-Object -Unique)
-} else {
+}
+else {
     # Full installation: all parameters needed
     $requiredParams = @('systemPurpose', 'systemOwnership', 'computerName', 'workgroupName', 'userPassword', 'dwAgentCode', 'dedicatedUserName')
 }
@@ -218,7 +219,8 @@ if (Test-Path $scriptsDir) {
     Write-Output "=========================================="
     if ($OnlyRun) {
         Write-Output "Selected scripts completed: $($OnlyRun -join ', ')"
-    } else {
+    }
+    else {
         Write-Output "All scripts completed."
     }
     Write-Output "=========================================="
