@@ -180,6 +180,11 @@
       "purposes": ["all"],
       "ownership": ["dedicated"],
       "description": "Prevent automatic reboot after updates (dedicated systems have auto-login)"
+    },
+    "system/bluetooth/disable-bluetooth.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable Bluetooth functionality system-wide"
     }
   }
 }
