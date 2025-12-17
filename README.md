@@ -27,11 +27,11 @@ The installer prompts for:
 Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems. Run via DWService or other remote shell as Administrator:
 
 ```powershell
-# Update policies only
-powershell -ExecutionPolicy Bypass -Command "& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1 -OnlyRun 'policies' -systemPurpose 'radio' -systemOwnership 'shared' }"
+# Update policies only (prompts for purpose and ownership)
+powershell -ExecutionPolicy Bypass -Command "& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1 -OnlyRun 'policies' }"
 
 # Update multiple components
-powershell -ExecutionPolicy Bypass -Command "& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1 -OnlyRun 'policies','hardening' -systemPurpose 'radio' -systemOwnership 'shared' }"
+powershell -ExecutionPolicy Bypass -Command "& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile $env:TEMP\install.ps1; & $env:TEMP\install.ps1 -OnlyRun 'policies','hardening' }"
 ```
 
 Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
