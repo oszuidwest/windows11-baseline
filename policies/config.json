@@ -184,7 +184,7 @@
     "system/bluetooth/disable-bluetooth.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Disable Bluetooth functionality system-wide"
+      "description": "Disable Bluetooth by disabling Bluetooth Support Service"
     },
     "system/wifi/disable-wifi.txt": {
       "purposes": ["all"],

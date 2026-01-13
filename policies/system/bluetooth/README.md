@@ -8,6 +8,6 @@ Disables Bluetooth functionality system-wide to reduce attack surface and preven
 
 | Setting | Value | Effect |
 |---------|-------|--------|
-| `AllowBluetooth` | 0 | Disables Bluetooth completely |
+| `Start` | 4 | Disables Bluetooth Support Service (bthserv) |
 
-AllowBluetooth values: `0` = disabled, `1` = reserved, `2` = allowed (default).
+Service Start values: `0` = Boot, `1` = System, `2` = Automatic, `3` = Manual, `4` = Disabled.
