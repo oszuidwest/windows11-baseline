@@ -14,6 +14,27 @@ This script installs applications based on the specified purpose.
 'systemPurpose' should be "radio", "tv", "editorial", or "plain".
 #>
 
+function New-Shortcut {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [string]$Path,
+        [string]$TargetPath,
+        [string]$Arguments,
+        [string]$WorkingDirectory,
+        [string]$Description,
+        [string]$IconPath
+    )
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($Path)
+    $shortcut.TargetPath = $TargetPath
+    if ($Arguments) { $shortcut.Arguments = $Arguments }
+    if ($WorkingDirectory) { $shortcut.WorkingDirectory = $WorkingDirectory }
+    if ($Description) { $shortcut.Description = $Description }
+    if ($IconPath -and (Test-Path $IconPath)) { $shortcut.IconLocation = "$IconPath,0" }
+    $shortcut.Save()
+}
+
 # Winget package IDs (apps installed via winget)
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
@@ -163,23 +184,13 @@ if ($apps -contains "spotify") {
         if ($process.ExitCode -eq 0) {
             Write-Output "  Spotify installed successfully"
 
-            # Create Start Menu shortcut
-            $startMenuPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk"
-            $shell = New-Object -ComObject WScript.Shell
-            $shortcut = $shell.CreateShortcut($startMenuPath)
-            $shortcut.TargetPath = "$spotifyPath\Spotify.exe"
-            $shortcut.WorkingDirectory = $spotifyPath
-            $shortcut.Description = "Spotify"
-            $shortcut.Save()
+            # Create shortcuts
+            New-Shortcut -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk" `
+                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
             Write-Output "  Start Menu shortcut created"
 
-            # Create Desktop shortcut
-            $desktopPath = "C:\Users\Public\Desktop\Spotify.lnk"
-            $shortcut = $shell.CreateShortcut($desktopPath)
-            $shortcut.TargetPath = "$spotifyPath\Spotify.exe"
-            $shortcut.WorkingDirectory = $spotifyPath
-            $shortcut.Description = "Spotify"
-            $shortcut.Save()
+            New-Shortcut -Path "C:\Users\Public\Desktop\Spotify.lnk" `
+                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
             Write-Output "  Desktop shortcut created"
         }
         else {
@@ -219,15 +230,8 @@ if ($systemOwnership -eq "shared") {
         Write-Warning "Could not download WhatsApp icon"
     }
 
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $edgePath
-    $shortcut.Arguments = $arguments
-    $shortcut.Description = "WhatsApp Web (InPrivate - geen data wordt opgeslagen)"
-    if (Test-Path $iconPath) {
-        $shortcut.IconLocation = "$iconPath,0"
-    }
-    $shortcut.Save()
+    New-Shortcut -Path $shortcutPath -TargetPath $edgePath -Arguments $arguments `
+        -Description "WhatsApp Web (InPrivate - geen data wordt opgeslagen)" -IconPath $iconPath
 
     Write-Output "WhatsApp Web shortcut created on Public Desktop."
 }

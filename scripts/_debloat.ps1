@@ -14,6 +14,29 @@ This script removes bloatware from Windows 11.
 Runs for all system purposes and ownership types.
 #>
 
+function Remove-AppPackage {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [string]$AppName
+    )
+
+    # Remove installed packages for all users
+    Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "*$AppName*" } |
+        ForEach-Object {
+            Write-Output "  Removing: $($_.Name)"
+            Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+        }
+
+    # Remove provisioned packages (prevents reinstallation)
+    Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -like "*$AppName*" -or $_.PackageName -like "*$AppName*" } |
+        ForEach-Object {
+            Write-Output "  Removing provisioned: $($_.DisplayName)"
+            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
+        }
+}
+
 $appsToRemove = @(
     "Microsoft.WindowsCamera"
     "Microsoft.Copilot"
@@ -49,42 +72,7 @@ Write-Output "Removing Windows bloatware..."
 
 foreach ($app in $appsToRemove) {
     Write-Output "Removing: $app"
-
-    # Remove for all users
-    try {
-        Get-AppxPackage -AllUsers -ErrorAction Stop |
-            Where-Object { $_.Name -like "*$app*" } |
-            ForEach-Object {
-                Write-Output "  Removing package: $($_.Name)"
-                try {
-                    Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction Stop
-                }
-                catch {
-                    Write-Warning "  Failed to remove $($_.Name): $_"
-                }
-            }
-    }
-    catch {
-        Write-Warning "  Could not query packages for $app"
-    }
-
-    # Remove provisioned package (prevents reinstallation for new users/updates)
-    try {
-        Get-AppxProvisionedPackage -Online -ErrorAction Stop |
-            Where-Object { $_.DisplayName -like "*$app*" -or $_.PackageName -like "*$app*" } |
-            ForEach-Object {
-                Write-Output "  Removing provisioned package: $($_.DisplayName)"
-                try {
-                    Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction Stop | Out-Null
-                }
-                catch {
-                    Write-Warning "  Failed to remove provisioned $($_.DisplayName): $_"
-                }
-            }
-    }
-    catch {
-        Write-Warning "  Could not query provisioned packages for $app"
-    }
+    Remove-AppPackage -AppName $app
 }
 
 Write-Output "Bloatware removal complete."

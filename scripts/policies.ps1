@@ -92,12 +92,10 @@ function Merge-PolicyFiles {
         [string]$outputPath
     )
 
-    $content = @()
-    foreach ($file in $policyFiles) {
-        $content += Get-Content $file -Raw
-        $content += "`n"
+    $content = $policyFiles | ForEach-Object {
+        Get-Content $_ -Raw
+        "`n"
     }
-
     $content | Out-File -FilePath $outputPath -Encoding UTF8 -NoNewline
 }
 

@@ -10,34 +10,34 @@ param (
 
 Write-Output "Configuring power settings..."
 
-$failed = $false
+function Set-PowerTimeout {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [string]$Setting,
+        [int]$AcValue,
+        [int]$DcValue
+    )
+    powercfg /change "$Setting-ac" $AcValue 2>&1 | Out-Null
+    powercfg /change "$Setting-dc" $DcValue 2>&1 | Out-Null
+    return $LASTEXITCODE -eq 0
+}
 
-# Set monitor timeout (30 min AC, 30 min DC)
+$success = $true
+
 Write-Output "  Monitor timeout: 30 min"
-powercfg /change monitor-timeout-ac 30 2>&1 | Out-Null
-powercfg /change monitor-timeout-dc 30 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { $failed = $true }
+if (-not (Set-PowerTimeout -Setting "monitor-timeout" -AcValue 30 -DcValue 30)) { $success = $false }
 
-# Disable disk timeout (not needed for SSDs)
 Write-Output "  Disk timeout: disabled"
-powercfg /change disk-timeout-ac 0 2>&1 | Out-Null
-powercfg /change disk-timeout-dc 0 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { $failed = $true }
+if (-not (Set-PowerTimeout -Setting "disk-timeout" -AcValue 0 -DcValue 0)) { $success = $false }
 
-# Set standby timeout (never on AC, 60 min on DC)
 Write-Output "  Standby: never (AC), 60 min (DC)"
-powercfg /change standby-timeout-ac 0 2>&1 | Out-Null
-powercfg /change standby-timeout-dc 60 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { $failed = $true }
+if (-not (Set-PowerTimeout -Setting "standby-timeout" -AcValue 0 -DcValue 60)) { $success = $false }
 
-# Disable hibernate
 Write-Output "  Hibernate: disabled"
-powercfg /change hibernate-timeout-ac 0 2>&1 | Out-Null
-powercfg /change hibernate-timeout-dc 0 2>&1 | Out-Null
+if (-not (Set-PowerTimeout -Setting "hibernate-timeout" -AcValue 0 -DcValue 0)) { $success = $false }
 powercfg /hibernate off 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { $failed = $true }
 
-if ($failed) {
+if (-not $success) {
     Write-Warning "Some power settings may not have been applied."
 }
 
