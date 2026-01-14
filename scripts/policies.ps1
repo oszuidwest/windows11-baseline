@@ -101,7 +101,8 @@ function Merge-PolicyFiles {
     $content | Out-File -FilePath $outputPath -Encoding UTF8 -NoNewline
 }
 
-function Apply-Policies {
+function Set-Policy {
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [hashtable]$policies
     )
@@ -241,6 +242,6 @@ if ($totalPolicies -eq 0) {
 Write-Output "`nFound $totalPolicies applicable policies"
 
 # Apply policies
-Apply-Policies -policies $applicablePolicies
+Set-Policy -policies $applicablePolicies
 
 Write-Output "`n=== Policy application complete ==="

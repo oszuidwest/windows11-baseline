@@ -73,6 +73,7 @@ if (-not (Test-Path $appLockerToolPath)) {
 
 # Generate AppLocker policy XML dynamically
 function New-AppLockerPolicy {
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [bool]$BlockStore,
         [bool]$BlockCopilot

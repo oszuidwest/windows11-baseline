@@ -69,21 +69,49 @@ jobs:
       - name: Format PowerShell scripts
         shell: pwsh
         run: |
+          $settingsPath = Join-Path $env:GITHUB_WORKSPACE 'PSScriptAnalyzerSettings.psd1'
           $files = Get-ChildItem -Recurse -Include *.ps1
           foreach ($file in $files) {
-            Write-Output "Formatting $file"
+            Write-Output "Formatting $($file.Name)"
             $content = Get-Content -Path $file.FullName -Raw
-            $formatted = Invoke-Formatter -ScriptDefinition $content
+            $formatted = Invoke-Formatter -ScriptDefinition $content -Settings $settingsPath
             Set-Content -Path $file.FullName -Value $formatted -NoNewline
           }
 
       - name: Lint PowerShell scripts
         shell: pwsh
         run: |
+          $settingsPath = Join-Path $env:GITHUB_WORKSPACE 'PSScriptAnalyzerSettings.psd1'
           $files = Get-ChildItem -Recurse -Include *.ps1
+          $hasErrors = $false
+
           foreach ($file in $files) {
-            Write-Output "Linting $file"
-            Invoke-ScriptAnalyzer -Path $file.FullName -Recurse -Severity Warning,Error -ExcludeRule PSReviewUnusedParameter
+            Write-Output "`n📄 Analyzing: $($file.Name)"
+            $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settingsPath
+
+            if ($results) {
+              $results | ForEach-Object {
+                $icon = switch ($_.Severity) {
+                  'Error'       { '❌' }
+                  'Warning'     { '⚠️' }
+                  'Information' { 'ℹ️' }
+                }
+                Write-Output "$icon [$($_.Severity)] Line $($_.Line): $($_.Message)"
+                Write-Output "   Rule: $($_.RuleName)"
+              }
+
+              if ($results | Where-Object { $_.Severity -in 'Error', 'Warning' }) {
+                $hasErrors = $true
+              }
+            }
+            else {
+              Write-Output "✅ No issues found"
+            }
+          }
+
+          if ($hasErrors) {
+            Write-Error "PSScriptAnalyzer found errors or warnings. Please fix before merging."
+            exit 1
           }
 
       - name: Commit changes
