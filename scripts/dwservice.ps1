@@ -25,7 +25,7 @@ param (
 #>
 
 # Skip if no agent code provided
-if (-not $dwAgentCode -or $dwAgentCode -eq "") {
+if (-not $dwAgentCode) {
     Write-Output "Skipping DWService installation (no agent code provided)."
     exit 0
 }

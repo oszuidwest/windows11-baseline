@@ -12,7 +12,7 @@ param (
 Write-Output "Configuring user settings..."
 
 # Determine username based on ownership and purpose
-if ($systemOwnership -eq "dedicated" -and $dedicatedUserName -ne "") {
+if ($systemOwnership -eq "dedicated" -and $dedicatedUserName) {
     # Dedicated system with custom user
     $userName = $dedicatedUserName
     $enableAutoLogin = $true
@@ -33,7 +33,7 @@ else {
 }
 
 # Add user if userName is specified
-if ($userName -ne "") {
+if ($userName) {
     if (-not (Get-LocalUser -Name $userName -ErrorAction SilentlyContinue)) {
         Write-Output "Creating local user: $userName"
         try {
@@ -52,7 +52,7 @@ if ($userName -ne "") {
 
 # Set registry values for auto-login if enabled
 $regPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
-if ($userName -ne "" -and $enableAutoLogin) {
+if ($userName -and $enableAutoLogin) {
     Write-Output "Configuring auto-login for: $userName"
     try {
         Set-ItemProperty -Path $regPath -Name "DefaultUserName" -Value $userName -Force -ErrorAction Stop

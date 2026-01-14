@@ -170,7 +170,7 @@ function Set-Policy {
 Write-Output "=== Windows 11 Policy Application ==="
 Write-Output ""
 
-# Validate parameters
+# Validate parameters (install.ps1 already validates values, just check presence)
 if (-not $systemPurpose -or -not $systemOwnership) {
     Write-Error "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
     exit 1
@@ -178,19 +178,6 @@ if (-not $systemPurpose -or -not $systemOwnership) {
 
 $systemPurpose = $systemPurpose.ToLower()
 $systemOwnership = $systemOwnership.ToLower()
-
-$validPurposes = @("radio", "tv", "editorial", "plain")
-$validOwnership = @("shared", "personal", "dedicated")
-
-if ($systemPurpose -notin $validPurposes) {
-    Write-Error "Invalid systemPurpose: $systemPurpose. Must be one of: $($validPurposes -join ', ')"
-    exit 1
-}
-
-if ($systemOwnership -notin $validOwnership) {
-    Write-Error "Invalid systemOwnership: $systemOwnership. Must be one of: $($validOwnership -join ', ')"
-    exit 1
-}
 
 # Verify LGPO.exe exists
 if (-not (Test-Path $lgpoPath)) {
