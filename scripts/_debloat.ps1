@@ -14,7 +14,7 @@ This script removes bloatware from Windows 11.
 Runs for all system purposes and ownership types.
 #>
 
-function Remove-AppPackage {
+function Remove-BloatwareApp {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [string]$AppName
@@ -72,7 +72,7 @@ Write-Output "Removing Windows bloatware..."
 
 foreach ($app in $appsToRemove) {
     Write-Output "Removing: $app"
-    Remove-AppPackage -AppName $app
+    Remove-BloatwareApp -AppName $app
 }
 
 Write-Output "Bloatware removal complete."
