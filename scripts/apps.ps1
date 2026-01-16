@@ -47,13 +47,13 @@ $appDefinitions = @{
 }
 
 # Apps requiring special installation (not via winget)
-$specialApps = @("spotify")
+$specialApps = @("spotify", "office")
 
 # Applications by purpose
 $appsByPurpose = @{
     "radio"     = @("audacity", "libreoffice", "spotify", "thunderbird", "vlc")
     "tv"        = @("creativecloud", "libreoffice", "vlc")
-    "editorial" = @("audacity", "msteams", "pinta", "vlc")
+    "editorial" = @("audacity", "msteams", "office", "pinta", "vlc")
     "plain"     = @()
 }
 
@@ -202,6 +202,52 @@ if ($apps -contains "spotify") {
     }
     finally {
         Remove-Item -Path $spotifyInstaller -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Install Microsoft Office (using Office Deployment Tool)
+if ($apps -contains "office") {
+    Write-Output "Installing Microsoft Office..."
+
+    $officeConfigPath = "C:\Windows\deploy\config\office.xml"
+    $odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19628-20046.exe"
+    $tempDir = Join-Path $env:TEMP "odt-install"
+
+    if (-not (Test-Path $officeConfigPath)) {
+        Write-Warning "Office config file not found at $officeConfigPath"
+    }
+    else {
+        try {
+            # Create temp directory
+            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+            # Download Office Deployment Tool
+            Write-Output "  Downloading Office Deployment Tool..."
+            $odtExe = Join-Path $tempDir "odt.exe"
+            Invoke-WebRequest -Uri $odtUrl -OutFile $odtExe -UseBasicParsing
+
+            # Extract ODT (contains setup.exe)
+            Write-Output "  Extracting ODT..."
+            Start-Process -FilePath $odtExe -ArgumentList "/extract:$tempDir /quiet" -NoNewWindow -Wait
+
+            # Run setup.exe with config
+            $setupExe = Join-Path $tempDir "setup.exe"
+            Write-Output "  Running Office setup..."
+            $process = Start-Process -FilePath $setupExe -ArgumentList "/configure `"$officeConfigPath`"" -NoNewWindow -Wait -PassThru
+
+            if ($process.ExitCode -eq 0) {
+                Write-Output "  Microsoft Office installed successfully"
+            }
+            else {
+                Write-Warning "Failed to install Microsoft Office (exit code: $($process.ExitCode))"
+            }
+        }
+        catch {
+            Write-Warning "Failed to install Microsoft Office: $_"
+        }
+        finally {
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 

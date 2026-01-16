@@ -62,13 +62,14 @@ Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `po
 | Audacity        | x     |    | x         |       |
 | Creative Cloud  |       | x  |           |       |
 | LibreOffice     | x     | x  |           |       |
+| MS Office       |       |    | x         |       |
 | MS Teams        |       |    | x         |       |
 | Pinta           |       |    | x         |       |
 | Spotify         | x     |    |           |       |
 | Thunderbird     | x     |    |           |       |
 | VLC             | x     | x  | x         |       |
 
-Applications are installed via **winget**, except Spotify which uses a direct download due to winget limitations in admin context. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
+Applications are installed via **winget**, except Spotify and MS Office which use direct downloads. Spotify has winget limitations in admin context; Office uses the Office Deployment Tool with a custom config (`config/office.xml`) for Dutch language and excluded apps. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
 
 ### Shared Systems
 
