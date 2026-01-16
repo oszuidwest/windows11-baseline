@@ -5,7 +5,8 @@ param (
     [string]$computerName,
     [string]$workgroupName,
     [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$dedicatedUserName,
+    [string]$personalUserName
 )
 
 Write-Output "Configuring power settings..."

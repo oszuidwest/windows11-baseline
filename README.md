@@ -18,8 +18,8 @@ The installer prompts for:
 - **Computer name**
 - **Workgroup name**
 - **User password**
+- **Username** (personal/dedicated only)
 - **Create user with auto-login?** (dedicated only)
-- **Username** (if creating user)
 - **DWService agent code** (optional)
 
 ### Updating Existing Systems
@@ -49,11 +49,11 @@ Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `po
 
 ### Ownership
 
-| Ownership | Description | Auto-login | Microsoft Store |
-|-----------|-------------|------------|-----------------|
-| Shared | Shared computers with restricted access | Yes (if not plain) | Blocked |
-| Personal | Company-issued laptops for employees | No | Allowed |
-| Dedicated | Single-function systems (e.g., playout servers) | Optional (custom user) | Allowed |
+| Ownership | Description | User | Auto-login | Microsoft Store |
+|-----------|-------------|------|------------|-----------------|
+| Shared | Shared computers with restricted access | Purpose-based | Yes (if not plain) | Blocked |
+| Personal | Company-issued laptops for employees | Custom | No | Allowed |
+| Dedicated | Single-function systems (e.g., playout servers) | Custom (optional) | Optional | Allowed |
 
 ## Application Matrix
 

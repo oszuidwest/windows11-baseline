@@ -14,6 +14,7 @@ param(
     [string]$userPassword,
     [string]$dwAgentCode,
     [string]$dedicatedUserName,
+    [string]$personalUserName,
 
     [ValidateSet("debloat", "applocker", "apps", "dwservice", "hardening", "policies", "power", "sounds", "time", "updates", "users", "workgroupname")]
     [string[]]$OnlyRun
@@ -57,7 +58,7 @@ $scriptRequirements = @{
     'sounds'        = @()
     'time'          = @()
     'updates'       = @()
-    'users'         = @('systemOwnership', 'userPassword', 'dedicatedUserName')
+    'users'         = @('systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
     'workgroupname' = @('workgroupName')
 }
 
@@ -67,7 +68,7 @@ if ($OnlyRun) {
 }
 else {
     # Full installation: all parameters needed
-    $requiredParams = @('systemPurpose', 'systemOwnership', 'computerName', 'workgroupName', 'userPassword', 'dwAgentCode', 'dedicatedUserName')
+    $requiredParams = @('systemPurpose', 'systemOwnership', 'computerName', 'workgroupName', 'userPassword', 'dwAgentCode', 'dedicatedUserName', 'personalUserName')
 }
 
 # Get and validate system purpose (if required and not provided via parameter)
@@ -118,6 +119,12 @@ if ('dedicatedUserName' -in $requiredParams -and -not $dedicatedUserName -and $s
     if ($createUser -eq "y" -or $createUser -eq "yes") {
         $dedicatedUserName = Read-Host -Prompt "Enter the username"
     }
+}
+
+# For personal systems, ask for username
+if ('personalUserName' -in $requiredParams -and -not $personalUserName -and $systemOwnership -eq "personal") {
+    Write-Output ""
+    $personalUserName = Read-Host -Prompt "Enter the username for this personal system"
 }
 
 # Get DWService agent code (if required and not provided via parameter)
@@ -205,6 +212,7 @@ if (Test-Path $scriptsDir) {
             workgroupName     = $workgroupName
             dwAgentCode       = $dwAgentCode
             dedicatedUserName = $dedicatedUserName
+            personalUserName  = $personalUserName
         }
 
         try {

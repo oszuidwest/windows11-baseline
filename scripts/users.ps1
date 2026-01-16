@@ -6,7 +6,8 @@ param (
     [string]$computerName,
     [string]$workgroupName,
     [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$dedicatedUserName,
+    [string]$personalUserName
 )
 
 Write-Output "Configuring user settings..."
@@ -16,6 +17,11 @@ if ($systemOwnership -eq "dedicated" -and $dedicatedUserName) {
     # Dedicated system with custom user
     $userName = $dedicatedUserName
     $enableAutoLogin = $true
+}
+elseif ($systemOwnership -eq "personal" -and $personalUserName) {
+    # Personal system with custom user (no auto-login)
+    $userName = $personalUserName
+    $enableAutoLogin = $false
 }
 elseif ($systemOwnership -eq "shared") {
     # Shared system with purpose-based user
