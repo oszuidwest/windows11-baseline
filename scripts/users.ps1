@@ -45,7 +45,10 @@ if ($userName) {
         try {
             $securePassword = ConvertTo-SecureString -String $userPassword -AsPlainText -Force
             New-LocalUser -Name $userName -Password $securePassword -FullName $userName -Description "User created by deployment script" -ErrorAction Stop
-            Add-LocalGroupMember -Group "Users" -Member $userName -ErrorAction Stop
+            # Use SID for Users group (S-1-5-32-545) - works on all language versions of Windows
+            $usersGroupFull = (New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-545")).Translate([System.Security.Principal.NTAccount]).Value
+            $usersGroup = $usersGroupFull.Split('\')[-1]
+            Add-LocalGroupMember -Group $usersGroup -Member $userName -ErrorAction Stop
             Write-Output "  User created and added to Users group."
         }
         catch {
@@ -54,6 +57,19 @@ if ($userName) {
     }
     else {
         Write-Output "User '$userName' already exists."
+        # Ensure user is in Users group (may be missing if created before fix)
+        $usersGroupFull = (New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-545")).Translate([System.Security.Principal.NTAccount]).Value
+        $usersGroup = $usersGroupFull.Split('\')[-1]
+        $members = Get-LocalGroupMember -Group $usersGroup -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+        if ($members -notcontains "$env:COMPUTERNAME\$userName") {
+            try {
+                Add-LocalGroupMember -Group $usersGroup -Member $userName -ErrorAction Stop
+                Write-Output "  Added to Users group."
+            }
+            catch {
+                Write-Warning "Failed to add to Users group: $_"
+            }
+        }
     }
 }
 
