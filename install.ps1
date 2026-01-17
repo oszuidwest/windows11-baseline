@@ -253,7 +253,5 @@ else {
     exit 1
 }
 
-# Prevent the script from closing immediately (skip for remote/automated execution)
-if (-not $OnlyRun) {
-    Read-Host -Prompt "Press Enter to exit..."
-}
+# Prevent the script from closing immediately
+Read-Host -Prompt "Press Enter to exit..."
