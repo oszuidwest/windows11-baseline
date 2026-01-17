@@ -193,8 +193,8 @@ Write-Output "Purpose: $systemPurpose"
 Write-Output "Ownership: $systemOwnership"
 Write-Output ""
 
-# Download wallpaper for shared systems
-if ($systemOwnership -eq "shared") {
+# Download wallpaper for shared and personal systems
+if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
     $wallpaperUrl = "https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png"
     $wallpaperPath = Join-Path $deployPath "wallpaper.png"
 
