@@ -58,8 +58,8 @@ $scriptRequirements = @{
     'sounds'        = @()
     'time'          = @()
     'updates'       = @()
-    'users'         = @('systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
-    'workgroupname' = @('workgroupName')
+    'users'         = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
+    'workgroupname' = @('computerName', 'workgroupName')
 }
 
 # Determine which parameters are required based on -OnlyRun
@@ -67,8 +67,8 @@ if ($OnlyRun) {
     $requiredParams = @($OnlyRun | ForEach-Object { $scriptRequirements[$_] } | Select-Object -Unique)
 }
 else {
-    # Full installation: all parameters needed
-    $requiredParams = @('systemPurpose', 'systemOwnership', 'computerName', 'workgroupName', 'userPassword', 'dwAgentCode', 'dedicatedUserName', 'personalUserName')
+    # Full installation: collect requirements for all scripts
+    $requiredParams = @($scriptRequirements.Values | ForEach-Object { $_ } | Select-Object -Unique)
 }
 
 # Get and validate system purpose (if required and not provided via parameter)
@@ -121,10 +121,15 @@ if ('dedicatedUserName' -in $requiredParams -and -not $dedicatedUserName -and $s
     }
 }
 
-# For personal systems, ask for username
+# For personal systems, ask for username (required)
 if ('personalUserName' -in $requiredParams -and -not $personalUserName -and $systemOwnership -eq "personal") {
     Write-Output ""
-    $personalUserName = Read-Host -Prompt "Enter the username for this personal system"
+    do {
+        $personalUserName = (Read-Host -Prompt "Enter the username for this personal system").Trim()
+        if (-not $personalUserName) {
+            Write-Warning "Username is required for personal systems."
+        }
+    } while (-not $personalUserName)
 }
 
 # Get DWService agent code (if required and not provided via parameter)
@@ -204,7 +209,7 @@ if (Test-Path $scriptsDir) {
         Write-Output "Running: $($scriptFile.Name)"
         Write-Output "=========================================="
 
-        $scriptParams = @{
+        $allParams = @{
             systemPurpose     = $systemPurpose
             systemOwnership   = $systemOwnership
             userPassword      = $userPassword
@@ -213,6 +218,16 @@ if (Test-Path $scriptsDir) {
             dwAgentCode       = $dwAgentCode
             dedicatedUserName = $dedicatedUserName
             personalUserName  = $personalUserName
+        }
+
+        $scriptParams = @{}
+        if ($scriptRequirements.ContainsKey($scriptName)) {
+            foreach ($paramName in $scriptRequirements[$scriptName]) {
+                $scriptParams[$paramName] = $allParams[$paramName]
+            }
+        }
+        else {
+            $scriptParams = $allParams
         }
 
         try {

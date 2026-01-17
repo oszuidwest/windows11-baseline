@@ -45,7 +45,8 @@ if ($userName) {
         try {
             $securePassword = ConvertTo-SecureString -String $userPassword -AsPlainText -Force
             New-LocalUser -Name $userName -Password $securePassword -FullName $userName -Description "User created by deployment script" -ErrorAction Stop
-            Write-Output "  User created successfully."
+            Add-LocalGroupMember -Group "Users" -Member $userName -ErrorAction Stop
+            Write-Output "  User created and added to Users group."
         }
         catch {
             Write-Error "Failed to create user: $_"
