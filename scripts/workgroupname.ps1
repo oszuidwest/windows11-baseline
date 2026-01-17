@@ -6,8 +6,7 @@ param (
     [string]$computerName,
     [string]$workgroupName,
     [string]$dwAgentCode,
-    [string]$dedicatedUserName,
-    [string]$personalUserName
+    [string]$dedicatedUserName
 )
 
 Write-Output "Configuring computer name and workgroup..."
