@@ -1,7 +1,7 @@
 User
 Software\Microsoft\Windows\CurrentVersion\Policies\System
 Wallpaper
-SZ:C:\Windows\deploy\wallpaper.png
+SZ:C:\ProgramData\ZuidWest\wallpaper\wallpaper.png
 
 User
 Control Panel\Desktop

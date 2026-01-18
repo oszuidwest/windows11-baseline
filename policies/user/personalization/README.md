@@ -10,7 +10,7 @@ Shared systems only.
 
 | Setting | Value | Effect |
 |---------|-------|--------|
-| `Wallpaper` | `C:\Windows\deploy\wallpaper.png` | Sets desktop background image path |
+| `Wallpaper` | `C:\ProgramData\ZuidWest\wallpaper\wallpaper.png` | Sets desktop background image path |
 | `WallpaperStyle` | 10 | Fills screen with image, cropping to fit |
 | `TileWallpaper` | 0 | Disables tiling |
 | `NoChangingWallPaper` | 1 | Prevents users from changing wallpaper |

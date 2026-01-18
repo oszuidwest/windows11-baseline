@@ -196,10 +196,14 @@ Write-Output ""
 # Download wallpaper for shared and personal systems
 if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
     $wallpaperUrl = "https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png"
-    $wallpaperPath = Join-Path $deployPath "wallpaper.png"
+    $wallpaperDir = "C:\ProgramData\ZuidWest\wallpaper"
+    $wallpaperPath = Join-Path $wallpaperDir "wallpaper.png"
 
     Write-Output "Downloading wallpaper..."
     try {
+        if (-not (Test-Path $wallpaperDir)) {
+            New-Item -ItemType Directory -Path $wallpaperDir -Force | Out-Null
+        }
         Invoke-WebRequest -Uri $wallpaperUrl -OutFile $wallpaperPath -UseBasicParsing
         Write-Output "  Wallpaper saved to $wallpaperPath"
     }

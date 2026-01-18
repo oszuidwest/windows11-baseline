@@ -75,7 +75,7 @@ Applications are installed via **winget**, except Spotify and MS Office which us
 
 Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
-- **Branded wallpaper** at `C:\Windows\deploy\wallpaper.png` (locked, cannot be changed)
+- **Branded wallpaper** at `C:\ProgramData\ZuidWest\wallpaper\wallpaper.png` (locked, cannot be changed)
 - **Microsoft Store blocked** via AppLocker (blocks Store app and web installer from get.microsoft.com)
 - **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
 - **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R), Task Manager
