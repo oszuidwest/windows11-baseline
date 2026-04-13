@@ -38,7 +38,7 @@ jobs:
 
       - name: Create issue if URL is broken
         if: steps.check.outputs.url_broken == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = 'Office Deployment Tool URL is broken';
