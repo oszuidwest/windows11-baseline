@@ -42,10 +42,108 @@ function ConvertFrom-SecureStringToPlainText {
     }
 }
 
+$script:InstallLogPath = $null
+$script:InstallTranscriptStarted = $false
+
+function Initialize-InstallLog {
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $logDirectories = @(
+        (Join-Path $env:ProgramData "ZuidWest\Logs"),
+        $env:TEMP
+    )
+
+    foreach ($logDirectory in $logDirectories) {
+        try {
+            if (-not (Test-Path $logDirectory)) {
+                New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
+            }
+
+            $script:InstallLogPath = Join-Path $logDirectory "windows11-baseline-$timestamp.log"
+            Start-Transcript -Path $script:InstallLogPath -Force | Out-Null
+            $script:InstallTranscriptStarted = $true
+            Write-Output "Log file: $script:InstallLogPath"
+            return
+        }
+        catch {
+            Write-Verbose "Could not start transcript in ${logDirectory}: $($_.Exception.Message)"
+            $script:InstallLogPath = $null
+            $script:InstallTranscriptStarted = $false
+        }
+    }
+
+    Write-Warning "Could not start transcript logging."
+}
+
+function Close-InstallLog {
+    if ($script:InstallTranscriptStarted) {
+        try {
+            Stop-Transcript | Out-Null
+        }
+        catch {
+            Write-Verbose "Could not stop transcript: $($_.Exception.Message)"
+        }
+        finally {
+            $script:InstallTranscriptStarted = $false
+        }
+    }
+}
+
+function Wait-BeforeExit {
+    param (
+        [string]$Prompt = "Press Enter to exit..."
+    )
+
+    try {
+        Read-Host -Prompt $Prompt | Out-Null
+    }
+    catch {
+        Write-Verbose "Could not wait for input: $($_.Exception.Message)"
+    }
+}
+
+function Write-FatalInstallError {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Message,
+
+        [object]$ErrorRecord,
+
+        [int]$ExitCode = 1
+    )
+
+    Write-Output ""
+    Write-Error $Message
+    if ($ErrorRecord) {
+        Write-Output "Details: $ErrorRecord"
+    }
+    if ($script:InstallLogPath) {
+        Write-Output "Log file: $script:InstallLogPath"
+    }
+
+    Close-InstallLog
+    Wait-BeforeExit
+    exit $ExitCode
+}
+
+function Complete-Install {
+    if ($script:InstallLogPath) {
+        Write-Output "Log file: $script:InstallLogPath"
+    }
+
+    Close-InstallLog
+    Wait-BeforeExit
+    exit 0
+}
+
+Initialize-InstallLog
+
+trap {
+    Write-FatalInstallError -Message "Unexpected fatal error." -ErrorRecord $_
+}
+
 # Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
-    Write-Error "This script must be run as an administrator. Exiting..."
-    exit 1
+    Write-FatalInstallError -Message "This script must be run as an administrator. Exiting..."
 }
 
 # Welcome message
@@ -174,15 +272,14 @@ New-Item -Path $deployDir -ItemType Directory -Force
 try {
     Write-Output "Downloading ZIP file from $zipUrl..."
     $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath -UseBasicParsing
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath -UseBasicParsing -ErrorAction Stop
     Write-Output "Download complete. Extracting ZIP file..."
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
     Write-Output "Extraction complete."
 }
 catch {
-    Write-Error "Failed to download or extract ZIP file: $_"
-    exit 1
+    Write-FatalInstallError -Message "Failed to download or extract ZIP file." -ErrorRecord $_
 }
 
 # Clean up the downloaded ZIP file
@@ -196,8 +293,7 @@ if (Test-Path $sourceDir) {
     Write-Output "Contents moved and $sourceDir removed."
 }
 else {
-    Write-Error "$sourceDir does not exist. Exiting..."
-    exit 1
+    Write-FatalInstallError -Message "$sourceDir does not exist. Exiting..."
 }
 
 #===============================================================
@@ -253,8 +349,7 @@ if (Test-Path $scriptsDir) {
             & $scriptFile.FullName @scriptParams
         }
         catch {
-            Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"
-            exit 1
+            Write-FatalInstallError -Message "Failed to execute script: $($scriptFile.Name)" -ErrorRecord $_
         }
     }
 
@@ -269,9 +364,7 @@ if (Test-Path $scriptsDir) {
     Write-Output "=========================================="
 }
 else {
-    Write-Error "Script directory does not exist: $scriptsDir"
-    exit 1
+    Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
 }
 
-# Prevent the script from closing immediately
-Read-Host -Prompt "Press Enter to exit..."
+Complete-Install
