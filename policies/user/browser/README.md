@@ -1,6 +1,6 @@
 # Browser Policies
 
-Microsoft Edge: ephemeral profiles, strict privacy, no autofill, clean UI, no extensions.
+Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions.
 
 ## Policies
 
@@ -88,6 +88,98 @@ Shared systems only.
 ### `edge-extensions.txt`
 
 Shared systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `ExtensionInstallBlocklist` | * | Blocks all extensions unless explicitly allowed |
+
+### `chrome-profile.txt`
+
+Shared systems only. Profiles are deleted on exit and browsing history is not saved.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `ForceEphemeralProfiles` | 1 | Profiles deleted when browser session ends |
+| `SyncDisabled` | 1 | Disables data synchronization |
+| `BrowserSignin` | 0 | Disables browser sign-in completely |
+| `BrowserGuestModeEnabled` | 0 | Disables guest profile browsing mode |
+| `ProfilePickerOnStartupAvailability` | 1 | Disables the profile picker at startup |
+| `SavingBrowserHistoryDisabled` | 1 | Prevents saving browsing history |
+
+### `chrome-privacy.txt`
+
+All systems.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `MetricsReportingEnabled` | 0 | Disables usage and crash reporting |
+| `UserFeedbackAllowed` | 0 | Disables Chrome feedback reports |
+| `UrlKeyedAnonymizedDataCollectionEnabled` | 0 | Disables URL-keyed anonymized data collection |
+| `SearchSuggestEnabled` | 0 | Disables search and URL suggestions |
+| `SafeBrowsingProtectionLevel` | 1 | Enforces Standard Safe Browsing |
+| `DisableSafeBrowsingProceedAnyway` | 1 | Blocks bypassing Safe Browsing warnings |
+| `SafeBrowsingExtendedReportingEnabled` | 0 | Disables extended Safe Browsing reporting |
+| `SafeBrowsingSurveysEnabled` | 0 | Disables Safe Browsing surveys |
+| `SitePerProcess` | 1 | Isolates each site in a separate process |
+| `HttpsUpgradesEnabled` | 1 | Upgrades navigations to HTTPS when possible |
+| `PrivacySandboxAdMeasurementEnabled` | 0 | Disables Privacy Sandbox ad measurement |
+| `PrivacySandboxAdTopicsEnabled` | 0 | Disables Privacy Sandbox ad topics |
+| `PrivacySandboxSiteEnabledAdsEnabled` | 0 | Disables site-suggested ads |
+| `PrivacySandboxPromptEnabled` | 0 | Suppresses Privacy Sandbox prompts |
+
+### `chrome-autofill.txt`
+
+Shared systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `PasswordManagerEnabled` | 0 | Prevents saving new passwords |
+| `PasswordManagerPasskeysEnabled` | 0 | Prevents Chrome passkey storage |
+| `PasswordSharingEnabled` | 0 | Disables password sharing |
+| `AutofillCreditCardEnabled` | 0 | Blocks saving and filling credit cards |
+| `AutofillAddressEnabled` | 0 | Blocks saving and filling addresses |
+| `PaymentMethodQueryEnabled` | 0 | Blocks sites from checking stored payment methods |
+| `ImportAutofillFormData` | 0 | Prevents importing browser form data |
+| `ImportBookmarks` | 0 | Prevents importing bookmarks |
+| `ImportHistory` | 0 | Prevents importing browsing history |
+| `ImportHomepage` | 0 | Prevents importing homepage settings |
+| `ImportSavedPasswords` | 0 | Prevents importing saved passwords |
+| `ImportSearchEngine` | 0 | Prevents importing search engine settings |
+
+### `chrome-ui.txt`
+
+All systems. Removes noisy Chrome UI and sets ZuidWest as the browser entry point.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DefaultNotificationsSetting` | 2 | Blocks all website desktop notifications |
+| `DefaultPopupsSetting` | 2 | Blocks website popups by default |
+| `HomepageLocation` | https://www.zuidwestupdate.nl/ | Sets homepage URL |
+| `HomepageIsNewTabPage` | 0 | Uses custom homepage instead of new tab |
+| `NewTabPageLocation` | https://www.zuidwestupdate.nl/ | Opens ZuidWest on new tabs |
+| `RestoreOnStartup` | 4 | Opens specific URLs on startup |
+| `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | URL to open on startup |
+| `PromotionsEnabled` | 0 | Disables Chrome promotions |
+| `PromotionalTabsEnabled` | 0 | Disables promotional tabs |
+| `ShoppingListEnabled` | 0 | Disables shopping list features |
+| `NTPMiddleSlotAnnouncementVisible` | 0 | Hides new tab announcements |
+| `NTPCardsVisible` | 0 | Hides new tab cards |
+| `NTPCustomBackgroundEnabled` | 0 | Disables custom new tab backgrounds |
+| `GoogleSearchSidePanelEnabled` | 0 | Disables Google Search side panel |
+| `LensOverlaySettings` | 1 | Disables Google Lens overlay |
+| `ShowFullUrlsInAddressBar` | 1 | Shows full URLs in the address bar |
+
+### `chrome-developer-tools.txt`
+
+Shared systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DeveloperToolsAvailability` | 2 | Blocks F12 developer tools and view source |
+
+### `chrome-extensions.txt`
+
+All systems.
 
 | Setting | Value | Effect |
 |---------|-------|--------|

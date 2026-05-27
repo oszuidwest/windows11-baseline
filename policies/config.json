@@ -151,6 +151,36 @@
       "ownership": ["shared"],
       "description": "Block all Edge extension installations"
     },
+    "user/browser/chrome-profile.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Chrome ephemeral profiles, no history, no sync"
+    },
+    "user/browser/chrome-privacy.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Chrome privacy, safe browsing, and telemetry defaults"
+    },
+    "user/browser/chrome-autofill.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Chrome password manager, autofill, passkeys, payments, and imports"
+    },
+    "user/browser/chrome-ui.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Block Chrome notifications/popups, set ZuidWest homepage, and remove promotional UI"
+    },
+    "user/browser/chrome-developer-tools.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared"],
+      "description": "Disable Chrome Developer Tools (F12)"
+    },
+    "user/browser/chrome-extensions.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Block all Chrome extension installations"
+    },
     "system/privacy/disable-activity-history.txt": {
       "purposes": ["all"],
       "ownership": ["all"],

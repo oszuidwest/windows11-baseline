@@ -21,7 +21,7 @@ policies/
 │   ├── security/                # Autorun, shutdown, NTLM, Defender
 │   └── windows-update/          # Auto-update configuration
 └── user/                        # User-level policies (HKCU, non-admin only)
-    ├── browser/                 # Edge: profile, privacy, autofill, UI, devtools, extensions
+    ├── browser/                 # Edge/Chrome: profile, privacy, autofill, UI, devtools, extensions
     ├── personalization/         # Wallpaper settings
     └── security/                # CMD, Registry, PowerShell, Run, Task Manager, Control Panel, Network
 ```
@@ -89,6 +89,12 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | user | browser | Edge UI | No Copilot, rewards, shopping; sets homepage | x | x | x |
 | user | browser | Edge developer tools | Disable F12 developer tools | x | | |
 | user | browser | Edge extensions | Block all extension installs | x | | |
+| user | browser | Chrome profile | Ephemeral profiles, no history/sync | x | | |
+| user | browser | Chrome privacy | Safe Browsing, no telemetry, no Privacy Sandbox ads | x | x | x |
+| user | browser | Chrome autofill | No passwords, passkeys, payments, imports | x | | |
+| user | browser | Chrome UI | No push notifications/popups; sets homepage | x | x | x |
+| user | browser | Chrome developer tools | Disable F12 developer tools | x | | |
+| user | browser | Chrome extensions | Block all extension installs | x | x | x |
 | user | personalization | Branded wallpaper | ZuidWest wallpaper (locked) | x | | |
 | user | personalization | Black wallpaper | Solid black background (locked) | | | x |
 | user | security | Disable Command Prompt | Block cmd.exe but allow batch files | x | | |
