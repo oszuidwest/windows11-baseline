@@ -43,34 +43,40 @@ catch {
 
 # Install DWService silently with agent code
 Write-Output "Installing DWService with agent code..."
+$maxMinutes = 5
 try {
     $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "key=$dwAgentCode" -PassThru
     Write-Output "  Installer started (PID: $($process.Id))"
 
-    # Poll every 60 seconds, max 5 minutes
-    $maxMinutes = 5
     for ($i = 1; $i -le $maxMinutes; $i++) {
-        $exited = $process.WaitForExit(60000)
-
-        if ($exited) {
-            Write-Output "  Installer exited with code: $($process.ExitCode)"
+        if ($process.WaitForExit(60000)) {
             break
         }
-        else {
-            Write-Output "  Still running after $i minute(s)..."
-        }
+        Write-Output "  Still running after $i minute(s)..."
     }
 
     if (-not $process.HasExited) {
-        Write-Warning "Installer still running after $maxMinutes minutes, killing process..."
-        $process.Kill()
+        $killed = $true
+        try {
+            $process.Kill()
+        }
+        catch {
+            $killed = $false
+            Write-Warning "Could not kill DWService installer (PID $($process.Id)): $($_.Exception.Message)"
+        }
+        $killState = if ($killed) { "process was killed" } else { "kill attempt failed (PID $($process.Id) may still be running)" }
+        throw "DWService installer did not exit within $maxMinutes minutes; $killState."
+    }
+
+    $exitCode = $process.ExitCode
+    Write-Output "  Installer exited with code: $exitCode"
+
+    if ($exitCode -ne 0) {
+        throw "DWService installer returned non-zero exit code $exitCode."
     }
 }
-catch {
-    throw "Failed to install DWService: $($_.Exception.Message)"
+finally {
+    Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 }
-
-# Clean up installer
-Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 
 Write-Output "DWService installation complete."

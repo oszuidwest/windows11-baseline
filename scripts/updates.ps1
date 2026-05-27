@@ -55,11 +55,23 @@ if ($updatesToDownload.Count -gt 0) {
     $downloader.Updates = $updatesToDownload
     try {
         $downloader.Download() | Out-Null
-        Write-Output "  Download complete."
+        Write-Output "  Download call returned."
     }
     catch {
-        Write-Warning "Download failed: $_"
+        throw "Windows Update download failed: $($_.Exception.Message)"
     }
+
+    $downloadedCount = 0
+    for ($idx = 0; $idx -lt $updatesToDownload.Count; $idx++) {
+        if ($updatesToDownload.Item($idx).IsDownloaded) {
+            $downloadedCount++
+        }
+    }
+    $missingCount = $updatesToDownload.Count - $downloadedCount
+    if ($missingCount -gt 0) {
+        throw "Windows Update reported $missingCount of $($updatesToDownload.Count) update(s) failed to download; refusing to install a partial set."
+    }
+    Write-Output "  All $downloadedCount update(s) downloaded."
 }
 
 # Create update collection for installation
@@ -70,6 +82,16 @@ foreach ($update in $updates) {
     }
 }
 
+# WUA OperationResultCode: 0=NotStarted, 1=InProgress, 2=Succeeded, 3=SucceededWithErrors, 4=Failed, 5=Aborted
+$resultCodeNames = @{
+    0 = 'NotStarted'
+    1 = 'InProgress'
+    2 = 'Succeeded'
+    3 = 'SucceededWithErrors'
+    4 = 'Failed'
+    5 = 'Aborted'
+}
+
 # Install updates
 if ($updatesToInstall.Count -gt 0) {
     Write-Output ""
@@ -78,17 +100,37 @@ if ($updatesToInstall.Count -gt 0) {
     $installer.Updates = $updatesToInstall
     try {
         $installResult = $installer.Install()
-
-        Write-Output "  Installation complete."
-        Write-Output "  Result code: $($installResult.ResultCode)"
-
-        if ($installResult.RebootRequired) {
-            Write-Output ""
-            Write-Warning "A reboot is required to complete the update installation."
-        }
     }
     catch {
-        throw "Installation failed: $($_.Exception.Message)"
+        throw "Windows Update install call failed: $($_.Exception.Message)"
+    }
+
+    $resultCode = [int]$installResult.ResultCode
+    $resultName = $resultCodeNames[$resultCode]
+    if (-not $resultName) { $resultName = "Unknown($resultCode)" }
+    Write-Output "  Install operation result: $resultName ($resultCode)"
+
+    if ($resultCode -ne 2) {
+        $failedTitles = @()
+        for ($idx = 0; $idx -lt $updatesToInstall.Count; $idx++) {
+            $perResult = $installResult.GetUpdateResult($idx)
+            $perCode = [int]$perResult.ResultCode
+            if ($perCode -ne 2) {
+                $hresult = "0x{0:X8}" -f ([int]$perResult.HResult)
+                $title = $updatesToInstall.Item($idx).Title
+                $perName = $resultCodeNames[$perCode]
+                if (-not $perName) { $perName = "Unknown($perCode)" }
+                $failedTitles += "  - $title ($perName, HRESULT $hresult)"
+            }
+        }
+
+        $detail = if ($failedTitles.Count -gt 0) { "`n" + ($failedTitles -join "`n") } else { "" }
+        throw "Windows Update install reported $resultName ($resultCode).$detail"
+    }
+
+    if ($installResult.RebootRequired) {
+        Write-Output ""
+        Write-Warning "A reboot is required to complete the update installation."
     }
 }
 

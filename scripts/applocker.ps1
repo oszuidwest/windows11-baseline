@@ -221,43 +221,34 @@ Write-Output ""
 # Step 1: Enable and start the Application Identity service
 Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
-try {
-    # Set service to start automatically using sc.exe (more reliable than Set-Service)
-    try {
-        Invoke-NativeCommand -FilePath "sc.exe" `
-            -Arguments @("config", "AppIDSvc", "start=", "auto") `
-            -FailureMessage "Failed to set AppIDSvc startup type" | Out-Null
-        Write-Output "  Service startup type set to Automatic"
-    }
-    catch {
-        Write-Warning $_.Exception.Message
-    }
+$service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
+if (-not $service) {
+    throw "AppIDSvc service not present on this system. AppLocker cannot be enforced without it (requires Windows Enterprise/Education/LTSC)."
+}
 
-    # Start the service if not running
-    $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
-    if ($service -and $service.Status -ne "Running") {
-        Invoke-NativeCommand -FilePath "sc.exe" `
-            -Arguments @("start", "AppIDSvc") `
-            -FailureMessage "Failed to start AppIDSvc" | Out-Null
+Invoke-NativeCommand -FilePath "sc.exe" `
+    -Arguments @("config", "AppIDSvc", "start=", "auto") `
+    -FailureMessage "Failed to set AppIDSvc startup type to Automatic" | Out-Null
+Write-Output "  Service startup type set to Automatic"
+
+if ($service.Status -ne "Running") {
+    Invoke-NativeCommand -FilePath "sc.exe" `
+        -Arguments @("start", "AppIDSvc") `
+        -FailureMessage "Failed to start AppIDSvc" | Out-Null
+
+    $deadline = (Get-Date).AddSeconds(30)
+    do {
         Start-Sleep -Seconds 2
         $service = Get-Service -Name "AppIDSvc"
-        if ($service.Status -eq "Running") {
-            Write-Output "  Service started successfully"
-        }
-        else {
-            Write-Warning "Service may not have started. Status: $($service.Status)"
-        }
+    } while ($service.Status -ne "Running" -and (Get-Date) -lt $deadline)
+
+    if ($service.Status -ne "Running") {
+        throw "AppIDSvc did not reach Running state within 30 seconds (current status: $($service.Status)). AppLocker rules would not be enforced."
     }
-    elseif ($service) {
-        Write-Output "  Service is already running"
-    }
-    else {
-        Write-Warning "AppIDSvc service not found"
-    }
+    Write-Output "  Service started successfully"
 }
-catch {
-    Write-Warning "Failed to configure AppIdSvc service: $_"
-    Write-Warning "AppLocker policies may not be enforced without this service"
+else {
+    Write-Output "  Service is already running"
 }
 
 Write-Output ""
@@ -282,15 +273,32 @@ Write-Output "Verifying AppLocker policy..."
 
 try {
     $policy = Get-AppLockerPolicy -Local -ErrorAction Stop
-    $exeRuleCount = ($policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }).Count
-    $appxRuleCount = ($policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }).Count
-
-    Write-Output "  Policy loaded successfully"
-    Write-Output "  Executable rule collections: $exeRuleCount"
-    Write-Output "  Packaged app rule collections: $appxRuleCount"
 }
 catch {
-    Write-Warning "Could not verify policy: $_"
+    throw "Could not read back local AppLocker policy after apply: $($_.Exception.Message)"
+}
+
+if (-not $policy -or -not $policy.RuleCollections) {
+    throw "Local AppLocker policy is empty after apply; enforcement would silently no-op."
+}
+
+$exeRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }
+$appxRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }
+$exeRuleCount = if ($exeRules) { ($exeRules | Measure-Object -Property Count -Sum).Sum } else { 0 }
+$appxRuleCount = if ($appxRules) { ($appxRules | Measure-Object -Property Count -Sum).Sum } else { 0 }
+
+Write-Output "  Executable rules: $exeRuleCount"
+Write-Output "  Packaged app rules: $appxRuleCount"
+
+if ($exeRuleCount -eq 0 -or $appxRuleCount -eq 0) {
+    throw "AppLocker policy applied but rule counts are empty (Exe=$exeRuleCount, Appx=$appxRuleCount); enforcement would silently no-op."
+}
+
+$managedCollections = @($policy.RuleCollections | Where-Object { $_.RuleCollectionType -in @("Exe", "Appx") })
+$nonEnforced = @($managedCollections | Where-Object { $_.EnforcementMode -ne "Enabled" })
+if ($nonEnforced.Count -gt 0) {
+    $modes = ($nonEnforced | ForEach-Object { "$($_.RuleCollectionType)=$($_.EnforcementMode)" }) -join ", "
+    throw "AppLocker rule collections not in Enabled enforcement mode: $modes. Rules would log but not block."
 }
 
 Write-Output ""

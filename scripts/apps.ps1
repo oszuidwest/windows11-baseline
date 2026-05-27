@@ -137,6 +137,8 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 Write-Output "Installing apps for '$systemPurpose'..."
 
+$failedApps = [System.Collections.Generic.List[string]]::new()
+
 # Install apps via winget
 foreach ($app in $apps) {
     # Skip special apps (handled separately)
@@ -147,8 +149,7 @@ foreach ($app in $apps) {
     $packageId = $appDefinitions[$app]
 
     if (-not $packageId) {
-        Write-Warning "Skipping '$app': not defined"
-        continue
+        throw "App '$app' is selected for purpose '$systemPurpose' but is not defined in the app catalog. This is a baseline bug; add it to either the winget definitions or the special-installer list."
     }
 
     Write-Output "Installing $app ($packageId)..."
@@ -159,6 +160,7 @@ foreach ($app in $apps) {
     }
     catch {
         Write-Warning $_.Exception.Message
+        $failedApps.Add($app)
     }
 }
 
@@ -170,32 +172,29 @@ if ($apps -contains "spotify") {
     $spotifyPath = "C:\Program Files\Spotify"
 
     try {
-        # Download Spotify installer
         Write-Output "  Downloading Spotify installer..."
         Invoke-Download -Uri "https://download.spotify.com/SpotifyFullSetup.exe" -OutFile $spotifyInstaller
 
-        # Extract to Program Files (machine-wide installation)
         Write-Output "  Extracting to $spotifyPath..."
         $process = Start-Process -FilePath $spotifyInstaller -ArgumentList "/extract `"$spotifyPath`"" -NoNewWindow -Wait -PassThru
 
-        if ($process.ExitCode -eq 0) {
-            Write-Output "  Spotify installed successfully"
-
-            # Create shortcuts
-            New-Shortcut -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk" `
-                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
-            Write-Output "  Start Menu shortcut created"
-
-            New-Shortcut -Path "C:\Users\Public\Desktop\Spotify.lnk" `
-                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
-            Write-Output "  Desktop shortcut created"
+        if ($process.ExitCode -ne 0) {
+            throw "Spotify installer returned exit code $($process.ExitCode)."
         }
-        else {
-            Write-Warning "Spotify installation failed (exit code: $($process.ExitCode))"
-        }
+
+        Write-Output "  Spotify installed successfully"
+
+        New-Shortcut -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk" `
+            -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
+        Write-Output "  Start Menu shortcut created"
+
+        New-Shortcut -Path "C:\Users\Public\Desktop\Spotify.lnk" `
+            -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
+        Write-Output "  Desktop shortcut created"
     }
     catch {
-        Write-Warning "Failed to install Spotify: $_"
+        Write-Warning "Failed to install Spotify: $($_.Exception.Message)"
+        $failedApps.Add("spotify")
     }
     finally {
         Remove-Item -Path $spotifyInstaller -Force -ErrorAction SilentlyContinue
@@ -211,39 +210,39 @@ if ($apps -contains "office") {
     $tempDir = Join-Path $env:TEMP "odt-install"
 
     if (-not (Test-Path $officeConfigPath)) {
-        Write-Warning "Office config file not found at $officeConfigPath"
+        throw "Office config file not found at $officeConfigPath (deployment package is incomplete)."
     }
-    else {
-        try {
-            # Create temp directory
-            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-            # Download Office Deployment Tool
-            Write-Output "  Downloading Office Deployment Tool..."
-            $odtExe = Join-Path $tempDir "odt.exe"
-            Invoke-Download -Uri $odtUrl -OutFile $odtExe
+    try {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
-            # Extract ODT (contains setup.exe)
-            Write-Output "  Extracting ODT..."
-            Invoke-NativeCommand -FilePath $odtExe `
-                -Arguments @("/extract:$tempDir", "/quiet") `
-                -FailureMessage "Failed to extract Office Deployment Tool" | Out-Null
+        Write-Output "  Downloading Office Deployment Tool..."
+        $odtExe = Join-Path $tempDir "odt.exe"
+        Invoke-Download -Uri $odtUrl -OutFile $odtExe
 
-            # Run setup.exe with config
-            $setupExe = Join-Path $tempDir "setup.exe"
-            Write-Output "  Running Office setup..."
-            Invoke-NativeCommand -FilePath $setupExe `
-                -Arguments @("/configure", $officeConfigPath) `
-                -FailureMessage "Failed to install Microsoft Office" | Out-Null
-            Write-Output "  Microsoft Office installed successfully"
-        }
-        catch {
-            Write-Warning "Failed to install Microsoft Office: $_"
-        }
-        finally {
-            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
+        Write-Output "  Extracting ODT..."
+        Invoke-NativeCommand -FilePath $odtExe `
+            -Arguments @("/extract:$tempDir", "/quiet") `
+            -FailureMessage "Failed to extract Office Deployment Tool" | Out-Null
+
+        $setupExe = Join-Path $tempDir "setup.exe"
+        Write-Output "  Running Office setup..."
+        Invoke-NativeCommand -FilePath $setupExe `
+            -Arguments @("/configure", $officeConfigPath) `
+            -FailureMessage "Failed to install Microsoft Office" | Out-Null
+        Write-Output "  Microsoft Office installed successfully"
     }
+    catch {
+        Write-Warning "Failed to install Microsoft Office: $($_.Exception.Message)"
+        $failedApps.Add("office")
+    }
+    finally {
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+if ($failedApps.Count -gt 0) {
+    throw "App installation failed for: $($failedApps -join ', '). The workstation is not deployment-ready for '$systemPurpose'; re-run with -OnlyRun apps after investigating."
 }
 
 Write-Output "Installation complete."

@@ -27,21 +27,6 @@ function Test-Admin {
     (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
 }
 
-function ConvertFrom-SecureStringToPlainText {
-    param (
-        [Parameter(Mandatory)]
-        [securestring]$SecureString
-    )
-
-    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureString)
-    try {
-        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-    }
-    finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-    }
-}
-
 $script:InstallLogPath = $null
 $script:InstallTranscriptStarted = $false
 
@@ -155,6 +140,50 @@ Write-Output ""
 Write-Output "This script will configure a Windows 11 system with the specified settings."
 Write-Output ""
 
+# Download before prompting so we can source _common.ps1 and validate the password input.
+$deployDir = "C:\Windows\deploy"
+$zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
+$zipFilePath = "$deployDir\main.zip"
+$sourceDir = "$deployDir\windows11-baseline-main"
+
+if (Test-Path $deployDir) {
+    Remove-Item -Path $deployDir -Recurse -Force
+}
+New-Item -Path $deployDir -ItemType Directory -Force | Out-Null
+
+try {
+    Write-Output "Downloading ZIP file from $zipUrl..."
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath -UseBasicParsing -ErrorAction Stop
+    Write-Output "Download complete. Extracting ZIP file..."
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
+    Write-Output "Extraction complete."
+}
+catch {
+    Write-FatalInstallError -Message "Failed to download or extract ZIP file." -ErrorRecord $_
+}
+
+Remove-Item -Path $zipFilePath -Force
+
+if (Test-Path $sourceDir) {
+    Write-Output "Moving contents from $sourceDir to $deployDir..."
+    Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
+    Remove-Item -Path $sourceDir -Recurse -Force
+    Write-Output "Contents moved and $sourceDir removed."
+}
+else {
+    Write-FatalInstallError -Message "$sourceDir does not exist. Exiting..."
+}
+
+$commonPath = Join-Path $deployDir "scripts\_common.ps1"
+if (-not (Test-Path $commonPath)) {
+    Write-FatalInstallError -Message "Shared helpers not found at $commonPath"
+}
+. $commonPath
+
+Write-Output ""
+
 # Valid options
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
@@ -168,7 +197,7 @@ $scriptRequirements = @{
     'dwservice'        = @('dwAgentCode')
     'hardening'        = @()
     'policies'         = @('systemPurpose', 'systemOwnership')
-    'power'            = @()
+    'power'            = @('systemPurpose', 'systemOwnership')
     'sounds'           = @()
     'time'             = @()
     'updates'          = @()
@@ -221,12 +250,6 @@ if ('workgroupName' -in $requiredParams -and -not $workgroupName) {
     $workgroupName = Read-Host -Prompt "Enter the workgroup name"
 }
 
-# Get user password (if required and not provided via parameter)
-if ('userPassword' -in $requiredParams -and -not $userPassword) {
-    $secureUserPassword = Read-Host -Prompt "Enter the user password" -AsSecureString
-    $userPassword = ConvertFrom-SecureStringToPlainText -SecureString $secureUserPassword
-}
-
 # For dedicated systems, ask if a user with auto-login should be created
 if ('dedicatedUserName' -in $requiredParams -and -not $dedicatedUserName -and $systemOwnership -eq "dedicated") {
     Write-Output ""
@@ -247,6 +270,25 @@ if ('personalUserName' -in $requiredParams -and -not $personalUserName -and $sys
     } while (-not $personalUserName)
 }
 
+# Resolve account name first so the password prompt can enforce the username-substring rule.
+$plannedUser = Resolve-DeploymentUserName -SystemPurpose $systemPurpose -SystemOwnership $systemOwnership `
+    -DedicatedUserName $dedicatedUserName -PersonalUserName $personalUserName
+
+if ('userPassword' -in $requiredParams -and $plannedUser.UserName) {
+    if ($userPassword) {
+        try {
+            Test-LocalUserPassword -Candidate $userPassword -AccountName $plannedUser.UserName
+        }
+        catch {
+            Write-FatalInstallError -Message "Password supplied via -userPassword does not meet policy: $($_.Exception.Message)"
+        }
+    }
+    else {
+        Write-Output ""
+        $userPassword = Read-DeploymentPassword -AccountName $plannedUser.UserName
+    }
+}
+
 # Get DWService agent code (if required and not provided via parameter)
 if ('dwAgentCode' -in $requiredParams -and -not $dwAgentCode) {
     Write-Output ""
@@ -255,46 +297,6 @@ if ('dwAgentCode' -in $requiredParams -and -not $dwAgentCode) {
 }
 
 Write-Output ""
-
-# Set deployment directory
-$deployDir = "C:\Windows\deploy"
-$zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
-$zipFilePath = "$deployDir\main.zip"
-$sourceDir = "$deployDir\windows11-baseline-main"
-
-# Clean up and recreate deployment directory
-if (Test-Path $deployDir) {
-    Remove-Item -Path $deployDir -Recurse -Force
-}
-New-Item -Path $deployDir -ItemType Directory -Force
-
-# Download and extract ZIP file
-try {
-    Write-Output "Downloading ZIP file from $zipUrl..."
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipFilePath -UseBasicParsing -ErrorAction Stop
-    Write-Output "Download complete. Extracting ZIP file..."
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFilePath, $deployDir)
-    Write-Output "Extraction complete."
-}
-catch {
-    Write-FatalInstallError -Message "Failed to download or extract ZIP file." -ErrorRecord $_
-}
-
-# Clean up the downloaded ZIP file
-Remove-Item -Path $zipFilePath -Force
-
-# Move extracted contents to root of deployDir
-if (Test-Path $sourceDir) {
-    Write-Output "Moving contents from $sourceDir to $deployDir..."
-    Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
-    Remove-Item -Path $sourceDir -Recurse -Force
-    Write-Output "Contents moved and $sourceDir removed."
-}
-else {
-    Write-FatalInstallError -Message "$sourceDir does not exist. Exiting..."
-}
 
 #===============================================================
 # Execute all scripts in the scripts directory

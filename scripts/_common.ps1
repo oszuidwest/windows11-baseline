@@ -109,3 +109,122 @@ function Invoke-Download {
         $ProgressPreference = $previousProgressPreference
     }
 }
+
+function ConvertFrom-SecureStringToPlainText {
+    param (
+        [Parameter(Mandatory)]
+        [securestring]$SecureString
+    )
+
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureString)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+}
+
+function Test-LocalUserPassword {
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string]$Candidate,
+
+        [Parameter(Mandatory)]
+        [string]$AccountName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Candidate)) {
+        throw "A password is required when creating '$AccountName'."
+    }
+
+    if ($Candidate.Length -lt 8) {
+        throw "The password for '$AccountName' must be at least 8 characters."
+    }
+
+    $characterClasses = 0
+    if ($Candidate -cmatch "[A-Z]") { $characterClasses++ }
+    if ($Candidate -cmatch "[a-z]") { $characterClasses++ }
+    if ($Candidate -match "\d") { $characterClasses++ }
+    if ($Candidate -match "[^a-zA-Z\d]") { $characterClasses++ }
+
+    if ($characterClasses -lt 3) {
+        throw "The password for '$AccountName' must contain characters from at least 3 of these groups: uppercase, lowercase, numbers, symbols."
+    }
+
+    $userNameParts = @($AccountName -split "[\s._-]+" | Where-Object { $_.Length -ge 3 })
+    foreach ($userNamePart in $userNameParts) {
+        if ($Candidate.IndexOf($userNamePart, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            throw "The password for '$AccountName' must not contain username part '$userNamePart'."
+        }
+    }
+}
+
+function Resolve-DeploymentUserName {
+    param (
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string]$SystemPurpose,
+
+        [Parameter(Mandatory)]
+        [AllowEmptyString()]
+        [string]$SystemOwnership,
+
+        [AllowEmptyString()]
+        [string]$DedicatedUserName,
+
+        [AllowEmptyString()]
+        [string]$PersonalUserName
+    )
+
+    $purpose = $SystemPurpose.ToLower()
+    $ownership = $SystemOwnership.ToLower()
+
+    if ($ownership -eq "dedicated" -and $DedicatedUserName) {
+        return [pscustomobject]@{ UserName = $DedicatedUserName; EnableAutoLogin = $true }
+    }
+
+    if ($ownership -eq "personal" -and $PersonalUserName) {
+        return [pscustomobject]@{ UserName = $PersonalUserName; EnableAutoLogin = $false }
+    }
+
+    if ($ownership -eq "shared") {
+        $sharedUserName = switch ($purpose) {
+            'editorial' { "Redactie Gebruiker" }
+            'tv' { "Studio Gebruiker" }
+            'radio' { "Studio Gebruiker" }
+            default { "" }
+        }
+        return [pscustomobject]@{ UserName = $sharedUserName; EnableAutoLogin = ($purpose -ne "plain") }
+    }
+
+    return [pscustomobject]@{ UserName = ""; EnableAutoLogin = $false }
+}
+
+function Read-DeploymentPassword {
+    param (
+        [Parameter(Mandatory)]
+        [string]$AccountName,
+
+        [string]$Prompt = "Enter the user password"
+    )
+
+    Write-Output "Password requirements for '$AccountName':"
+    Write-Output "  - At least 8 characters"
+    Write-Output "  - Characters from at least 3 of: uppercase, lowercase, numbers, symbols"
+    Write-Output "  - Must not contain parts of the username"
+
+    while ($true) {
+        $secure = Read-Host -Prompt $Prompt -AsSecureString
+        $candidate = ConvertFrom-SecureStringToPlainText -SecureString $secure
+        try {
+            Test-LocalUserPassword -Candidate $candidate -AccountName $AccountName
+            return $candidate
+        }
+        catch {
+            Write-Warning $_.Exception.Message
+            Write-Output ""
+        }
+    }
+}
