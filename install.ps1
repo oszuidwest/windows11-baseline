@@ -188,21 +188,24 @@ Write-Output ""
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
 
-# Script requirements mapping - which parameters each script needs
-$scriptRequirements = @{
-    'debloat'          = @('systemPurpose', 'systemOwnership')
-    'securitybaseline' = @()
-    'applocker'        = @('systemOwnership')
-    'apps'             = @('systemPurpose', 'systemOwnership')
-    'dwservice'        = @('dwAgentCode')
-    'hardening'        = @()
-    'policies'         = @('systemPurpose', 'systemOwnership')
-    'power'            = @('systemPurpose', 'systemOwnership')
-    'sounds'           = @()
-    'time'             = @()
-    'updates'          = @()
-    'users'            = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
-    'workgroupname'    = @('computerName', 'workgroupName')
+# Derive each script's required params from its param() block; a hand-maintained map drifted and silently broke power.ps1.
+$scriptsDir = Join-Path $deployDir "scripts"
+$scriptRequirements = @{}
+Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
+    Where-Object { $_.BaseName -ne "_common" } |
+    ForEach-Object {
+        $scriptName = $_.BaseName -replace '^_', ''
+        $scriptRequirements[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
+    }
+
+# Reverse-drift check: a script param that install.ps1 cannot supply would otherwise splat $null silently.
+$installerParams = @(Get-ScriptParameterNames -Path $PSCommandPath | Where-Object { $_ -ne 'OnlyRun' })
+foreach ($script in $scriptRequirements.Keys) {
+    foreach ($paramName in $scriptRequirements[$script]) {
+        if ($paramName -notin $installerParams) {
+            Write-FatalInstallError -Message "Script '$script' declares parameter -$paramName but install.ps1 does not collect it. Add it to install.ps1's param() block."
+        }
+    }
 }
 
 # Determine which parameters are required based on -OnlyRun
@@ -302,71 +305,61 @@ Write-Output ""
 # Execute all scripts in the scripts directory
 #===============================================================
 
-$scriptsDir = "$deployDir\scripts"
+if (-not (Test-Path $scriptsDir)) {
+    Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
+}
 
-# Check if the scripts directory exists
-if (Test-Path $scriptsDir) {
-    # Get executable .ps1 files in the scripts directory (sorted alphabetically)
-    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
-        Where-Object { $_.BaseName -ne "_common" } |
-        Sort-Object Name
+$allParams = @{
+    systemPurpose     = $systemPurpose
+    systemOwnership   = $systemOwnership
+    userPassword      = $userPassword
+    computerName      = $computerName
+    workgroupName     = $workgroupName
+    dwAgentCode       = $dwAgentCode
+    dedicatedUserName = $dedicatedUserName
+    personalUserName  = $personalUserName
+}
 
-    foreach ($scriptFile in $scriptFiles) {
-        # Get script name without extension and underscore prefix (e.g., "_debloat.ps1" -> "debloat")
-        $scriptName = $scriptFile.BaseName -replace '^_', ''
+$scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
+    Where-Object { $_.BaseName -ne "_common" } |
+    Sort-Object Name
 
-        # Skip scripts not in -OnlyRun list (if specified)
-        if ($OnlyRun -and $scriptName -notin $OnlyRun) {
-            Write-Output "Skipping: $($scriptFile.Name) (not in -OnlyRun list)"
-            continue
-        }
+foreach ($scriptFile in $scriptFiles) {
+    # Get script name without extension and underscore prefix (e.g., "_debloat.ps1" -> "debloat")
+    $scriptName = $scriptFile.BaseName -replace '^_', ''
 
-        Write-Output ""
-        Write-Output "=========================================="
-        Write-Output "Running: $($scriptFile.Name)"
-        Write-Output "=========================================="
-
-        $allParams = @{
-            systemPurpose     = $systemPurpose
-            systemOwnership   = $systemOwnership
-            userPassword      = $userPassword
-            computerName      = $computerName
-            workgroupName     = $workgroupName
-            dwAgentCode       = $dwAgentCode
-            dedicatedUserName = $dedicatedUserName
-            personalUserName  = $personalUserName
-        }
-
-        $scriptParams = @{}
-        if ($scriptRequirements.ContainsKey($scriptName)) {
-            foreach ($paramName in $scriptRequirements[$scriptName]) {
-                $scriptParams[$paramName] = $allParams[$paramName]
-            }
-        }
-        else {
-            $scriptParams = $allParams
-        }
-
-        try {
-            & $scriptFile.FullName @scriptParams
-        }
-        catch {
-            Write-FatalInstallError -Message "Failed to execute script: $($scriptFile.Name)" -ErrorRecord $_
-        }
+    # Skip scripts not in -OnlyRun list (if specified)
+    if ($OnlyRun -and $scriptName -notin $OnlyRun) {
+        Write-Output "Skipping: $($scriptFile.Name) (not in -OnlyRun list)"
+        continue
     }
 
     Write-Output ""
     Write-Output "=========================================="
-    if ($OnlyRun) {
-        Write-Output "Selected scripts completed: $($OnlyRun -join ', ')"
-    }
-    else {
-        Write-Output "All scripts completed."
-    }
+    Write-Output "Running: $($scriptFile.Name)"
     Write-Output "=========================================="
+
+    $scriptParams = @{}
+    foreach ($paramName in $scriptRequirements[$scriptName]) {
+        $scriptParams[$paramName] = $allParams[$paramName]
+    }
+
+    try {
+        & $scriptFile.FullName @scriptParams
+    }
+    catch {
+        Write-FatalInstallError -Message "Failed to execute script: $($scriptFile.Name)" -ErrorRecord $_
+    }
+}
+
+Write-Output ""
+Write-Output "=========================================="
+if ($OnlyRun) {
+    Write-Output "Selected scripts completed: $($OnlyRun -join ', ')"
 }
 else {
-    Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
+    Write-Output "All scripts completed."
 }
+Write-Output "=========================================="
 
 Complete-Install

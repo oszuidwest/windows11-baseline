@@ -110,6 +110,24 @@ function Invoke-Download {
     }
 }
 
+function Get-ScriptParameterNames {
+    [OutputType([string[]])]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $parseErrors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$null, [ref]$parseErrors)
+    if ($parseErrors) {
+        throw "PowerShell parse errors in $($Path): $($parseErrors -join '; ')"
+    }
+    if (-not $ast.ParamBlock) {
+        return @()
+    }
+    return @($ast.ParamBlock.Parameters | ForEach-Object { $_.Name.VariablePath.UserPath })
+}
+
 function ConvertFrom-SecureStringToPlainText {
     param (
         [Parameter(Mandatory)]
