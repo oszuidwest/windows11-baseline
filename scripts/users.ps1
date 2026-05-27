@@ -2,7 +2,7 @@
 param (
     [string]$systemPurpose,
     [string]$systemOwnership,
-    [string]$userPassword,
+    [securestring]$userPassword,
     [string]$dedicatedUserName,
     [string]$personalUserName
 )
@@ -28,6 +28,21 @@ function Get-LocalizedUsersGroupName {
     return $usersGroupFull.Split('\')[-1]
 }
 
+function Invoke-SensitiveUserOperation {
+    param (
+        [Parameter(Mandatory)]
+        [scriptblock]$ScriptBlock
+    )
+
+    $transcriptSuspender = Get-Command -Name Invoke-WithInstallTranscriptSuspended -ErrorAction SilentlyContinue
+    if ($transcriptSuspender) {
+        Invoke-WithInstallTranscriptSuspended -ScriptBlock $ScriptBlock
+        return
+    }
+
+    & $ScriptBlock
+}
+
 function Add-UserToUsersGroup {
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -36,7 +51,12 @@ function Add-UserToUsersGroup {
     )
 
     $usersGroup = Get-LocalizedUsersGroupName
-    $members = Get-LocalGroupMember -Group $usersGroup -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+    try {
+        $members = @(Get-LocalGroupMember -Group $usersGroup -ErrorAction Stop | Select-Object -ExpandProperty Name)
+    }
+    catch {
+        throw "Could not read members of local group '$usersGroup': $($_.Exception.Message)"
+    }
 
     if ($members -notcontains "$env:COMPUTERNAME\$UserName") {
         if ($PSCmdlet.ShouldProcess($UserName, "Add to $usersGroup group")) {
@@ -51,16 +71,16 @@ $resolved = Resolve-DeploymentUserName -SystemPurpose $systemPurpose -SystemOwne
 $userName = $resolved.UserName
 $enableAutoLogin = $resolved.EnableAutoLogin
 
-# Create or sync the local user account
 if ($userName) {
-    Test-LocalUserPassword -Candidate $userPassword -AccountName $userName
-    $securePassword = ConvertTo-SecureString -String $userPassword -AsPlainText -Force
+    Test-LocalUserPassword -SecurePassword $userPassword -AccountName $userName
     $existingUser = Get-LocalUser -Name $userName -ErrorAction SilentlyContinue
 
     if (-not $existingUser) {
         Write-Output "Creating local user: $userName"
         try {
-            New-LocalUser -Name $userName -Password $securePassword -FullName $userName -Description "User created by deployment script" -ErrorAction Stop
+            Invoke-SensitiveUserOperation -ScriptBlock {
+                New-LocalUser -Name $userName -Password $userPassword -FullName $userName -Description "User created by deployment script" -ErrorAction Stop
+            }
             Add-UserToUsersGroup -UserName $userName
             Write-Output "  User created."
         }
@@ -71,7 +91,9 @@ if ($userName) {
     else {
         Write-Output "User '$userName' already exists; syncing password and group membership."
         try {
-            Set-LocalUser -Name $userName -Password $securePassword -ErrorAction Stop
+            Invoke-SensitiveUserOperation -ScriptBlock {
+                Set-LocalUser -Name $userName -Password $userPassword -ErrorAction Stop
+            }
             Write-Output "  Password synced with deployment input."
         }
         catch {
@@ -92,12 +114,15 @@ $regPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
 if ($userName -and $enableAutoLogin) {
     Write-Output "Configuring auto-login for: $userName"
     try {
-        if ([string]::IsNullOrWhiteSpace($userPassword)) {
+        if (-not $userPassword) {
             throw "A password is required for auto-login."
         }
 
         Set-ItemProperty -Path $regPath -Name "DefaultUserName" -Value $userName -Force -ErrorAction Stop
-        Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $userPassword -Force -ErrorAction Stop
+        Invoke-SensitiveUserOperation -ScriptBlock {
+            $plainPassword = ConvertFrom-SecureStringToPlainText -SecureString $userPassword
+            Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $plainPassword -Force -ErrorAction Stop
+        }
         Set-ItemProperty -Path $regPath -Name "AutoAdminLogon" -Value 1 -Force -ErrorAction Stop
         Write-Output "  Auto-login configured."
     }
@@ -108,13 +133,8 @@ if ($userName -and $enableAutoLogin) {
 
 # Set maximum password age to unlimited
 Write-Output "Setting password policy (max age unlimited)..."
-try {
-    Invoke-NativeCommand -FilePath "net.exe" `
-        -Arguments @("accounts", "/maxpwage:unlimited") `
-        -FailureMessage "Failed to set password policy" | Out-Null
-}
-catch {
-    Write-Warning $_.Exception.Message
-}
+Invoke-NativeCommand -FilePath "net.exe" `
+    -Arguments @("accounts", "/maxpwage:unlimited") `
+    -FailureMessage "Failed to set password policy" | Out-Null
 
 Write-Output "User settings configured."

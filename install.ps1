@@ -11,7 +11,7 @@ param(
 
     [string]$computerName,
     [string]$workgroupName,
-    [string]$userPassword,
+    [securestring]$userPassword,
     [string]$dwAgentCode,
     [string]$dedicatedUserName,
     [string]$personalUserName,
@@ -70,6 +70,55 @@ function Close-InstallLog {
         finally {
             $script:InstallTranscriptStarted = $false
         }
+    }
+}
+
+function Suspend-InstallLog {
+    if (-not $script:InstallTranscriptStarted) {
+        return $false
+    }
+
+    try {
+        Stop-Transcript | Out-Null
+        $script:InstallTranscriptStarted = $false
+        return $true
+    }
+    catch {
+        throw "Could not suspend transcript before sensitive operation: $($_.Exception.Message)"
+    }
+}
+
+function Resume-InstallLog {
+    param (
+        [bool]$WasStarted
+    )
+
+    if (-not $WasStarted -or -not $script:InstallLogPath) {
+        return
+    }
+
+    try {
+        Start-Transcript -Path $script:InstallLogPath -Append -Force | Out-Null
+        $script:InstallTranscriptStarted = $true
+    }
+    catch {
+        Write-Warning "Could not resume transcript logging: $($_.Exception.Message)"
+        $script:InstallTranscriptStarted = $false
+    }
+}
+
+function Invoke-WithInstallTranscriptSuspended {
+    param (
+        [Parameter(Mandatory)]
+        [scriptblock]$ScriptBlock
+    )
+
+    $wasStarted = Suspend-InstallLog
+    try {
+        & $ScriptBlock
+    }
+    finally {
+        Resume-InstallLog -WasStarted $wasStarted
     }
 }
 
@@ -188,15 +237,22 @@ Write-Output ""
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
 
-# Derive each script's required params from its param() block; a hand-maintained map drifted and silently broke power.ps1.
+# Derive requirements from each script's param() block so prompting and splatting stay in sync.
 $scriptsDir = Join-Path $deployDir "scripts"
+if (-not (Test-Path $scriptsDir)) {
+    Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
+}
+
+$scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
+        Where-Object { $_.BaseName -ne "_common" } |
+        Sort-Object Name)
+
 $scriptRequirements = @{}
-Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
-    Where-Object { $_.BaseName -ne "_common" } |
-    ForEach-Object {
-        $scriptName = $_.BaseName -replace '^_', ''
-        $scriptRequirements[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
-    }
+$scriptFiles | ForEach-Object {
+    # Public script names strip a leading ordering underscore: _securitybaseline.ps1 -> securitybaseline.
+    $scriptName = $_.BaseName -replace '^_', ''
+    $scriptRequirements[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
+}
 
 # Reverse-drift check: a script param that install.ps1 cannot supply would otherwise splat $null silently.
 $installerParams = @(Get-ScriptParameterNames -Path $PSCommandPath | Where-Object { $_ -ne 'OnlyRun' })
@@ -280,7 +336,7 @@ $plannedUser = Resolve-DeploymentUserName -SystemPurpose $systemPurpose -SystemO
 if ('userPassword' -in $requiredParams -and $plannedUser.UserName) {
     if ($userPassword) {
         try {
-            Test-LocalUserPassword -Candidate $userPassword -AccountName $plannedUser.UserName
+            Test-LocalUserPassword -SecurePassword $userPassword -AccountName $plannedUser.UserName
         }
         catch {
             Write-FatalInstallError -Message "Password supplied via -userPassword does not meet policy: $($_.Exception.Message)"
@@ -305,10 +361,6 @@ Write-Output ""
 # Execute all scripts in the scripts directory
 #===============================================================
 
-if (-not (Test-Path $scriptsDir)) {
-    Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
-}
-
 $allParams = @{
     systemPurpose     = $systemPurpose
     systemOwnership   = $systemOwnership
@@ -320,12 +372,7 @@ $allParams = @{
     personalUserName  = $personalUserName
 }
 
-$scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
-    Where-Object { $_.BaseName -ne "_common" } |
-    Sort-Object Name
-
 foreach ($scriptFile in $scriptFiles) {
-    # Get script name without extension and underscore prefix (e.g., "_debloat.ps1" -> "debloat")
     $scriptName = $scriptFile.BaseName -replace '^_', ''
 
     # Skip scripts not in -OnlyRun list (if specified)

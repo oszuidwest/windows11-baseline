@@ -101,7 +101,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
         Write-Output "  Installing dependencies for $arch..."
         Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | ForEach-Object {
-            Add-AppxPackage -Path $_.FullName -ErrorAction SilentlyContinue
+            Add-AppxPackage -Path $_.FullName -ErrorAction Stop
         }
 
         # Download winget msixbundle and license
@@ -168,8 +168,7 @@ foreach ($app in $apps) {
             -FailureMessage "Failed to install $app" | Out-Null
     }
     catch {
-        Write-Warning $_.Exception.Message
-        $failedApps.Add($app)
+        $failedApps.Add("$app ($($_.Exception.Message))")
     }
 }
 
@@ -202,8 +201,7 @@ if ($apps -contains "spotify") {
         Write-Output "  Desktop shortcut created"
     }
     catch {
-        Write-Warning "Failed to install Spotify: $($_.Exception.Message)"
-        $failedApps.Add("spotify")
+        $failedApps.Add("spotify ($($_.Exception.Message))")
     }
     finally {
         Remove-Item -Path $spotifyInstaller -Force -ErrorAction SilentlyContinue
@@ -242,8 +240,7 @@ if ($apps -contains "office") {
         Write-Output "  Microsoft Office installed successfully"
     }
     catch {
-        Write-Warning "Failed to install Microsoft Office: $($_.Exception.Message)"
-        $failedApps.Add("office")
+        $failedApps.Add("office ($($_.Exception.Message))")
     }
     finally {
         Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -251,10 +248,8 @@ if ($apps -contains "office") {
 }
 
 if ($failedApps.Count -gt 0) {
-    throw "App installation failed for: $($failedApps -join ', '). The workstation is not deployment-ready for '$systemPurpose'; re-run with -OnlyRun apps after investigating."
+    throw "App installation failed for: $($failedApps -join '; '). The workstation is not deployment-ready for '$systemPurpose'; re-run with -OnlyRun apps after investigating."
 }
-
-Write-Output "Installation complete."
 
 # Create WhatsApp Web shortcut (InPrivate mode) for shared computers
 if ($systemOwnership -eq "shared") {
@@ -284,3 +279,5 @@ if ($systemOwnership -eq "shared") {
 
     Write-Output "WhatsApp Web shortcut created on Public Desktop."
 }
+
+Write-Output "Installation complete."

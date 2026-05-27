@@ -1,5 +1,7 @@
 param()
 
+. (Join-Path $PSScriptRoot "_common.ps1")
+
 <#
 .SYNOPSIS
     Checks for and installs Windows updates.
@@ -13,16 +15,6 @@ param()
 #>
 
 Write-Output "Checking for Windows updates..."
-
-# WUA OperationResultCode: 0=NotStarted, 1=InProgress, 2=Succeeded, 3=SucceededWithErrors, 4=Failed, 5=Aborted
-$resultCodeNames = @{
-    0 = 'NotStarted'
-    1 = 'InProgress'
-    2 = 'Succeeded'
-    3 = 'SucceededWithErrors'
-    4 = 'Failed'
-    5 = 'Aborted'
-}
 
 # Create Windows Update Session
 $updateSession = New-Object -ComObject Microsoft.Update.Session
@@ -71,25 +63,12 @@ if ($updatesToDownload.Count -gt 0) {
     }
 
     $downloadCode = [int]$downloadResult.ResultCode
-    $downloadName = $resultCodeNames[$downloadCode]
-    if (-not $downloadName) { $downloadName = "Unknown($downloadCode)" }
+    $downloadName = Get-WuaOperationResultName -ResultCode $downloadCode
     Write-Output "  Download operation result: $downloadName ($downloadCode)"
 
     if ($downloadCode -ne 2) {
-        $failedTitles = @()
-        for ($idx = 0; $idx -lt $updatesToDownload.Count; $idx++) {
-            $perResult = $downloadResult.GetUpdateResult($idx)
-            $perCode = [int]$perResult.ResultCode
-            if ($perCode -ne 2) {
-                $hresult = "0x{0:X8}" -f ([int]$perResult.HResult)
-                $title = $updatesToDownload.Item($idx).Title
-                $perName = $resultCodeNames[$perCode]
-                if (-not $perName) { $perName = "Unknown($perCode)" }
-                $failedTitles += "  - $title ($perName, HRESULT $hresult)"
-            }
-        }
-
-        $detail = if ($failedTitles.Count -gt 0) { "`n" + ($failedTitles -join "`n") } else { "" }
+        $failedUpdates = @(Get-WuaFailedUpdateDetails -OperationResult $downloadResult -Updates $updatesToDownload)
+        $detail = if ($failedUpdates.Count -gt 0) { "`n" + ($failedUpdates -join "`n") } else { "" }
         throw "Windows Update download reported $downloadName ($downloadCode).$detail"
     }
 
@@ -128,25 +107,12 @@ if ($updatesToInstall.Count -gt 0) {
     }
 
     $resultCode = [int]$installResult.ResultCode
-    $resultName = $resultCodeNames[$resultCode]
-    if (-not $resultName) { $resultName = "Unknown($resultCode)" }
+    $resultName = Get-WuaOperationResultName -ResultCode $resultCode
     Write-Output "  Install operation result: $resultName ($resultCode)"
 
     if ($resultCode -ne 2) {
-        $failedTitles = @()
-        for ($idx = 0; $idx -lt $updatesToInstall.Count; $idx++) {
-            $perResult = $installResult.GetUpdateResult($idx)
-            $perCode = [int]$perResult.ResultCode
-            if ($perCode -ne 2) {
-                $hresult = "0x{0:X8}" -f ([int]$perResult.HResult)
-                $title = $updatesToInstall.Item($idx).Title
-                $perName = $resultCodeNames[$perCode]
-                if (-not $perName) { $perName = "Unknown($perCode)" }
-                $failedTitles += "  - $title ($perName, HRESULT $hresult)"
-            }
-        }
-
-        $detail = if ($failedTitles.Count -gt 0) { "`n" + ($failedTitles -join "`n") } else { "" }
+        $failedUpdates = @(Get-WuaFailedUpdateDetails -OperationResult $installResult -Updates $updatesToInstall)
+        $detail = if ($failedUpdates.Count -gt 0) { "`n" + ($failedUpdates -join "`n") } else { "" }
         throw "Windows Update install reported $resultName ($resultCode).$detail"
     }
 

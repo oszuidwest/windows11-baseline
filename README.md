@@ -22,6 +22,13 @@ The installer prompts for:
 - **Create user with auto-login?** (dedicated only)
 - **DWService agent code** (optional)
 
+For non-interactive runs, `-userPassword` expects a `SecureString`:
+
+```powershell
+$securePassword = ConvertTo-SecureString 'ReplaceWithDeploymentPassword' -AsPlainText -Force
+& $env:TEMP\install.ps1 -systemPurpose 'radio' -systemOwnership 'shared' -userPassword $securePassword
+```
+
 ### Updating Existing Systems
 
 Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems:

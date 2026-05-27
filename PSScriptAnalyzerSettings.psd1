@@ -8,12 +8,6 @@
         # Write-Host is acceptable for user-facing deployment scripts
         'PSAvoidUsingWriteHost',
 
-        # False positive: triggers on parameter names like $userPassword, not hardcoded passwords
-        'PSAvoidUsingPlainTextForPassword',
-
-        # Deployment scripts receive passwords as strings from Read-Host, conversion is unavoidable
-        'PSAvoidUsingConvertToSecureStringWithPlainText',
-
         # Functions like Get-ApplicablePolicies are clearer with plural nouns in this context
         'PSUseSingularNouns'
     )

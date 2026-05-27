@@ -146,26 +146,27 @@ function ConvertFrom-SecureStringToPlainText {
 function Test-LocalUserPassword {
     param (
         [Parameter(Mandatory)]
-        [AllowEmptyString()]
-        [string]$Candidate,
+        [securestring]$SecurePassword,
 
         [Parameter(Mandatory)]
         [string]$AccountName
     )
 
-    if ([string]::IsNullOrWhiteSpace($Candidate)) {
+    $plainPassword = ConvertFrom-SecureStringToPlainText -SecureString $SecurePassword
+
+    if ([string]::IsNullOrWhiteSpace($plainPassword)) {
         throw "A password is required when creating '$AccountName'."
     }
 
-    if ($Candidate.Length -lt 8) {
+    if ($plainPassword.Length -lt 8) {
         throw "The password for '$AccountName' must be at least 8 characters."
     }
 
     $characterClasses = 0
-    if ($Candidate -cmatch "[A-Z]") { $characterClasses++ }
-    if ($Candidate -cmatch "[a-z]") { $characterClasses++ }
-    if ($Candidate -match "\d") { $characterClasses++ }
-    if ($Candidate -match "[^a-zA-Z\d]") { $characterClasses++ }
+    if ($plainPassword -cmatch "[A-Z]") { $characterClasses++ }
+    if ($plainPassword -cmatch "[a-z]") { $characterClasses++ }
+    if ($plainPassword -match "\d") { $characterClasses++ }
+    if ($plainPassword -match "[^a-zA-Z\d]") { $characterClasses++ }
 
     if ($characterClasses -lt 3) {
         throw "The password for '$AccountName' must contain characters from at least 3 of these groups: uppercase, lowercase, numbers, symbols."
@@ -173,7 +174,7 @@ function Test-LocalUserPassword {
 
     $userNameParts = @($AccountName -split "[\s._-]+" | Where-Object { $_.Length -ge 3 })
     foreach ($userNamePart in $userNameParts) {
-        if ($Candidate.IndexOf($userNamePart, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        if ($plainPassword.IndexOf($userNamePart, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
             throw "The password for '$AccountName' must not contain username part '$userNamePart'."
         }
     }
@@ -234,15 +235,60 @@ function Read-DeploymentPassword {
     Write-Output "  - Must not contain parts of the username"
 
     while ($true) {
-        $secure = Read-Host -Prompt $Prompt -AsSecureString
-        $candidate = ConvertFrom-SecureStringToPlainText -SecureString $secure
+        $securePassword = Read-Host -Prompt $Prompt -AsSecureString
         try {
-            Test-LocalUserPassword -Candidate $candidate -AccountName $AccountName
-            return $candidate
+            Test-LocalUserPassword -SecurePassword $securePassword -AccountName $AccountName
+            return $securePassword
         }
         catch {
             Write-Warning $_.Exception.Message
             Write-Output ""
         }
     }
+}
+
+function Get-WuaOperationResultName {
+    param (
+        [Parameter(Mandatory)]
+        [int]$ResultCode
+    )
+
+    $resultCodeNames = @{
+        0 = 'NotStarted'
+        1 = 'InProgress'
+        2 = 'Succeeded'
+        3 = 'SucceededWithErrors'
+        4 = 'Failed'
+        5 = 'Aborted'
+    }
+
+    $resultName = $resultCodeNames[$ResultCode]
+    if (-not $resultName) {
+        return "Unknown($ResultCode)"
+    }
+    return $resultName
+}
+
+function Get-WuaFailedUpdateDetails {
+    param (
+        [Parameter(Mandatory)]
+        $OperationResult,
+
+        [Parameter(Mandatory)]
+        $Updates
+    )
+
+    $failedUpdates = @()
+    for ($idx = 0; $idx -lt $Updates.Count; $idx++) {
+        $perUpdateResult = $OperationResult.GetUpdateResult($idx)
+        $perUpdateCode = [int]$perUpdateResult.ResultCode
+        if ($perUpdateCode -ne 2) {
+            $hresult = "0x{0:X8}" -f ([int]$perUpdateResult.HResult)
+            $title = $Updates.Item($idx).Title
+            $perUpdateName = Get-WuaOperationResultName -ResultCode $perUpdateCode
+            $failedUpdates += "  - $title ($perUpdateName, HRESULT $hresult)"
+        }
+    }
+
+    return @($failedUpdates)
 }

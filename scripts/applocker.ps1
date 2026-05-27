@@ -284,8 +284,8 @@ if (-not $policy -or -not $policy.RuleCollections) {
 
 $exeRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }
 $appxRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }
-$exeRuleCount = if ($exeRules) { ($exeRules | Measure-Object -Property Count -Sum).Sum } else { 0 }
-$appxRuleCount = if ($appxRules) { ($appxRules | Measure-Object -Property Count -Sum).Sum } else { 0 }
+$exeRuleCount = if ($exeRules) { ($exeRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
+$appxRuleCount = if ($appxRules) { ($appxRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
 
 Write-Output "  Executable rules: $exeRuleCount"
 Write-Output "  Packaged app rules: $appxRuleCount"
