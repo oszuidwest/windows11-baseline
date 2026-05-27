@@ -81,7 +81,7 @@ Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
 - **Branded wallpaper** at `C:\ProgramData\ZuidWest\wallpaper\wallpaper.png` (locked, cannot be changed)
 - **Microsoft Store and StoreInstaller.exe blocked** via AppLocker (defense-in-depth on top of the debloat-phase appx removal that applies to all systems)
-- **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
+- **Edge/Chrome lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
 - **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R), Task Manager
 - **Settings blocked** - Control Panel, Settings app, network connection properties
 - **Privacy hardening** - clipboard history disabled, no data persistence

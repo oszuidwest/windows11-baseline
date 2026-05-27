@@ -1,0 +1,5 @@
+User
+Software\Policies\Google\Chrome\ExtensionInstallBlocklist
+1
+SZ:*
+
