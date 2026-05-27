@@ -33,6 +33,40 @@ $baselineGpoNames = @(
     "MSFT Windows 11 24H2 - User"
 )
 
+function ConvertTo-CmdArgument {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Argument
+    )
+
+    if ($Argument -match '[\s"]') {
+        return '"' + ($Argument -replace '"', '\"') + '"'
+    }
+
+    return $Argument
+}
+
+function Invoke-Lgpo {
+    param (
+        [Parameter(Mandatory)]
+        [string[]]$Arguments,
+
+        [Parameter(Mandatory)]
+        [string]$FailureMessage
+    )
+
+    # Microsoft runs LGPO through cmd.exe so stderr is captured as text instead
+    # of becoming a PowerShell RemoteException when $ErrorActionPreference is Stop.
+    $argumentLine = ($Arguments | ForEach-Object { ConvertTo-CmdArgument -Argument $_ }) -join " "
+    $commandLine = "$(ConvertTo-CmdArgument -Argument $lgpoPath) $argumentLine 2>&1"
+    $result = cmd.exe /d /c $commandLine
+
+    if ($LASTEXITCODE -ne 0) {
+        $result | Write-Output
+        throw "$FailureMessage with exit code $LASTEXITCODE"
+    }
+}
+
 Write-Output "=== Microsoft Windows 11 24H2 Security Baseline ==="
 Write-Output ""
 
@@ -105,11 +139,9 @@ try {
     Copy-Item -Path (Join-Path (Join-Path $templatesPath "en-US") "*.adml") -Destination $policyDefinitionsLanguagePath -Force
 
     Write-Output "Configuring required LGPO client-side extensions..."
-    $result = & $lgpoPath /v /e mitigation /e audit /e zone /e DGVBS 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $result | Write-Output
-        throw "LGPO client-side extension configuration failed with exit code $LASTEXITCODE"
-    }
+    Invoke-Lgpo `
+        -Arguments @("/v", "/e", "mitigation", "/e", "audit", "/e", "zone", "/e", "DGVBS") `
+        -FailureMessage "LGPO client-side extension configuration failed"
 
     Write-Output "Disabling Xbox Game Save scheduled task..."
     $taskResult = & schtasks.exe /Change /TN "\Microsoft\XblGameSave\XblGameSaveTask" /DISABLE 2>&1
@@ -130,11 +162,9 @@ try {
         $gpoPath = $gpoMap[$gpoName]
         Write-Output "Applying: $gpoName"
 
-        $result = & $lgpoPath /v /g $gpoPath 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            $result | Write-Output
-            throw "Failed to apply Microsoft baseline GPO '$gpoName' with exit code $LASTEXITCODE"
-        }
+        Invoke-Lgpo `
+            -Arguments @("/v", "/g", $gpoPath) `
+            -FailureMessage "Failed to apply Microsoft baseline GPO '$gpoName'"
     }
 
     if (-not $isDomainJoined) {
@@ -142,17 +172,15 @@ try {
         $deltaInf = Join-Path $configFilesPath "DeltaForNonDomainJoined.inf"
         $deltaTxt = Join-Path $configFilesPath "DeltaForNonDomainJoined.txt"
 
-        $result = & $lgpoPath /v /s $deltaInf /t $deltaTxt 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            $result | Write-Output
-            throw "Failed to apply non-domain-joined delta with exit code $LASTEXITCODE"
-        }
+        Invoke-Lgpo `
+            -Arguments @("/v", "/s", $deltaInf, "/t", $deltaTxt) `
+            -FailureMessage "Failed to apply non-domain-joined delta"
     }
 
     Write-Output ""
     Write-Output "Microsoft Windows 11 24H2 Security Baseline applied."
 }
 catch {
-    Write-Error "Failed to apply Microsoft security baseline: $_"
+    Write-Error "Failed to apply Microsoft security baseline: $($_.Exception.Message)"
     exit 1
 }
