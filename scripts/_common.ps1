@@ -209,12 +209,13 @@ function Resolve-DeploymentUserName {
     }
 
     if ($ownership -eq "shared") {
-        $sharedUserName = switch ($purpose) {
-            'editorial' { "Redactie Gebruiker" }
-            'tv' { "Studio Gebruiker" }
-            'radio' { "Studio Gebruiker" }
-            default { "" }
+        $sharedUserNames = @{
+            'editorial' = 'Redactie Gebruiker'
+            'tv'        = 'Studio Gebruiker'
+            'radio'     = 'Studio Gebruiker'
         }
+        $sharedUserName = $sharedUserNames[$purpose]
+        if (-not $sharedUserName) { $sharedUserName = "" }
         return [pscustomobject]@{ UserName = $sharedUserName; EnableAutoLogin = ($purpose -ne "plain") }
     }
 
@@ -245,6 +246,17 @@ function Read-DeploymentPassword {
             Write-Output ""
         }
     }
+}
+
+# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wsusss/0a8c5b85-2123-4ed9-a6cd-7d23e23e3786
+$script:WuaSucceededCode = 2
+
+function Test-WuaSucceeded {
+    param (
+        [Parameter(Mandatory)]
+        [int]$ResultCode
+    )
+    return $ResultCode -eq $script:WuaSucceededCode
 }
 
 function Get-WuaOperationResultName {
@@ -278,17 +290,92 @@ function Get-WuaFailedUpdateDetails {
         $Updates
     )
 
-    $failedUpdates = @()
+    $failedUpdates = [System.Collections.Generic.List[string]]::new()
     for ($idx = 0; $idx -lt $Updates.Count; $idx++) {
         $perUpdateResult = $OperationResult.GetUpdateResult($idx)
         $perUpdateCode = [int]$perUpdateResult.ResultCode
-        if ($perUpdateCode -ne 2) {
+        if (-not (Test-WuaSucceeded -ResultCode $perUpdateCode)) {
             $hresult = "0x{0:X8}" -f ([int]$perUpdateResult.HResult)
             $title = $Updates.Item($idx).Title
             $perUpdateName = Get-WuaOperationResultName -ResultCode $perUpdateCode
-            $failedUpdates += "  - $title ($perUpdateName, HRESULT $hresult)"
+            $failedUpdates.Add("  - $title ($perUpdateName, HRESULT $hresult)")
         }
     }
 
-    return @($failedUpdates)
+    return $failedUpdates.ToArray()
+}
+
+function Assert-WuaOperationSucceeded {
+    param (
+        [Parameter(Mandatory)]
+        $OperationResult,
+
+        [Parameter(Mandatory)]
+        $Updates,
+
+        [Parameter(Mandatory)]
+        [ValidateSet('Download', 'Install')]
+        [string]$Phase
+    )
+
+    $code = [int]$OperationResult.ResultCode
+    $name = Get-WuaOperationResultName -ResultCode $code
+    Write-Output "  $Phase operation result: $name ($code)"
+
+    if (Test-WuaSucceeded -ResultCode $code) {
+        return
+    }
+
+    $failedUpdates = Get-WuaFailedUpdateDetails -OperationResult $OperationResult -Updates $Updates
+    $detail = if ($failedUpdates.Count -gt 0) { "`n" + ($failedUpdates -join "`n") } else { "" }
+    throw "Windows Update $($Phase.ToLower()) reported $name ($code).$detail"
+}
+
+# install.ps1 publishes the active transcript path to $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH;
+# child scripts (invoked via &) read it to suspend/resume the parent transcript around plaintext
+# secrets (e.g. registry writes that would otherwise be captured).
+function Suspend-InstallTranscript {
+    if (-not $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH) {
+        return $false
+    }
+    try {
+        Stop-Transcript | Out-Null
+        return $true
+    }
+    catch {
+        throw "Could not suspend transcript before sensitive operation: $($_.Exception.Message)"
+    }
+}
+
+function Resume-InstallTranscript {
+    param (
+        [Parameter(Mandatory)]
+        [bool]$WasSuspended
+    )
+
+    if (-not $WasSuspended -or -not $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH) {
+        return
+    }
+
+    try {
+        Start-Transcript -Path $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH -Append -Force | Out-Null
+    }
+    catch {
+        Write-Warning "Could not resume transcript logging: $($_.Exception.Message)"
+    }
+}
+
+function Invoke-WithTranscriptSuspended {
+    param (
+        [Parameter(Mandatory)]
+        [scriptblock]$ScriptBlock
+    )
+
+    $wasSuspended = Suspend-InstallTranscript
+    try {
+        & $ScriptBlock
+    }
+    finally {
+        Resume-InstallTranscript -WasSuspended $wasSuspended
+    }
 }

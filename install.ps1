@@ -28,7 +28,6 @@ function Test-Admin {
 }
 
 $script:InstallLogPath = $null
-$script:InstallTranscriptStarted = $false
 
 function Initialize-InstallLog {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -43,16 +42,15 @@ function Initialize-InstallLog {
                 New-Item -Path $logDirectory -ItemType Directory -Force | Out-Null
             }
 
-            $script:InstallLogPath = Join-Path $logDirectory "windows11-baseline-$timestamp.log"
-            Start-Transcript -Path $script:InstallLogPath -Force | Out-Null
-            $script:InstallTranscriptStarted = $true
+            $candidate = Join-Path $logDirectory "windows11-baseline-$timestamp.log"
+            Start-Transcript -Path $candidate -Force | Out-Null
+            $script:InstallLogPath = $candidate
+            $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH = $candidate
             Write-Output "Log file: $script:InstallLogPath"
             return
         }
         catch {
             Write-Verbose "Could not start transcript in ${logDirectory}: $($_.Exception.Message)"
-            $script:InstallLogPath = $null
-            $script:InstallTranscriptStarted = $false
         }
     }
 
@@ -60,65 +58,17 @@ function Initialize-InstallLog {
 }
 
 function Close-InstallLog {
-    if ($script:InstallTranscriptStarted) {
-        try {
-            Stop-Transcript | Out-Null
-        }
-        catch {
-            Write-Verbose "Could not stop transcript: $($_.Exception.Message)"
-        }
-        finally {
-            $script:InstallTranscriptStarted = $false
-        }
-    }
-}
-
-function Suspend-InstallLog {
-    if (-not $script:InstallTranscriptStarted) {
-        return $false
-    }
-
-    try {
-        Stop-Transcript | Out-Null
-        $script:InstallTranscriptStarted = $false
-        return $true
-    }
-    catch {
-        throw "Could not suspend transcript before sensitive operation: $($_.Exception.Message)"
-    }
-}
-
-function Resume-InstallLog {
-    param (
-        [bool]$WasStarted
-    )
-
-    if (-not $WasStarted -or -not $script:InstallLogPath) {
+    if (-not $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH) {
         return
     }
-
     try {
-        Start-Transcript -Path $script:InstallLogPath -Append -Force | Out-Null
-        $script:InstallTranscriptStarted = $true
+        Stop-Transcript | Out-Null
     }
     catch {
-        Write-Warning "Could not resume transcript logging: $($_.Exception.Message)"
-        $script:InstallTranscriptStarted = $false
-    }
-}
-
-function Invoke-WithInstallTranscriptSuspended {
-    param (
-        [Parameter(Mandatory)]
-        [scriptblock]$ScriptBlock
-    )
-
-    $wasStarted = Suspend-InstallLog
-    try {
-        & $ScriptBlock
+        Write-Verbose "Could not stop transcript: $($_.Exception.Message)"
     }
     finally {
-        Resume-InstallLog -WasStarted $wasStarted
+        Remove-Item -Path "Env:WINDOWS11_BASELINE_TRANSCRIPT_PATH" -ErrorAction SilentlyContinue
     }
 }
 

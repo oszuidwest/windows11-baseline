@@ -28,21 +28,6 @@ function Get-LocalizedUsersGroupName {
     return $usersGroupFull.Split('\')[-1]
 }
 
-function Invoke-SensitiveUserOperation {
-    param (
-        [Parameter(Mandatory)]
-        [scriptblock]$ScriptBlock
-    )
-
-    $transcriptSuspender = Get-Command -Name Invoke-WithInstallTranscriptSuspended -ErrorAction SilentlyContinue
-    if ($transcriptSuspender) {
-        Invoke-WithInstallTranscriptSuspended -ScriptBlock $ScriptBlock
-        return
-    }
-
-    & $ScriptBlock
-}
-
 function Add-UserToUsersGroup {
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -78,7 +63,7 @@ if ($userName) {
     if (-not $existingUser) {
         Write-Output "Creating local user: $userName"
         try {
-            Invoke-SensitiveUserOperation -ScriptBlock {
+            Invoke-WithTranscriptSuspended -ScriptBlock {
                 New-LocalUser -Name $userName -Password $userPassword -FullName $userName -Description "User created by deployment script" -ErrorAction Stop
             }
             Add-UserToUsersGroup -UserName $userName
@@ -91,7 +76,7 @@ if ($userName) {
     else {
         Write-Output "User '$userName' already exists; syncing password and group membership."
         try {
-            Invoke-SensitiveUserOperation -ScriptBlock {
+            Invoke-WithTranscriptSuspended -ScriptBlock {
                 Set-LocalUser -Name $userName -Password $userPassword -ErrorAction Stop
             }
             Write-Output "  Password synced with deployment input."
@@ -119,7 +104,7 @@ if ($userName -and $enableAutoLogin) {
         }
 
         Set-ItemProperty -Path $regPath -Name "DefaultUserName" -Value $userName -Force -ErrorAction Stop
-        Invoke-SensitiveUserOperation -ScriptBlock {
+        Invoke-WithTranscriptSuspended -ScriptBlock {
             $plainPassword = ConvertFrom-SecureStringToPlainText -SecureString $userPassword
             Set-ItemProperty -Path $regPath -Name "DefaultPassword" -Value $plainPassword -Force -ErrorAction Stop
         }

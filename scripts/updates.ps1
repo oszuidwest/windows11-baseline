@@ -62,15 +62,7 @@ if ($updatesToDownload.Count -gt 0) {
         throw "Windows Update download failed: $($_.Exception.Message)"
     }
 
-    $downloadCode = [int]$downloadResult.ResultCode
-    $downloadName = Get-WuaOperationResultName -ResultCode $downloadCode
-    Write-Output "  Download operation result: $downloadName ($downloadCode)"
-
-    if ($downloadCode -ne 2) {
-        $failedUpdates = @(Get-WuaFailedUpdateDetails -OperationResult $downloadResult -Updates $updatesToDownload)
-        $detail = if ($failedUpdates.Count -gt 0) { "`n" + ($failedUpdates -join "`n") } else { "" }
-        throw "Windows Update download reported $downloadName ($downloadCode).$detail"
-    }
+    Assert-WuaOperationSucceeded -OperationResult $downloadResult -Updates $updatesToDownload -Phase 'Download'
 
     $downloadedCount = 0
     for ($idx = 0; $idx -lt $updatesToDownload.Count; $idx++) {
@@ -106,15 +98,7 @@ if ($updatesToInstall.Count -gt 0) {
         throw "Windows Update install call failed: $($_.Exception.Message)"
     }
 
-    $resultCode = [int]$installResult.ResultCode
-    $resultName = Get-WuaOperationResultName -ResultCode $resultCode
-    Write-Output "  Install operation result: $resultName ($resultCode)"
-
-    if ($resultCode -ne 2) {
-        $failedUpdates = @(Get-WuaFailedUpdateDetails -OperationResult $installResult -Updates $updatesToInstall)
-        $detail = if ($failedUpdates.Count -gt 0) { "`n" + ($failedUpdates -join "`n") } else { "" }
-        throw "Windows Update install reported $resultName ($resultCode).$detail"
-    }
+    Assert-WuaOperationSucceeded -OperationResult $installResult -Updates $updatesToInstall -Phase 'Install'
 
     if ($installResult.RebootRequired) {
         Write-Output ""
