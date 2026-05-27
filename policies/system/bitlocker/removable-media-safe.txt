@@ -1,0 +1,19 @@
+Computer
+Software\Policies\Microsoft\Windows\DeviceInstall\Restrictions
+DenyDeviceClasses
+MULTI_SZ:{d48179be-ec20-11d1-b6b8-00c04fa372a7}
+
+Computer
+Software\Policies\Microsoft\Windows\DeviceInstall\Restrictions
+DenyDeviceClassesRetroactive
+DWORD:1
+
+Computer
+Software\Policies\Microsoft\Windows\Kernel DMA Protection
+DeviceEnumerationPolicy
+DWORD:0
+
+Computer
+Software\Policies\Microsoft\FVE
+UseEnhancedPin
+DWORD:1

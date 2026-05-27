@@ -11,6 +11,7 @@ policies/
 ├── applocker/                   # AppLocker policies (generated at runtime)
 ├── system/                      # Computer-level policies (HKLM)
 │   ├── bloatware/               # Game Bar, Spotlight, Widgets, Web Search
+│   ├── bitlocker/               # BitLocker-related hardening safe for removable media workflows
 │   ├── logon-experience/        # First-run animations
 │   ├── microsoft-account/       # Block MS Account auth
 │   ├── microsoft-store/         # Block Store + app installer
@@ -68,6 +69,7 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | system | bloatware | Disable Spotlight | Remove tips and suggestions | x | x | x |
 | system | bloatware | Disable Widgets | Remove Widgets panel | x | x | x |
 | system | bloatware | Disable Game Bar | Suppress Game Bar popups | x | x | x |
+| system | bitlocker | Removable-media-safe BitLocker hardening | DMA/device hardening without blocking SD/USB writes | x | x | x |
 | system | logon-experience | Disable logon animations | Skip first-run animation, hide Switch User | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
 | system | microsoft-store | Disable Store | Block ms-appinstaller:// and promotions | x | | |

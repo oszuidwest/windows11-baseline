@@ -16,7 +16,7 @@ param(
     [string]$dedicatedUserName,
     [string]$personalUserName,
 
-    [ValidateSet("debloat", "applocker", "apps", "dwservice", "hardening", "policies", "power", "sounds", "time", "updates", "users", "workgroupname")]
+    [ValidateSet("debloat", "securitybaseline", "applocker", "apps", "dwservice", "hardening", "policies", "power", "sounds", "time", "updates", "users", "workgroupname")]
     [string[]]$OnlyRun
 )
 
@@ -48,18 +48,19 @@ $validOwnership = @("shared", "personal", "dedicated")
 
 # Script requirements mapping - which parameters each script needs
 $scriptRequirements = @{
-    'debloat'       = @('systemPurpose', 'systemOwnership')
-    'applocker'     = @('systemOwnership')
-    'apps'          = @('systemPurpose')
-    'dwservice'     = @('dwAgentCode')
-    'hardening'     = @()
-    'policies'      = @('systemPurpose', 'systemOwnership')
-    'power'         = @()
-    'sounds'        = @()
-    'time'          = @()
-    'updates'       = @()
-    'users'         = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
-    'workgroupname' = @('computerName', 'workgroupName')
+    'debloat'          = @('systemPurpose', 'systemOwnership')
+    'securitybaseline' = @()
+    'applocker'        = @('systemOwnership')
+    'apps'             = @('systemPurpose')
+    'dwservice'        = @('dwAgentCode')
+    'hardening'        = @()
+    'policies'         = @('systemPurpose', 'systemOwnership')
+    'power'            = @()
+    'sounds'           = @()
+    'time'             = @()
+    'updates'          = @()
+    'users'            = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
+    'workgroupname'    = @('computerName', 'workgroupName')
 }
 
 # Determine which parameters are required based on -OnlyRun

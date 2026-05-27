@@ -41,6 +41,11 @@
       "ownership": ["all"],
       "description": "Configure automatic updates daily at 3:00 AM"
     },
+    "system/bitlocker/removable-media-safe.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Apply BitLocker-related hardening without blocking writes to SD cards or USB media"
+    },
     "system/security/disable-autorun.txt": {
       "purposes": ["all"],
       "ownership": ["all"],

@@ -34,7 +34,7 @@ Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 -OnlyRun 'policies','hardening' }`"" -Verb RunAs
 ```
 
-Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
+Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
 
 ## Configuration Options
 
@@ -134,7 +134,9 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 
 ## Security Hardening
 
-All systems receive defense-in-depth hardening beyond Windows 11 24H2 defaults. Attack surface reduction is achieved by disabling the Remote Registry service, blocking AutoRun on all drive types, and removing pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
+All systems first receive the official **Microsoft Windows 11 v24H2 Security Baseline** from the Microsoft Security Compliance Toolkit, applied locally with LGPO.exe. The package is downloaded from Microsoft at deployment time and verified with a pinned SHA-256 hash before use. The Microsoft BitLocker GPO is intentionally skipped because it blocks writing to removable drives that are not BitLocker-protected; editorial and camera workflows need normal access to SD cards. ZuidWest applies a removable-media-safe BitLocker hardening policy afterwards.
+
+Additional defense-in-depth hardening beyond Windows 11 24H2 defaults disables the Remote Registry service, blocks AutoRun on all drive types, and removes pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
 
 ## LTSC Compatibility
 
