@@ -139,6 +139,14 @@ Write-Output "Installing apps for '$systemPurpose'..."
 
 $failedApps = [System.Collections.Generic.List[string]]::new()
 
+# `winget install` exit codes that mean "no-op, package already in the requested state".
+# Treated as success so `-OnlyRun apps` is idempotent on already-deployed workstations.
+# Codes verified against microsoft/winget-cli AppInstallerErrors.h:
+#   0x8A15002B UPDATE_NOT_APPLICABLE       (-1978335189) - winget itself
+#   0x8A150061 PACKAGE_ALREADY_INSTALLED   (-1978335135) - winget itself
+#   0x8A15010D INSTALL_ALREADY_INSTALLED   (-1978334963) - underlying MSI/EXE installer
+$wingetSuccessExitCodes = @(0, -1978335189, -1978335135, -1978334963)
+
 # Install apps via winget
 foreach ($app in $apps) {
     # Skip special apps (handled separately)
@@ -156,6 +164,7 @@ foreach ($app in $apps) {
     try {
         Invoke-NativeCommand -FilePath "winget" `
             -Arguments @("install", "--id=$packageId", "-e", "--silent", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") `
+            -SuccessExitCodes $wingetSuccessExitCodes `
             -FailureMessage "Failed to install $app" | Out-Null
     }
     catch {
@@ -209,11 +218,11 @@ if ($apps -contains "office") {
     $odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19628-20046.exe"
     $tempDir = Join-Path $env:TEMP "odt-install"
 
-    if (-not (Test-Path $officeConfigPath)) {
-        throw "Office config file not found at $officeConfigPath (deployment package is incomplete)."
-    }
-
     try {
+        if (-not (Test-Path $officeConfigPath)) {
+            throw "Office config file not found at $officeConfigPath (deployment package is incomplete)."
+        }
+
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
         Write-Output "  Downloading Office Deployment Tool..."

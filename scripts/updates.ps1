@@ -14,6 +14,16 @@ param()
 
 Write-Output "Checking for Windows updates..."
 
+# WUA OperationResultCode: 0=NotStarted, 1=InProgress, 2=Succeeded, 3=SucceededWithErrors, 4=Failed, 5=Aborted
+$resultCodeNames = @{
+    0 = 'NotStarted'
+    1 = 'InProgress'
+    2 = 'Succeeded'
+    3 = 'SucceededWithErrors'
+    4 = 'Failed'
+    5 = 'Aborted'
+}
+
 # Create Windows Update Session
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
@@ -54,11 +64,33 @@ if ($updatesToDownload.Count -gt 0) {
     $downloader = $updateSession.CreateUpdateDownloader()
     $downloader.Updates = $updatesToDownload
     try {
-        $downloader.Download() | Out-Null
-        Write-Output "  Download call returned."
+        $downloadResult = $downloader.Download()
     }
     catch {
         throw "Windows Update download failed: $($_.Exception.Message)"
+    }
+
+    $downloadCode = [int]$downloadResult.ResultCode
+    $downloadName = $resultCodeNames[$downloadCode]
+    if (-not $downloadName) { $downloadName = "Unknown($downloadCode)" }
+    Write-Output "  Download operation result: $downloadName ($downloadCode)"
+
+    if ($downloadCode -ne 2) {
+        $failedTitles = @()
+        for ($idx = 0; $idx -lt $updatesToDownload.Count; $idx++) {
+            $perResult = $downloadResult.GetUpdateResult($idx)
+            $perCode = [int]$perResult.ResultCode
+            if ($perCode -ne 2) {
+                $hresult = "0x{0:X8}" -f ([int]$perResult.HResult)
+                $title = $updatesToDownload.Item($idx).Title
+                $perName = $resultCodeNames[$perCode]
+                if (-not $perName) { $perName = "Unknown($perCode)" }
+                $failedTitles += "  - $title ($perName, HRESULT $hresult)"
+            }
+        }
+
+        $detail = if ($failedTitles.Count -gt 0) { "`n" + ($failedTitles -join "`n") } else { "" }
+        throw "Windows Update download reported $downloadName ($downloadCode).$detail"
     }
 
     $downloadedCount = 0
@@ -80,16 +112,6 @@ foreach ($update in $updates) {
     if ($update.IsDownloaded) {
         $updatesToInstall.Add($update) | Out-Null
     }
-}
-
-# WUA OperationResultCode: 0=NotStarted, 1=InProgress, 2=Succeeded, 3=SucceededWithErrors, 4=Failed, 5=Aborted
-$resultCodeNames = @{
-    0 = 'NotStarted'
-    1 = 'InProgress'
-    2 = 'Succeeded'
-    3 = 'SucceededWithErrors'
-    4 = 'Failed'
-    5 = 'Aborted'
 }
 
 # Install updates
