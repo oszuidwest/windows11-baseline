@@ -1,0 +1,74 @@
+name: Check external download URLs
+
+on:
+  schedule:
+    # Run every Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check all referenced URLs
+        id: check
+        run: |
+          chmod +x scripts/ci/check-urls.sh
+          ./scripts/ci/check-urls.sh
+
+      - name: Create or update issue if URLs are broken
+        if: steps.check.outputs.broken_count != '0'
+        uses: actions/github-script@v9
+        env:
+          BROKEN_COUNT: ${{ steps.check.outputs.broken_count }}
+          BROKEN_URLS_REPORT: ${{ steps.check.outputs.broken_urls_report }}
+        with:
+          script: |
+            // Read step outputs from env to avoid injecting backticks or quotes
+            // from the shell-produced report directly into a JS template literal.
+            const brokenCount = process.env.BROKEN_COUNT;
+            const report = process.env.BROKEN_URLS_REPORT;
+            const title = `External download URL check failed (${brokenCount} issue${brokenCount === '1' ? '' : 's'})`;
+            const body = [
+              'One or more external download URLs referenced from `scripts/` are not reachable, or the pinned Microsoft Security Baseline hash no longer matches.',
+              '',
+              '**Broken endpoints:**',
+              report,
+              '',
+              'Re-run the workflow after fixing to clear this issue.'
+            ].join('\n');
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'external-url-broken'
+            });
+
+            if (existing.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['external-url-broken', 'maintenance']
+              });
+              console.log('Issue created');
+            } else {
+              const issueNumber = existing.data[0].number;
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                title: title,
+                body: body
+              });
+              console.log(`Issue #${issueNumber} updated`);
+            }

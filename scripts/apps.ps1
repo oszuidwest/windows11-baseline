@@ -101,7 +101,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
         Write-Output "  Installing dependencies for $arch..."
         Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | ForEach-Object {
-            Add-AppxPackage -Path $_.FullName -ErrorAction SilentlyContinue
+            Add-AppxPackage -Path $_.FullName -ErrorAction Stop
         }
 
         # Download winget msixbundle and license
@@ -137,6 +137,16 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 Write-Output "Installing apps for '$systemPurpose'..."
 
+$failedApps = [System.Collections.Generic.List[string]]::new()
+
+# `winget install` exit codes that mean "no-op, package already in the requested state".
+# Treated as success so `-OnlyRun apps` is idempotent on already-deployed workstations.
+# Codes verified against microsoft/winget-cli AppInstallerErrors.h:
+#   0x8A15002B UPDATE_NOT_APPLICABLE       (-1978335189) - winget itself
+#   0x8A150061 PACKAGE_ALREADY_INSTALLED   (-1978335135) - winget itself
+#   0x8A15010D INSTALL_ALREADY_INSTALLED   (-1978334963) - underlying MSI/EXE installer
+$wingetSuccessExitCodes = @(0, -1978335189, -1978335135, -1978334963)
+
 # Install apps via winget
 foreach ($app in $apps) {
     # Skip special apps (handled separately)
@@ -147,18 +157,18 @@ foreach ($app in $apps) {
     $packageId = $appDefinitions[$app]
 
     if (-not $packageId) {
-        Write-Warning "Skipping '$app': not defined"
-        continue
+        throw "App '$app' is selected for purpose '$systemPurpose' but is not defined in the app catalog. This is a baseline bug; add it to either the winget definitions or the special-installer list."
     }
 
     Write-Output "Installing $app ($packageId)..."
     try {
         Invoke-NativeCommand -FilePath "winget" `
             -Arguments @("install", "--id=$packageId", "-e", "--silent", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") `
+            -SuccessExitCodes $wingetSuccessExitCodes `
             -FailureMessage "Failed to install $app" | Out-Null
     }
     catch {
-        Write-Warning $_.Exception.Message
+        $failedApps.Add("$app ($($_.Exception.Message))")
     }
 }
 
@@ -170,32 +180,28 @@ if ($apps -contains "spotify") {
     $spotifyPath = "C:\Program Files\Spotify"
 
     try {
-        # Download Spotify installer
         Write-Output "  Downloading Spotify installer..."
         Invoke-Download -Uri "https://download.spotify.com/SpotifyFullSetup.exe" -OutFile $spotifyInstaller
 
-        # Extract to Program Files (machine-wide installation)
         Write-Output "  Extracting to $spotifyPath..."
         $process = Start-Process -FilePath $spotifyInstaller -ArgumentList "/extract `"$spotifyPath`"" -NoNewWindow -Wait -PassThru
 
-        if ($process.ExitCode -eq 0) {
-            Write-Output "  Spotify installed successfully"
-
-            # Create shortcuts
-            New-Shortcut -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk" `
-                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
-            Write-Output "  Start Menu shortcut created"
-
-            New-Shortcut -Path "C:\Users\Public\Desktop\Spotify.lnk" `
-                -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
-            Write-Output "  Desktop shortcut created"
+        if ($process.ExitCode -ne 0) {
+            throw "Spotify installer returned exit code $($process.ExitCode)."
         }
-        else {
-            Write-Warning "Spotify installation failed (exit code: $($process.ExitCode))"
-        }
+
+        Write-Output "  Spotify installed successfully"
+
+        New-Shortcut -Path "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Spotify.lnk" `
+            -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
+        Write-Output "  Start Menu shortcut created"
+
+        New-Shortcut -Path "C:\Users\Public\Desktop\Spotify.lnk" `
+            -TargetPath "$spotifyPath\Spotify.exe" -WorkingDirectory $spotifyPath -Description "Spotify"
+        Write-Output "  Desktop shortcut created"
     }
     catch {
-        Write-Warning "Failed to install Spotify: $_"
+        $failedApps.Add("spotify ($($_.Exception.Message))")
     }
     finally {
         Remove-Item -Path $spotifyInstaller -Force -ErrorAction SilentlyContinue
@@ -210,43 +216,40 @@ if ($apps -contains "office") {
     $odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19628-20046.exe"
     $tempDir = Join-Path $env:TEMP "odt-install"
 
-    if (-not (Test-Path $officeConfigPath)) {
-        Write-Warning "Office config file not found at $officeConfigPath"
+    try {
+        if (-not (Test-Path $officeConfigPath)) {
+            throw "Office config file not found at $officeConfigPath (deployment package is incomplete)."
+        }
+
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+        Write-Output "  Downloading Office Deployment Tool..."
+        $odtExe = Join-Path $tempDir "odt.exe"
+        Invoke-Download -Uri $odtUrl -OutFile $odtExe
+
+        Write-Output "  Extracting ODT..."
+        Invoke-NativeCommand -FilePath $odtExe `
+            -Arguments @("/extract:$tempDir", "/quiet") `
+            -FailureMessage "Failed to extract Office Deployment Tool" | Out-Null
+
+        $setupExe = Join-Path $tempDir "setup.exe"
+        Write-Output "  Running Office setup..."
+        Invoke-NativeCommand -FilePath $setupExe `
+            -Arguments @("/configure", $officeConfigPath) `
+            -FailureMessage "Failed to install Microsoft Office" | Out-Null
+        Write-Output "  Microsoft Office installed successfully"
     }
-    else {
-        try {
-            # Create temp directory
-            New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-
-            # Download Office Deployment Tool
-            Write-Output "  Downloading Office Deployment Tool..."
-            $odtExe = Join-Path $tempDir "odt.exe"
-            Invoke-Download -Uri $odtUrl -OutFile $odtExe
-
-            # Extract ODT (contains setup.exe)
-            Write-Output "  Extracting ODT..."
-            Invoke-NativeCommand -FilePath $odtExe `
-                -Arguments @("/extract:$tempDir", "/quiet") `
-                -FailureMessage "Failed to extract Office Deployment Tool" | Out-Null
-
-            # Run setup.exe with config
-            $setupExe = Join-Path $tempDir "setup.exe"
-            Write-Output "  Running Office setup..."
-            Invoke-NativeCommand -FilePath $setupExe `
-                -Arguments @("/configure", $officeConfigPath) `
-                -FailureMessage "Failed to install Microsoft Office" | Out-Null
-            Write-Output "  Microsoft Office installed successfully"
-        }
-        catch {
-            Write-Warning "Failed to install Microsoft Office: $_"
-        }
-        finally {
-            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
+    catch {
+        $failedApps.Add("office ($($_.Exception.Message))")
+    }
+    finally {
+        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
-Write-Output "Installation complete."
+if ($failedApps.Count -gt 0) {
+    throw "App installation failed for: $($failedApps -join '; '). The workstation is not deployment-ready for '$systemPurpose'; re-run with -OnlyRun apps after investigating."
+}
 
 # Create WhatsApp Web shortcut (InPrivate mode) for shared computers
 if ($systemOwnership -eq "shared") {
@@ -276,3 +279,5 @@ if ($systemOwnership -eq "shared") {
 
     Write-Output "WhatsApp Web shortcut created on Public Desktop."
 }
+
+Write-Output "Installation complete."

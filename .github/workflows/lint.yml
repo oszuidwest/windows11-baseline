@@ -2,11 +2,13 @@ name: Lint and Format
 
 on:
   push:
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
-  lint_and_format:
-    permissions:
-      contents: write
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,13 +24,13 @@ jobs:
         run: |
           echo "Validating XML files..."
           failed=0
-          for file in $(find . -name "*.xml" -type f); do
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
             if ! xmllint --noout "$file" 2>&1; then
               echo "ERROR: $file is not valid XML"
               failed=1
             fi
-          done
+          done < <(find . -name "*.xml" -type f -print0)
           if [ $failed -eq 1 ]; then
             echo "XML validation failed"
             exit 1
@@ -39,13 +41,13 @@ jobs:
         run: |
           echo "Validating JSON files..."
           failed=0
-          for file in $(find . -name "*.json" -type f); do
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
             if ! jq empty "$file" 2>&1; then
               echo "ERROR: $file is not valid JSON"
               failed=1
             fi
-          done
+          done < <(find . -name "*.json" -type f -print0)
           if [ $failed -eq 1 ]; then
             echo "JSON validation failed"
             exit 1
@@ -56,22 +58,35 @@ jobs:
         run: |
           echo "Validating config.json against schema..."
           cd policies
-          # Use ajv-cli for JSON schema validation
           npm install -g ajv-cli ajv-formats
           ajv validate -s config.schema.json -d config.json --all-errors
           echo "Schema validation passed"
 
-      - name: Format PowerShell scripts
+      - name: Verify policy matrix is up to date
+        run: |
+          echo "Regenerating policy matrix from config.json and diffing against policies/README.md..."
+          chmod +x scripts/ci/generate-policy-matrix.sh
+          ./scripts/ci/generate-policy-matrix.sh check
+
+      - name: Check PowerShell formatting
         shell: pwsh
         run: |
           $settingsPath = Join-Path $env:GITHUB_WORKSPACE 'PSScriptAnalyzerSettings.psd1'
           $files = Get-ChildItem -Recurse -Include *.ps1
+          $unformatted = @()
           foreach ($file in $files) {
-            Write-Output "Formatting $($file.Name)"
             $content = Get-Content -Path $file.FullName -Raw
             $formatted = Invoke-Formatter -ScriptDefinition $content -Settings $settingsPath
-            Set-Content -Path $file.FullName -Value $formatted -NoNewline
+            if ($formatted -ne $content) {
+              $unformatted += $file.FullName
+              Write-Output "Needs formatting: $($file.FullName)"
+            }
           }
+          if ($unformatted.Count -gt 0) {
+            Write-Error "PowerShell formatting check failed for $($unformatted.Count) file(s). Run Invoke-Formatter locally before pushing."
+            exit 1
+          }
+          Write-Output "All PowerShell scripts are correctly formatted."
 
       - name: Lint PowerShell scripts
         shell: pwsh
@@ -81,17 +96,12 @@ jobs:
           $hasErrors = $false
 
           foreach ($file in $files) {
-            Write-Output "`n📄 Analyzing: $($file.Name)"
+            Write-Output "`nAnalyzing: $($file.Name)"
             $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settingsPath
 
             if ($results) {
               $results | ForEach-Object {
-                $icon = switch ($_.Severity) {
-                  'Error'       { '❌' }
-                  'Warning'     { '⚠️' }
-                  'Information' { 'ℹ️' }
-                }
-                Write-Output "$icon [$($_.Severity)] Line $($_.Line): $($_.Message)"
+                Write-Output "[$($_.Severity)] Line $($_.Line): $($_.Message)"
                 Write-Output "   Rule: $($_.RuleName)"
               }
 
@@ -100,7 +110,7 @@ jobs:
               }
             }
             else {
-              Write-Output "✅ No issues found"
+              Write-Output "No issues found"
             }
           }
 
@@ -108,11 +118,3 @@ jobs:
             Write-Error "PSScriptAnalyzer found errors or warnings. Please fix before merging."
             exit 1
           }
-
-      - name: Commit changes
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m "style: auto-format code" || echo "No changes to commit"
-          git push

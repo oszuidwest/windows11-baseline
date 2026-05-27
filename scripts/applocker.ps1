@@ -9,16 +9,16 @@ param (
     Applies AppLocker policies to block unwanted applications.
 
 .DESCRIPTION
-    This script dynamically generates and applies AppLocker policies based on system ownership:
+    This script applies a checked-in AppLocker policy template based on system ownership:
 
-    Shared systems:
+    Shared systems (policies/applocker/shared.xml):
     - Blocks Microsoft Store application
     - Blocks Microsoft Copilot application
     - Blocks StoreInstaller.exe (web installer from get.microsoft.com)
 
-    Dedicated systems:
+    Dedicated systems (policies/applocker/dedicated.xml):
     - Blocks Microsoft Copilot application only
-    - Microsoft Store remains available
+    - Microsoft Store appx is still removed via the debloat phase
 
     Personal systems: No AppLocker policies applied.
 
@@ -32,21 +32,19 @@ param (
 
 # Paths
 $appLockerToolPath = Join-DeployPath "bin\AppLockerPolicyTool.exe"
-$appLockerPolicyPath = Join-DeployPath "policies\applocker\policy.xml"
+$appLockerTemplateDir = Join-DeployPath "policies\applocker"
 
 Write-Output "=== AppLocker Configuration ==="
 Write-Output ""
 
-# Determine what to block based on ownership
+# Select template based on ownership
 switch ($systemOwnership) {
     "shared" {
-        $blockStore = $true
-        $blockCopilot = $true
-        $policyDescription = "Store + Copilot"
+        $templateName = "shared.xml"
+        $policyDescription = "Store + Copilot + StoreInstaller.exe"
     }
     "dedicated" {
-        $blockStore = $false
-        $blockCopilot = $true
+        $templateName = "dedicated.xml"
         $policyDescription = "Copilot only"
     }
     default {
@@ -56,218 +54,62 @@ switch ($systemOwnership) {
     }
 }
 
+$templatePath = Join-Path $appLockerTemplateDir $templateName
+
 Write-Output "Ownership: $systemOwnership"
-Write-Output "Configuring AppLocker to block: $policyDescription"
+Write-Output "Template: $templateName"
+Write-Output "Blocks: $policyDescription"
 Write-Output ""
 
-# Verify AppLockerPolicyTool.exe exists
 if (-not (Test-Path $appLockerToolPath)) {
     throw "AppLockerPolicyTool.exe not found at $appLockerToolPath"
 }
 
-# Generate AppLocker policy XML dynamically
-function Get-AppLockerPolicyXml {
-    param (
-        [bool]$BlockStore,
-        [bool]$BlockCopilot
-    )
-
-    # Build executable deny rules
-    $exeDenyRules = ""
-    if ($BlockStore) {
-        $exeDenyRules = @"
-
-        <!-- DENY: Block StoreInstaller.exe (the Microsoft Store web installer) -->
-        <FilePublisherRule Id="b7d74306-35f3-4ad6-a29f-796e2491c992"
-                           Name="Block StoreInstaller.exe"
-                           Description="Blocks the Microsoft Store web installer downloaded from get.microsoft.com"
-                           UserOrGroupSid="S-1-1-0"
-                           Action="Deny">
-            <Conditions>
-                <FilePublisherCondition PublisherName="O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US"
-                                        ProductName="STOREINSTALLER"
-                                        BinaryName="STOREINSTALLER.EXE">
-                    <BinaryVersionRange LowSection="*" HighSection="*"/>
-                </FilePublisherCondition>
-            </Conditions>
-        </FilePublisherRule>
-"@
-    }
-
-    # Build packaged app deny rules
-    $appxDenyRules = ""
-    if ($BlockStore) {
-        $appxDenyRules += @"
-
-        <!-- DENY: Block Microsoft Store app -->
-        <FilePublisherRule Id="a0a3fca2-3820-4489-8db0-4e2fc319b756"
-                           Name="Block Microsoft Store"
-                           Description="Prevents users from opening the Microsoft Store application"
-                           UserOrGroupSid="S-1-1-0"
-                           Action="Deny">
-            <Conditions>
-                <FilePublisherCondition PublisherName="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
-                                        ProductName="Microsoft.WindowsStore"
-                                        BinaryName="*">
-                    <BinaryVersionRange LowSection="*" HighSection="*"/>
-                </FilePublisherCondition>
-            </Conditions>
-        </FilePublisherRule>
-"@
-    }
-
-    if ($BlockCopilot) {
-        $appxDenyRules += @"
-
-        <!-- DENY: Block Microsoft Copilot app -->
-        <FilePublisherRule Id="c8d91a3b-5927-4f8a-9c1e-3b6d82f4a509"
-                           Name="Block Microsoft Copilot"
-                           Description="Prevents users from opening the Microsoft Copilot application"
-                           UserOrGroupSid="S-1-1-0"
-                           Action="Deny">
-            <Conditions>
-                <FilePublisherCondition PublisherName="CN=MICROSOFT CORPORATION, O=MICROSOFT CORPORATION, L=REDMOND, S=WASHINGTON, C=US"
-                                        ProductName="MICROSOFT.COPILOT"
-                                        BinaryName="*">
-                    <BinaryVersionRange LowSection="*" HighSection="*"/>
-                </FilePublisherCondition>
-            </Conditions>
-        </FilePublisherRule>
-"@
-    }
-
-    # Generate the full policy XML
-    $policyXml = @"
-<?xml version="1.0" encoding="UTF-8"?>
-<AppLockerPolicy Version="1">
-
-    <!-- EXECUTABLE RULES -->
-    <RuleCollection Type="Exe" EnforcementMode="Enabled">
-
-        <!-- Default Rule: Allow Windows folder executables for Everyone -->
-        <FilePathRule Id="a61c8b2c-a319-4cd0-9690-d2177cad7b51"
-                      Name="(Default) Allow Windows folder"
-                      Description="Allows everyone to run applications in the Windows folder"
-                      UserOrGroupSid="S-1-1-0"
-                      Action="Allow">
-            <Conditions>
-                <FilePathCondition Path="%WINDIR%\*"/>
-            </Conditions>
-        </FilePathRule>
-
-        <!-- Default Rule: Allow Program Files executables for Everyone -->
-        <FilePathRule Id="921cc481-6e17-4653-8f75-050b80acca20"
-                      Name="(Default) Allow Program Files"
-                      Description="Allows everyone to run applications in Program Files"
-                      UserOrGroupSid="S-1-1-0"
-                      Action="Allow">
-            <Conditions>
-                <FilePathCondition Path="%PROGRAMFILES%\*"/>
-            </Conditions>
-        </FilePathRule>
-
-        <!-- Default Rule: Allow Administrators to run anything -->
-        <FilePathRule Id="fd686d83-a829-4351-8ff4-27c7de5755d2"
-                      Name="(Default) Allow Administrators"
-                      Description="Allows administrators to run all applications"
-                      UserOrGroupSid="S-1-5-32-544"
-                      Action="Allow">
-            <Conditions>
-                <FilePathCondition Path="*"/>
-            </Conditions>
-        </FilePathRule>
-$exeDenyRules
-    </RuleCollection>
-
-    <!-- PACKAGED APP (APPX/MSIX) RULES -->
-    <RuleCollection Type="Appx" EnforcementMode="Enabled">
-
-        <!-- Default Rule: Allow all signed packaged apps for Everyone -->
-        <FilePublisherRule Id="a9e18c21-ff8f-43cf-b9fc-db40eed693ba"
-                           Name="(Default) Allow all signed packaged apps"
-                           Description="Allows everyone to run all signed packaged applications"
-                           UserOrGroupSid="S-1-1-0"
-                           Action="Allow">
-            <Conditions>
-                <FilePublisherCondition PublisherName="*" ProductName="*" BinaryName="*">
-                    <BinaryVersionRange LowSection="0.0.0.0" HighSection="*"/>
-                </FilePublisherCondition>
-            </Conditions>
-        </FilePublisherRule>
-$appxDenyRules
-    </RuleCollection>
-
-</AppLockerPolicy>
-"@
-
-    return $policyXml
+if (-not (Test-Path $templatePath)) {
+    throw "AppLocker template not found at $templatePath"
 }
-
-# Generate and save the policy
-Write-Output "Generating AppLocker policy..."
-$policyXml = Get-AppLockerPolicyXml -BlockStore $blockStore -BlockCopilot $blockCopilot
-
-# Ensure the applocker directory exists
-$appLockerDir = Split-Path $appLockerPolicyPath -Parent
-if (-not (Test-Path $appLockerDir)) {
-    New-Item -ItemType Directory -Path $appLockerDir -Force | Out-Null
-}
-
-# Save the policy to a file
-$policyXml | Out-File -FilePath $appLockerPolicyPath -Encoding UTF8 -Force
-Write-Output "  Policy saved to: $appLockerPolicyPath"
-Write-Output ""
 
 # Step 1: Enable and start the Application Identity service
 Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
-try {
-    # Set service to start automatically using sc.exe (more reliable than Set-Service)
-    try {
-        Invoke-NativeCommand -FilePath "sc.exe" `
-            -Arguments @("config", "AppIDSvc", "start=", "auto") `
-            -FailureMessage "Failed to set AppIDSvc startup type" | Out-Null
-        Write-Output "  Service startup type set to Automatic"
-    }
-    catch {
-        Write-Warning $_.Exception.Message
-    }
+$service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
+if (-not $service) {
+    throw "AppIDSvc service not present on this system. AppLocker cannot be enforced without it (requires Windows Enterprise/Education/LTSC)."
+}
 
-    # Start the service if not running
-    $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
-    if ($service -and $service.Status -ne "Running") {
-        Invoke-NativeCommand -FilePath "sc.exe" `
-            -Arguments @("start", "AppIDSvc") `
-            -FailureMessage "Failed to start AppIDSvc" | Out-Null
+Invoke-NativeCommand -FilePath "sc.exe" `
+    -Arguments @("config", "AppIDSvc", "start=", "auto") `
+    -FailureMessage "Failed to set AppIDSvc startup type to Automatic" | Out-Null
+Write-Output "  Service startup type set to Automatic"
+
+if ($service.Status -ne "Running") {
+    Invoke-NativeCommand -FilePath "sc.exe" `
+        -Arguments @("start", "AppIDSvc") `
+        -FailureMessage "Failed to start AppIDSvc" | Out-Null
+
+    $deadline = (Get-Date).AddSeconds(30)
+    do {
         Start-Sleep -Seconds 2
         $service = Get-Service -Name "AppIDSvc"
-        if ($service.Status -eq "Running") {
-            Write-Output "  Service started successfully"
-        }
-        else {
-            Write-Warning "Service may not have started. Status: $($service.Status)"
-        }
+    } while ($service.Status -ne "Running" -and (Get-Date) -lt $deadline)
+
+    if ($service.Status -ne "Running") {
+        throw "AppIDSvc did not reach Running state within 30 seconds (current status: $($service.Status)). AppLocker rules would not be enforced."
     }
-    elseif ($service) {
-        Write-Output "  Service is already running"
-    }
-    else {
-        Write-Warning "AppIDSvc service not found"
-    }
+    Write-Output "  Service started successfully"
 }
-catch {
-    Write-Warning "Failed to configure AppIdSvc service: $_"
-    Write-Warning "AppLocker policies may not be enforced without this service"
+else {
+    Write-Output "  Service is already running"
 }
 
 Write-Output ""
 
-# Step 2: Apply AppLocker policy
-Write-Output "Applying AppLocker policy..."
+# Step 2: Apply AppLocker policy template
+Write-Output "Applying AppLocker policy from $templateName..."
 
 try {
     Invoke-NativeCommand -FilePath $appLockerToolPath `
-        -Arguments @("-lgpo", "-set", $appLockerPolicyPath) `
+        -Arguments @("-lgpo", "-set", $templatePath) `
         -FailureMessage "AppLockerPolicyTool failed" | Out-Null
     Write-Output "  AppLocker policy applied successfully"
 }
@@ -282,25 +124,40 @@ Write-Output "Verifying AppLocker policy..."
 
 try {
     $policy = Get-AppLockerPolicy -Local -ErrorAction Stop
-    $exeRuleCount = ($policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }).Count
-    $appxRuleCount = ($policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }).Count
-
-    Write-Output "  Policy loaded successfully"
-    Write-Output "  Executable rule collections: $exeRuleCount"
-    Write-Output "  Packaged app rule collections: $appxRuleCount"
 }
 catch {
-    Write-Warning "Could not verify policy: $_"
+    throw "Could not read back local AppLocker policy after apply: $($_.Exception.Message)"
+}
+
+if (-not $policy -or -not $policy.RuleCollections) {
+    throw "Local AppLocker policy is empty after apply; enforcement would silently no-op."
+}
+
+$exeRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }
+$appxRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }
+$exeRuleCount = if ($exeRules) { ($exeRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
+$appxRuleCount = if ($appxRules) { ($appxRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
+
+Write-Output "  Executable rules: $exeRuleCount"
+Write-Output "  Packaged app rules: $appxRuleCount"
+
+if ($exeRuleCount -eq 0 -or $appxRuleCount -eq 0) {
+    throw "AppLocker policy applied but rule counts are empty (Exe=$exeRuleCount, Appx=$appxRuleCount); enforcement would silently no-op."
+}
+
+$managedCollections = @($policy.RuleCollections | Where-Object { $_.RuleCollectionType -in @("Exe", "Appx") })
+$nonEnforced = @($managedCollections | Where-Object { $_.EnforcementMode -ne "Enabled" })
+if ($nonEnforced.Count -gt 0) {
+    $modes = ($nonEnforced | ForEach-Object { "$($_.RuleCollectionType)=$($_.EnforcementMode)" }) -join ", "
+    throw "AppLocker rule collections not in Enabled enforcement mode: $modes. Rules would log but not block."
 }
 
 Write-Output ""
 Write-Output "=== AppLocker configuration complete ==="
 Write-Output ""
 Write-Output "The following are now blocked for non-admin users:"
-if ($blockStore) {
+if ($systemOwnership -eq "shared") {
     Write-Output "  - Microsoft Store application"
     Write-Output "  - StoreInstaller.exe (web installer from get.microsoft.com)"
 }
-if ($blockCopilot) {
-    Write-Output "  - Microsoft Copilot application"
-}
+Write-Output "  - Microsoft Copilot application"
