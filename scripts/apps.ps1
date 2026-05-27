@@ -1,13 +1,10 @@
 # Define script parameters
 param (
     [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$systemOwnership
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 This script installs applications based on the specified purpose.
@@ -25,14 +22,16 @@ function New-Shortcut {
         [string]$IconPath
     )
 
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut($Path)
-    $shortcut.TargetPath = $TargetPath
-    if ($Arguments) { $shortcut.Arguments = $Arguments }
-    if ($WorkingDirectory) { $shortcut.WorkingDirectory = $WorkingDirectory }
-    if ($Description) { $shortcut.Description = $Description }
-    if ($IconPath -and (Test-Path $IconPath)) { $shortcut.IconLocation = "$IconPath,0" }
-    $shortcut.Save()
+    if ($PSCmdlet.ShouldProcess($Path, "Create shortcut")) {
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($Path)
+        $shortcut.TargetPath = $TargetPath
+        if ($Arguments) { $shortcut.Arguments = $Arguments }
+        if ($WorkingDirectory) { $shortcut.WorkingDirectory = $WorkingDirectory }
+        if ($Description) { $shortcut.Description = $Description }
+        if ($IconPath -and (Test-Path $IconPath)) { $shortcut.IconLocation = "$IconPath,0" }
+        $shortcut.Save()
+    }
 }
 
 # Winget package IDs (apps installed via winget)
@@ -59,14 +58,12 @@ $appsByPurpose = @{
 
 # Validate parameters
 if (-not $systemPurpose) {
-    Write-Error "'systemPurpose' parameter must be provided."
-    exit 1
+    throw "'systemPurpose' parameter must be provided."
 }
 
 $systemPurpose = $systemPurpose.ToLower()
 if (-not $appsByPurpose.ContainsKey($systemPurpose)) {
-    Write-Error "Invalid 'systemPurpose': $systemPurpose. Valid values: radio, tv, editorial, plain"
-    exit 1
+    throw "Invalid 'systemPurpose': $systemPurpose. Valid values: radio, tv, editorial, plain"
 }
 
 # Get apps for this purpose
@@ -74,7 +71,7 @@ $apps = $appsByPurpose[$systemPurpose]
 
 if ($apps.Count -eq 0) {
     Write-Output "No apps to install for '$systemPurpose'."
-    exit 0
+    return
 }
 
 # Install winget if not available (required for LTSC which has no Microsoft Store)
@@ -97,7 +94,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Output "  Downloading dependencies..."
         $depsZip = Join-Path $tempDir "deps.zip"
         $depsDir = Join-Path $tempDir "deps"
-        Invoke-WebRequest -Uri $depsUrl -OutFile $depsZip -UseBasicParsing
+        Invoke-Download -Uri $depsUrl -OutFile $depsZip
         Expand-Archive -Path $depsZip -DestinationPath $depsDir -Force
 
         # Detect architecture and install matching dependencies
@@ -111,8 +108,8 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Output "  Downloading Winget..."
         $msixPath = Join-Path $tempDir "winget.msixbundle"
         $licensePath = Join-Path $tempDir "license.xml"
-        Invoke-WebRequest -Uri $msixUrl -OutFile $msixPath -UseBasicParsing
-        Invoke-WebRequest -Uri $licenseUrl -OutFile $licensePath -UseBasicParsing
+        Invoke-Download -Uri $msixUrl -OutFile $msixPath
+        Invoke-Download -Uri $licenseUrl -OutFile $licensePath
 
         # Install winget (current user + provision for all users)
         Write-Output "  Installing Winget..."
@@ -126,8 +123,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Output "  Winget installed successfully."
     }
     catch {
-        Write-Error "Failed to install Winget: $_"
-        exit 1
+        throw "Failed to install Winget: $($_.Exception.Message)"
     }
     finally {
         Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -136,8 +132,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 # Verify winget is now available
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    Write-Error "Winget not available. A reboot may be required."
-    exit 1
+    throw "Winget not available. A reboot may be required."
 }
 
 Write-Output "Installing apps for '$systemPurpose'..."
@@ -157,11 +152,13 @@ foreach ($app in $apps) {
     }
 
     Write-Output "Installing $app ($packageId)..."
-    $wingetArgs = "install --id=$packageId -e --silent --source winget --accept-package-agreements --accept-source-agreements"
-    $process = Start-Process -FilePath "winget" -ArgumentList $wingetArgs -NoNewWindow -Wait -PassThru
-
-    if ($process.ExitCode -ne 0) {
-        Write-Warning "Failed to install $app (exit code: $($process.ExitCode))"
+    try {
+        Invoke-NativeCommand -FilePath "winget" `
+            -Arguments @("install", "--id=$packageId", "-e", "--silent", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements") `
+            -FailureMessage "Failed to install $app" | Out-Null
+    }
+    catch {
+        Write-Warning $_.Exception.Message
     }
 }
 
@@ -175,7 +172,7 @@ if ($apps -contains "spotify") {
     try {
         # Download Spotify installer
         Write-Output "  Downloading Spotify installer..."
-        Invoke-WebRequest -Uri "https://download.spotify.com/SpotifyFullSetup.exe" -OutFile $spotifyInstaller -UseBasicParsing
+        Invoke-Download -Uri "https://download.spotify.com/SpotifyFullSetup.exe" -OutFile $spotifyInstaller
 
         # Extract to Program Files (machine-wide installation)
         Write-Output "  Extracting to $spotifyPath..."
@@ -209,7 +206,7 @@ if ($apps -contains "spotify") {
 if ($apps -contains "office") {
     Write-Output "Installing Microsoft Office..."
 
-    $officeConfigPath = "C:\Windows\deploy\config\office.xml"
+    $officeConfigPath = Join-DeployPath "config\office.xml"
     $odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19628-20046.exe"
     $tempDir = Join-Path $env:TEMP "odt-install"
 
@@ -224,23 +221,21 @@ if ($apps -contains "office") {
             # Download Office Deployment Tool
             Write-Output "  Downloading Office Deployment Tool..."
             $odtExe = Join-Path $tempDir "odt.exe"
-            Invoke-WebRequest -Uri $odtUrl -OutFile $odtExe -UseBasicParsing
+            Invoke-Download -Uri $odtUrl -OutFile $odtExe
 
             # Extract ODT (contains setup.exe)
             Write-Output "  Extracting ODT..."
-            Start-Process -FilePath $odtExe -ArgumentList "/extract:$tempDir /quiet" -NoNewWindow -Wait
+            Invoke-NativeCommand -FilePath $odtExe `
+                -Arguments @("/extract:$tempDir", "/quiet") `
+                -FailureMessage "Failed to extract Office Deployment Tool" | Out-Null
 
             # Run setup.exe with config
             $setupExe = Join-Path $tempDir "setup.exe"
             Write-Output "  Running Office setup..."
-            $process = Start-Process -FilePath $setupExe -ArgumentList "/configure `"$officeConfigPath`"" -NoNewWindow -Wait -PassThru
-
-            if ($process.ExitCode -eq 0) {
-                Write-Output "  Microsoft Office installed successfully"
-            }
-            else {
-                Write-Warning "Failed to install Microsoft Office (exit code: $($process.ExitCode))"
-            }
+            Invoke-NativeCommand -FilePath $setupExe `
+                -Arguments @("/configure", $officeConfigPath) `
+                -FailureMessage "Failed to install Microsoft Office" | Out-Null
+            Write-Output "  Microsoft Office installed successfully"
         }
         catch {
             Write-Warning "Failed to install Microsoft Office: $_"
@@ -258,7 +253,7 @@ if ($systemOwnership -eq "shared") {
     Write-Output "Creating WhatsApp Web shortcut (InPrivate mode)..."
 
     $shortcutPath = "C:\Users\Public\Desktop\WhatsApp.lnk"
-    $iconPath = "C:\Windows\deploy\whatsapp.ico"
+    $iconPath = Join-DeployPath "whatsapp.ico"
     $edgePath = if (Test-Path "C:\Program Files\Microsoft\Edge\Application\msedge.exe") {
         "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
     }
@@ -270,7 +265,7 @@ if ($systemOwnership -eq "shared") {
     # Download WhatsApp icon
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
     try {
-        Invoke-WebRequest -Uri $iconUrl -OutFile $iconPath -UseBasicParsing -ErrorAction Stop
+        Invoke-Download -Uri $iconUrl -OutFile $iconPath
     }
     catch {
         Write-Warning "Could not download WhatsApp icon"

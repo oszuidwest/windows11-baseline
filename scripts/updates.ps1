@@ -1,12 +1,4 @@
-param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
-)
+param()
 
 <#
 .SYNOPSIS
@@ -32,15 +24,14 @@ try {
     $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Software'")
 }
 catch {
-    Write-Error "Failed to search for updates: $_"
-    exit 1
+    throw "Failed to search for updates: $($_.Exception.Message)"
 }
 
 $updates = $searchResult.Updates
 
 if ($updates.Count -eq 0) {
     Write-Output "No updates available."
-    exit 0
+    return
 }
 
 Write-Output "Found $($updates.Count) update(s):"
@@ -97,8 +88,7 @@ if ($updatesToInstall.Count -gt 0) {
         }
     }
     catch {
-        Write-Error "Installation failed: $_"
-        exit 1
+        throw "Installation failed: $($_.Exception.Message)"
     }
 }
 

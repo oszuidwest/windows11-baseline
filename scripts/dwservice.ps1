@@ -1,12 +1,8 @@
 param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$dwAgentCode
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 .SYNOPSIS
@@ -27,24 +23,22 @@ param (
 # Skip if no agent code provided
 if (-not $dwAgentCode) {
     Write-Output "Skipping DWService installation (no agent code provided)."
-    exit 0
+    return
 }
 
 Write-Output "Installing DWService..."
 
-$deployPath = "C:\Windows\deploy"
-$installerPath = Join-Path $deployPath "dwagent.exe"
+$installerPath = Join-DeployPath "dwagent.exe"
 $dwServiceUrl = "https://www.dwservice.net/download/dwagent.exe"
 
 # Download DWService installer
 Write-Output "Downloading DWService agent..."
 try {
-    Invoke-WebRequest -Uri $dwServiceUrl -OutFile $installerPath -UseBasicParsing
+    Invoke-Download -Uri $dwServiceUrl -OutFile $installerPath
     Write-Output "  Download complete."
 }
 catch {
-    Write-Error "Failed to download DWService: $_"
-    exit 1
+    throw "Failed to download DWService: $($_.Exception.Message)"
 }
 
 # Install DWService silently with agent code
@@ -73,8 +67,7 @@ try {
     }
 }
 catch {
-    Write-Error "Failed to install DWService: $_"
-    exit 1
+    throw "Failed to install DWService: $($_.Exception.Message)"
 }
 
 # Clean up installer

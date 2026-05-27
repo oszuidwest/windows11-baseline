@@ -27,6 +27,21 @@ function Test-Admin {
     (New-Object Security.Principal.WindowsPrincipal $currentUser).IsInRole($adminRole)
 }
 
+function ConvertFrom-SecureStringToPlainText {
+    param (
+        [Parameter(Mandatory)]
+        [securestring]$SecureString
+    )
+
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureString)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+}
+
 # Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
     Write-Error "This script must be run as an administrator. Exiting..."
@@ -51,7 +66,7 @@ $scriptRequirements = @{
     'debloat'          = @('systemPurpose', 'systemOwnership')
     'securitybaseline' = @()
     'applocker'        = @('systemOwnership')
-    'apps'             = @('systemPurpose')
+    'apps'             = @('systemPurpose', 'systemOwnership')
     'dwservice'        = @('dwAgentCode')
     'hardening'        = @()
     'policies'         = @('systemPurpose', 'systemOwnership')
@@ -110,7 +125,8 @@ if ('workgroupName' -in $requiredParams -and -not $workgroupName) {
 
 # Get user password (if required and not provided via parameter)
 if ('userPassword' -in $requiredParams -and -not $userPassword) {
-    $userPassword = Read-Host -Prompt "Enter the user password"
+    $secureUserPassword = Read-Host -Prompt "Enter the user password" -AsSecureString
+    $userPassword = ConvertFrom-SecureStringToPlainText -SecureString $secureUserPassword
 }
 
 # For dedicated systems, ask if a user with auto-login should be created
@@ -192,8 +208,10 @@ $scriptsDir = "$deployDir\scripts"
 
 # Check if the scripts directory exists
 if (Test-Path $scriptsDir) {
-    # Get all .ps1 files in the scripts directory (sorted alphabetically)
-    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 | Sort-Object Name
+    # Get executable .ps1 files in the scripts directory (sorted alphabetically)
+    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
+        Where-Object { $_.BaseName -ne "_common" } |
+        Sort-Object Name
 
     foreach ($scriptFile in $scriptFiles) {
         # Get script name without extension and underscore prefix (e.g., "_debloat.ps1" -> "debloat")
@@ -236,6 +254,7 @@ if (Test-Path $scriptsDir) {
         }
         catch {
             Write-Error "Failed to execute script: $($scriptFile.Name) - Error: $_"
+            exit 1
         }
     }
 

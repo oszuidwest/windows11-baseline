@@ -1,12 +1,9 @@
 param (
     [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$systemOwnership
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 .SYNOPSIS
@@ -28,9 +25,9 @@ param (
 #>
 
 # Paths
-$deployPath = "C:\Windows\deploy"
-$lgpoPath = Join-Path $deployPath "bin\LGPO.exe"
-$policiesPath = Join-Path $deployPath "policies"
+$deployPath = Get-DeployPath
+$lgpoPath = Join-DeployPath "bin\LGPO.exe"
+$policiesPath = Join-DeployPath "policies"
 $configPath = Join-Path $policiesPath "config.json"
 $tempPath = Join-Path $deployPath "temp"
 
@@ -111,7 +108,7 @@ function Set-Policy {
     }
 
     # Process Computer policies
-    if ($policies.Computer.Count -gt 0) {
+    if ($policies.Computer.Count -gt 0 -and $PSCmdlet.ShouldProcess("Computer local policy", "Apply $($policies.Computer.Count) policies")) {
         Write-Output "`nApplying $($policies.Computer.Count) computer policies..."
 
         $computerTxt = Join-Path $tempPath "computer.txt"
@@ -119,24 +116,19 @@ function Set-Policy {
 
         Merge-PolicyFiles -policyFiles $policies.Computer -outputPath $computerTxt
 
-        # Convert txt to pol
-        $result = & $lgpoPath /r $computerTxt /w $computerPol 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "LGPO conversion error: $result"
-        }
+        Invoke-NativeCommand -FilePath $lgpoPath `
+            -Arguments @("/r", $computerTxt, "/w", $computerPol) `
+            -FailureMessage "LGPO computer policy conversion failed"
 
-        # Apply to machine
-        $result = & $lgpoPath /m $computerPol 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "LGPO apply error: $result"
-        }
-        else {
-            Write-Output "  Computer policies applied successfully"
-        }
+        Invoke-NativeCommand -FilePath $lgpoPath `
+            -Arguments @("/m", $computerPol) `
+            -FailureMessage "LGPO computer policy apply failed"
+
+        Write-Output "  Computer policies applied successfully"
     }
 
     # Process User policies
-    if ($policies.User.Count -gt 0) {
+    if ($policies.User.Count -gt 0 -and $PSCmdlet.ShouldProcess("Non-admin user local policy", "Apply $($policies.User.Count) policies")) {
         Write-Output "`nApplying $($policies.User.Count) user policies (non-admin accounts)..."
 
         $userTxt = Join-Path $tempPath "user.txt"
@@ -144,20 +136,15 @@ function Set-Policy {
 
         Merge-PolicyFiles -policyFiles $policies.User -outputPath $userTxt
 
-        # Convert txt to pol
-        $result = & $lgpoPath /r $userTxt /w $userPol 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "LGPO conversion error: $result"
-        }
+        Invoke-NativeCommand -FilePath $lgpoPath `
+            -Arguments @("/r", $userTxt, "/w", $userPol) `
+            -FailureMessage "LGPO user policy conversion failed"
 
-        # Apply to non-administrator accounts only
-        $result = & $lgpoPath /un $userPol 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "LGPO apply error: $result"
-        }
-        else {
-            Write-Output "  User policies applied successfully"
-        }
+        Invoke-NativeCommand -FilePath $lgpoPath `
+            -Arguments @("/un", $userPol) `
+            -FailureMessage "LGPO user policy apply failed"
+
+        Write-Output "  User policies applied successfully"
     }
 
     # Cleanup temp files
@@ -170,8 +157,7 @@ Write-Output ""
 
 # Validate parameters (install.ps1 already validates values, just check presence)
 if (-not $systemPurpose -or -not $systemOwnership) {
-    Write-Error "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
-    exit 1
+    throw "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
 }
 
 $systemPurpose = $systemPurpose.ToLower()
@@ -179,14 +165,12 @@ $systemOwnership = $systemOwnership.ToLower()
 
 # Verify LGPO.exe exists
 if (-not (Test-Path $lgpoPath)) {
-    Write-Error "LGPO.exe not found at $lgpoPath"
-    exit 1
+    throw "LGPO.exe not found at $lgpoPath"
 }
 
 # Verify config exists
 if (-not (Test-Path $configPath)) {
-    Write-Error "Policy configuration not found at $configPath"
-    exit 1
+    throw "Policy configuration not found at $configPath"
 }
 
 Write-Output "Purpose: $systemPurpose"
@@ -204,7 +188,7 @@ if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
         if (-not (Test-Path $wallpaperDir)) {
             New-Item -ItemType Directory -Path $wallpaperDir -Force | Out-Null
         }
-        Invoke-WebRequest -Uri $wallpaperUrl -OutFile $wallpaperPath -UseBasicParsing
+        Invoke-Download -Uri $wallpaperUrl -OutFile $wallpaperPath
         Write-Output "  Wallpaper saved to $wallpaperPath"
     }
     catch {
@@ -225,7 +209,7 @@ $totalPolicies = $applicablePolicies.Computer.Count + $applicablePolicies.User.C
 
 if ($totalPolicies -eq 0) {
     Write-Output "`nNo applicable policies found for this configuration."
-    exit 0
+    return
 }
 
 Write-Output "`nFound $totalPolicies applicable policies"

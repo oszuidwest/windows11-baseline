@@ -1,5 +1,7 @@
 param()
 
+. (Join-Path $PSScriptRoot "_common.ps1")
+
 <#
 .SYNOPSIS
     Applies the Microsoft Windows 11 24H2 Security Baseline.
@@ -15,9 +17,8 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-$deployPath = "C:\Windows\deploy"
-$lgpoPath = Join-Path $deployPath "bin\LGPO.exe"
-$baselineRoot = Join-Path $deployPath "microsoft-security-baseline"
+$lgpoPath = Join-DeployPath "bin\LGPO.exe"
+$baselineRoot = Join-DeployPath "microsoft-security-baseline"
 $baselineZip = Join-Path $baselineRoot "Windows 11 v24H2 Security Baseline.zip"
 $extractPath = Join-Path $baselineRoot "extracted"
 $baselineUrl = "https://download.microsoft.com/download/8/5/c/85c25433-a1b0-4ffa-9429-7e023e7da8d8/Windows%2011%20v24H2%20Security%20Baseline.zip"
@@ -32,40 +33,6 @@ $baselineGpoNames = @(
     "MSFT Windows 11 24H2 - Domain Security",
     "MSFT Windows 11 24H2 - User"
 )
-
-function ConvertTo-CmdArgument {
-    param (
-        [Parameter(Mandatory)]
-        [string]$Argument
-    )
-
-    if ($Argument -match '[\s"]') {
-        return '"' + ($Argument -replace '"', '\"') + '"'
-    }
-
-    return $Argument
-}
-
-function Invoke-Lgpo {
-    param (
-        [Parameter(Mandatory)]
-        [string[]]$Arguments,
-
-        [Parameter(Mandatory)]
-        [string]$FailureMessage
-    )
-
-    # Microsoft runs LGPO through cmd.exe so stderr is captured as text instead
-    # of becoming a PowerShell RemoteException when $ErrorActionPreference is Stop.
-    $argumentLine = ($Arguments | ForEach-Object { ConvertTo-CmdArgument -Argument $_ }) -join " "
-    $commandLine = "$(ConvertTo-CmdArgument -Argument $lgpoPath) $argumentLine 2>&1"
-    $result = cmd.exe /d /c $commandLine
-
-    if ($LASTEXITCODE -ne 0) {
-        $result | Write-Output
-        throw "$FailureMessage with exit code $LASTEXITCODE"
-    }
-}
 
 Write-Output "=== Microsoft Windows 11 24H2 Security Baseline ==="
 Write-Output ""
@@ -86,8 +53,7 @@ try {
     New-Item -Path $baselineRoot -ItemType Directory -Force | Out-Null
 
     Write-Output "Downloading Microsoft Security Compliance Toolkit baseline..."
-    $ProgressPreference = "SilentlyContinue"
-    Invoke-WebRequest -Uri $baselineUrl -OutFile $baselineZip -UseBasicParsing
+    Invoke-Download -Uri $baselineUrl -OutFile $baselineZip
 
     Write-Output "Verifying baseline package hash..."
     $actualSha256 = (Get-FileHash -Path $baselineZip -Algorithm SHA256).Hash.ToUpperInvariant()
@@ -139,14 +105,18 @@ try {
     Copy-Item -Path (Join-Path (Join-Path $templatesPath "en-US") "*.adml") -Destination $policyDefinitionsLanguagePath -Force
 
     Write-Output "Configuring required LGPO client-side extensions..."
-    Invoke-Lgpo `
+    Invoke-NativeCommand -FilePath $lgpoPath `
         -Arguments @("/v", "/e", "mitigation", "/e", "audit", "/e", "zone", "/e", "DGVBS") `
         -FailureMessage "LGPO client-side extension configuration failed"
 
     Write-Output "Disabling Xbox Game Save scheduled task..."
-    $taskResult = & schtasks.exe /Change /TN "\Microsoft\XblGameSave\XblGameSaveTask" /DISABLE 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Could not disable Xbox Game Save scheduled task: $taskResult"
+    try {
+        Invoke-NativeCommand -FilePath "schtasks.exe" `
+            -Arguments @("/Change", "/TN", "\Microsoft\XblGameSave\XblGameSaveTask", "/DISABLE") `
+            -FailureMessage "Could not disable Xbox Game Save scheduled task" | Out-Null
+    }
+    catch {
+        Write-Warning $_.Exception.Message
     }
 
     $computerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
@@ -162,7 +132,7 @@ try {
         $gpoPath = $gpoMap[$gpoName]
         Write-Output "Applying: $gpoName"
 
-        Invoke-Lgpo `
+        Invoke-NativeCommand -FilePath $lgpoPath `
             -Arguments @("/v", "/g", $gpoPath) `
             -FailureMessage "Failed to apply Microsoft baseline GPO '$gpoName'"
     }
@@ -172,7 +142,7 @@ try {
         $deltaInf = Join-Path $configFilesPath "DeltaForNonDomainJoined.inf"
         $deltaTxt = Join-Path $configFilesPath "DeltaForNonDomainJoined.txt"
 
-        Invoke-Lgpo `
+        Invoke-NativeCommand -FilePath $lgpoPath `
             -Arguments @("/v", "/s", $deltaInf, "/t", $deltaTxt) `
             -FailureMessage "Failed to apply non-domain-joined delta"
     }
@@ -181,6 +151,5 @@ try {
     Write-Output "Microsoft Windows 11 24H2 Security Baseline applied."
 }
 catch {
-    Write-Error "Failed to apply Microsoft security baseline: $($_.Exception.Message)"
-    exit 1
+    throw "Failed to apply Microsoft security baseline: $($_.Exception.Message)"
 }

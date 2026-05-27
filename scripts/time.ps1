@@ -1,12 +1,6 @@
-param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
-)
+param()
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 Write-Output "Configuring time settings..."
 
@@ -17,7 +11,7 @@ try {
     Write-Output "  Timezone set."
 }
 catch {
-    Write-Error "Failed to set timezone: $_"
+    throw "Failed to set timezone: $($_.Exception.Message)"
 }
 
 # Set regional settings to Netherlands (nl-NL)
@@ -35,7 +29,7 @@ try {
     Write-Output "  Regional settings will apply to new users."
 }
 catch {
-    Write-Error "Failed to set regional settings: $_"
+    throw "Failed to set regional settings: $($_.Exception.Message)"
 }
 
 # Ensure the Windows Time Service is running
@@ -48,26 +42,32 @@ try {
     Write-Output "  Time service running."
 }
 catch {
-    Write-Error "Failed to start time service: $_"
+    throw "Failed to start time service: $($_.Exception.Message)"
 }
 
 # Configure the Windows Time Service to use the specified NTP servers
 Write-Output "Configuring NTP servers (nl.pool.ntp.org)..."
 $ntpServers = "0.nl.pool.ntp.org,1.nl.pool.ntp.org,2.nl.pool.ntp.org,3.nl.pool.ntp.org"
 
-$result = w32tm /config /manualpeerlist:$ntpServers /syncfromflags:manual /reliable:NO /update 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "NTP config failed: $result"
+try {
+    Invoke-NativeCommand -FilePath "w32tm" `
+        -Arguments @("/config", "/manualpeerlist:$ntpServers", "/syncfromflags:manual", "/reliable:NO", "/update") `
+        -FailureMessage "NTP config failed" | Out-Null
+}
+catch {
+    Write-Warning $_.Exception.Message
 }
 
 # Forcing a resynchronization
 Write-Output "Syncing time..."
-$result = w32tm /resync /rediscover 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "Time sync failed: $result"
-}
-else {
+try {
+    Invoke-NativeCommand -FilePath "w32tm" `
+        -Arguments @("/resync", "/rediscover") `
+        -FailureMessage "Time sync failed" | Out-Null
     Write-Output "  Time synchronized."
+}
+catch {
+    Write-Warning $_.Exception.Message
 }
 
 Write-Output "Time settings configured."

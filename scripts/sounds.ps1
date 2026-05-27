@@ -1,12 +1,6 @@
-param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
-)
+param()
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 .SYNOPSIS
@@ -25,10 +19,13 @@ $tempKey = "HKU\DefaultUser"
 
 # Load the Default User registry hive
 Write-Output "Loading Default User registry hive..."
-$result = reg load $tempKey $defaultUserHive 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to load Default User hive: $result"
-    exit 1
+try {
+    Invoke-NativeCommand -FilePath "reg.exe" `
+        -Arguments @("load", $tempKey, $defaultUserHive) `
+        -FailureMessage "Failed to load Default User hive" | Out-Null
+}
+catch {
+    throw $_.Exception.Message
 }
 
 try {
@@ -93,12 +90,14 @@ finally {
 
     while (-not $unloaded -and $retryCount -lt $maxRetries) {
         $retryCount++
-        $result = reg unload $tempKey 2>&1
-        if ($LASTEXITCODE -eq 0) {
+        try {
+            Invoke-NativeCommand -FilePath "reg.exe" `
+                -Arguments @("unload", $tempKey) `
+                -FailureMessage "Failed to unload Default User hive" | Out-Null
             $unloaded = $true
             Write-Output "Default User registry hive unloaded."
         }
-        else {
+        catch {
             if ($retryCount -lt $maxRetries) {
                 Write-Output "  Retry $retryCount/$maxRetries - waiting for handles to release..."
                 Start-Sleep -Seconds 2

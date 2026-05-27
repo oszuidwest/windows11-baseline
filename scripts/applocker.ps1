@@ -1,12 +1,8 @@
 param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$systemOwnership
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 .SYNOPSIS
@@ -35,9 +31,8 @@ param (
 #>
 
 # Paths
-$deployPath = "C:\Windows\deploy"
-$appLockerToolPath = Join-Path $deployPath "bin\AppLockerPolicyTool.exe"
-$appLockerPolicyPath = Join-Path $deployPath "policies\applocker\policy.xml"
+$appLockerToolPath = Join-DeployPath "bin\AppLockerPolicyTool.exe"
+$appLockerPolicyPath = Join-DeployPath "policies\applocker\policy.xml"
 
 Write-Output "=== AppLocker Configuration ==="
 Write-Output ""
@@ -57,7 +52,7 @@ switch ($systemOwnership) {
     default {
         Write-Output "Skipping AppLocker configuration (only applies to shared/dedicated systems)"
         Write-Output "Current ownership: $systemOwnership"
-        exit 0
+        return
     }
 }
 
@@ -67,13 +62,11 @@ Write-Output ""
 
 # Verify AppLockerPolicyTool.exe exists
 if (-not (Test-Path $appLockerToolPath)) {
-    Write-Error "AppLockerPolicyTool.exe not found at $appLockerToolPath"
-    exit 1
+    throw "AppLockerPolicyTool.exe not found at $appLockerToolPath"
 }
 
 # Generate AppLocker policy XML dynamically
-function New-AppLockerPolicy {
-    [CmdletBinding(SupportsShouldProcess)]
+function Get-AppLockerPolicyXml {
     param (
         [bool]$BlockStore,
         [bool]$BlockCopilot
@@ -212,7 +205,7 @@ $appxDenyRules
 
 # Generate and save the policy
 Write-Output "Generating AppLocker policy..."
-$policyXml = New-AppLockerPolicy -BlockStore $blockStore -BlockCopilot $blockCopilot
+$policyXml = Get-AppLockerPolicyXml -BlockStore $blockStore -BlockCopilot $blockCopilot
 
 # Ensure the applocker directory exists
 $appLockerDir = Split-Path $appLockerPolicyPath -Parent
@@ -230,18 +223,22 @@ Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
 try {
     # Set service to start automatically using sc.exe (more reliable than Set-Service)
-    $scResult = & sc.exe config AppIDSvc start= auto 2>&1
-    if ($LASTEXITCODE -eq 0) {
+    try {
+        Invoke-NativeCommand -FilePath "sc.exe" `
+            -Arguments @("config", "AppIDSvc", "start=", "auto") `
+            -FailureMessage "Failed to set AppIDSvc startup type" | Out-Null
         Write-Output "  Service startup type set to Automatic"
     }
-    else {
-        Write-Warning "Failed to set service startup type: $scResult"
+    catch {
+        Write-Warning $_.Exception.Message
     }
 
     # Start the service if not running
     $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
     if ($service -and $service.Status -ne "Running") {
-        & sc.exe start AppIDSvc | Out-Null
+        Invoke-NativeCommand -FilePath "sc.exe" `
+            -Arguments @("start", "AppIDSvc") `
+            -FailureMessage "Failed to start AppIDSvc" | Out-Null
         Start-Sleep -Seconds 2
         $service = Get-Service -Name "AppIDSvc"
         if ($service.Status -eq "Running") {
@@ -269,18 +266,13 @@ Write-Output ""
 Write-Output "Applying AppLocker policy..."
 
 try {
-    $result = & $appLockerToolPath -lgpo -set $appLockerPolicyPath 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Output "  AppLocker policy applied successfully"
-    }
-    else {
-        Write-Warning "AppLockerPolicyTool returned exit code: $LASTEXITCODE"
-        Write-Warning "Output: $result"
-    }
+    Invoke-NativeCommand -FilePath $appLockerToolPath `
+        -Arguments @("-lgpo", "-set", $appLockerPolicyPath) `
+        -FailureMessage "AppLockerPolicyTool failed" | Out-Null
+    Write-Output "  AppLocker policy applied successfully"
 }
 catch {
-    Write-Error "Failed to apply AppLocker policy: $_"
-    exit 1
+    throw "Failed to apply AppLocker policy: $($_.Exception.Message)"
 }
 
 Write-Output ""
