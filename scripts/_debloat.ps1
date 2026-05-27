@@ -1,13 +1,4 @@
-# Define script parameters
-param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
-)
+param()
 
 <#
 This script removes bloatware from Windows 11.
@@ -25,7 +16,9 @@ function Remove-BloatwareApp {
         Where-Object { $_.Name -like "*$AppName*" } |
         ForEach-Object {
             Write-Output "  Removing: $($_.Name)"
-            Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+            if ($PSCmdlet.ShouldProcess($_.PackageFullName, "Remove Appx package")) {
+                Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue
+            }
         }
 
     # Remove provisioned packages (prevents reinstallation)
@@ -33,7 +26,9 @@ function Remove-BloatwareApp {
         Where-Object { $_.DisplayName -like "*$AppName*" -or $_.PackageName -like "*$AppName*" } |
         ForEach-Object {
             Write-Output "  Removing provisioned: $($_.DisplayName)"
-            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
+            if ($PSCmdlet.ShouldProcess($_.PackageName, "Remove provisioned Appx package")) {
+                Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
+            }
         }
 }
 

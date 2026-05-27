@@ -1,13 +1,4 @@
-# Define script parameters
-param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
-)
+param()
 
 <#
 This script applies additional security hardening.

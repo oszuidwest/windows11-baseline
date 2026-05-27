@@ -12,7 +12,7 @@ Run as Administrator:
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 }`"" -Verb RunAs
 ```
 
-The installer prompts for:
+The installer is interactive and prompts for:
 - **System purpose** (radio, tv, editorial, plain)
 - **System ownership** (shared, personal, dedicated)
 - **Computer name**
@@ -22,9 +22,11 @@ The installer prompts for:
 - **Create user with auto-login?** (dedicated only)
 - **DWService agent code** (optional)
 
+Deployment values are not accepted as command-line parameters. Use the prompts; `-OnlyRun` is the only supported installer option.
+
 ### Updating Existing Systems
 
-Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems:
+Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems. The installer still prompts for any values needed by the selected scripts:
 
 ```powershell
 # Update policies only (prompts for purpose and ownership)
@@ -34,7 +36,7 @@ Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 -OnlyRun 'policies','hardening' }`"" -Verb RunAs
 ```
 
-Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
+Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
 
 ## Configuration Options
 
@@ -52,8 +54,10 @@ Available scripts: `debloat`, `applocker`, `apps`, `dwservice`, `hardening`, `po
 | Ownership | Description | User | Auto-login | Microsoft Store |
 |-----------|-------------|------|------------|-----------------|
 | Shared | Shared computers with restricted access | Purpose-based | Yes (if not plain) | Blocked |
-| Personal | Company-issued laptops for employees | Custom | No | Allowed |
-| Dedicated | Single-function systems (e.g., playout servers) | Custom (optional) | Optional | Allowed |
+| Personal | Company-issued laptops for employees | Custom | No | Blocked |
+| Dedicated | Single-function systems (e.g., playout servers) | Custom (optional) | Optional | Blocked |
+
+The Microsoft Store app is removed for all ownerships via the debloat phase (`Microsoft.WindowsStore` is in the global removal list, including its provisioned package so it does not return for new users). Shared systems additionally block `StoreInstaller.exe` (the web installer from `get.microsoft.com`) via AppLocker as defense-in-depth.
 
 ## Application Matrix
 
@@ -76,7 +80,7 @@ Applications are installed via **winget**, except Spotify and MS Office which us
 Shared systems also receive:
 - **WhatsApp Web shortcut** on Public Desktop (Edge InPrivate mode, no data stored)
 - **Branded wallpaper** at `C:\ProgramData\ZuidWest\wallpaper\wallpaper.png` (locked, cannot be changed)
-- **Microsoft Store blocked** via AppLocker (blocks Store app and web installer from get.microsoft.com)
+- **Microsoft Store and StoreInstaller.exe blocked** via AppLocker (defense-in-depth on top of the debloat-phase appx removal that applies to all systems)
 - **Edge lockdown** - ephemeral profiles, no extensions, no developer tools, no autofill
 - **System tools blocked** - Command Prompt, PowerShell, Registry Editor, Run dialog (Win+R), Task Manager
 - **Settings blocked** - Control Panel, Settings app, network connection properties
@@ -89,7 +93,7 @@ Dedicated systems (e.g., playout servers) receive:
 
 ### AppLocker
 
-On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Additionally, Copilot cannot be reliably blocked via GPO in 24H2. This baseline uses **AppLocker** to block unwanted apps based on ownership. The policy XML is generated dynamically at runtime:
+On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Additionally, Copilot cannot be reliably blocked via GPO in 24H2. This baseline uses **AppLocker** to block unwanted apps based on ownership. The policy XML lives as checked-in templates in `policies/applocker/` (`shared.xml`, `dedicated.xml`); `scripts/applocker.ps1` selects the matching template and applies it via `AppLockerPolicyTool.exe`:
 
 | Ownership | Blocked Apps |
 |-----------|--------------|
@@ -134,7 +138,9 @@ Policies are applied via LGPO.exe based on system purpose and ownership. Configu
 
 ## Security Hardening
 
-All systems receive defense-in-depth hardening beyond Windows 11 24H2 defaults. Attack surface reduction is achieved by disabling the Remote Registry service, blocking AutoRun on all drive types, and removing pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
+All systems first receive the official **Microsoft Windows 11 v24H2 Security Baseline** from the Microsoft Security Compliance Toolkit, applied locally with LGPO.exe. The package is downloaded from Microsoft at deployment time and verified with a pinned SHA-256 hash before use. The Microsoft BitLocker GPO is intentionally skipped because it blocks writing to removable drives that are not BitLocker-protected; editorial and camera workflows need normal access to SD cards. ZuidWest applies a removable-media-safe BitLocker hardening policy afterwards.
+
+Additional defense-in-depth hardening beyond Windows 11 24H2 defaults disables the Remote Registry service, blocks AutoRun on all drive types, and removes pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
 
 ## LTSC Compatibility
 

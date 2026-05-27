@@ -1,12 +1,8 @@
 param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$dwAgentCode
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
 .SYNOPSIS
@@ -14,10 +10,10 @@ param (
 
 .DESCRIPTION
     Downloads and installs DWService agent for remote support and management.
-    Configures as unattended agent using the provided agent code from dwservice.net.
+    Configures as a persistent remote-access agent using the provided agent code from dwservice.net.
 
 .PARAMETER dwAgentCode
-    The agent code from dwservice.net for unattended access configuration.
+    The agent code from dwservice.net for remote access configuration.
 
 .NOTES
     DWService is installed on all systems (shared, personal, dedicated).
@@ -27,57 +23,60 @@ param (
 # Skip if no agent code provided
 if (-not $dwAgentCode) {
     Write-Output "Skipping DWService installation (no agent code provided)."
-    exit 0
+    return
 }
 
 Write-Output "Installing DWService..."
 
-$deployPath = "C:\Windows\deploy"
-$installerPath = Join-Path $deployPath "dwagent.exe"
+$installerPath = Join-DeployPath "dwagent.exe"
 $dwServiceUrl = "https://www.dwservice.net/download/dwagent.exe"
 
 # Download DWService installer
 Write-Output "Downloading DWService agent..."
 try {
-    Invoke-WebRequest -Uri $dwServiceUrl -OutFile $installerPath -UseBasicParsing
+    Invoke-Download -Uri $dwServiceUrl -OutFile $installerPath
     Write-Output "  Download complete."
 }
 catch {
-    Write-Error "Failed to download DWService: $_"
-    exit 1
+    throw "Failed to download DWService: $($_.Exception.Message)"
 }
 
-# Install DWService silently with agent code
+# Run the DWService installer with the configured agent code.
 Write-Output "Installing DWService with agent code..."
+$maxMinutes = 5
 try {
     $process = Start-Process -FilePath $installerPath -ArgumentList "-silent", "key=$dwAgentCode" -PassThru
     Write-Output "  Installer started (PID: $($process.Id))"
 
-    # Poll every 60 seconds, max 5 minutes
-    $maxMinutes = 5
     for ($i = 1; $i -le $maxMinutes; $i++) {
-        $exited = $process.WaitForExit(60000)
-
-        if ($exited) {
-            Write-Output "  Installer exited with code: $($process.ExitCode)"
+        if ($process.WaitForExit(60000)) {
             break
         }
-        else {
-            Write-Output "  Still running after $i minute(s)..."
-        }
+        Write-Output "  Still running after $i minute(s)..."
     }
 
     if (-not $process.HasExited) {
-        Write-Warning "Installer still running after $maxMinutes minutes, killing process..."
-        $process.Kill()
+        $killed = $true
+        try {
+            $process.Kill()
+        }
+        catch {
+            $killed = $false
+            Write-Warning "Could not kill DWService installer (PID $($process.Id)): $($_.Exception.Message)"
+        }
+        $killState = if ($killed) { "process was killed" } else { "kill attempt failed (PID $($process.Id) may still be running)" }
+        throw "DWService installer did not exit within $maxMinutes minutes; $killState."
+    }
+
+    $exitCode = $process.ExitCode
+    Write-Output "  Installer exited with code: $exitCode"
+
+    if ($exitCode -ne 0) {
+        throw "DWService installer returned non-zero exit code $exitCode."
     }
 }
-catch {
-    Write-Error "Failed to install DWService: $_"
-    exit 1
+finally {
+    Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 }
-
-# Clean up installer
-Remove-Item -Path $installerPath -Force -ErrorAction SilentlyContinue
 
 Write-Output "DWService installation complete."

@@ -1,25 +1,38 @@
 param (
     [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
-    [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$systemOwnership
 )
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 Write-Output "Configuring power settings..."
 
 function Set-PowerTimeout {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([bool])]
     param (
         [string]$Setting,
         [int]$AcValue,
         [int]$DcValue
     )
-    powercfg /change "$Setting-ac" $AcValue 2>&1 | Out-Null
-    powercfg /change "$Setting-dc" $DcValue 2>&1 | Out-Null
-    return $LASTEXITCODE -eq 0
+
+    if (-not $PSCmdlet.ShouldProcess($Setting, "Set AC/DC power timeout")) {
+        return $true
+    }
+
+    try {
+        Invoke-NativeCommand -FilePath "powercfg" `
+            -Arguments @("/change", "$Setting-ac", $AcValue) `
+            -FailureMessage "Failed to set $Setting AC timeout" | Out-Null
+        Invoke-NativeCommand -FilePath "powercfg" `
+            -Arguments @("/change", "$Setting-dc", $DcValue) `
+            -FailureMessage "Failed to set $Setting DC timeout" | Out-Null
+        return $true
+    }
+    catch {
+        Write-Warning $_.Exception.Message
+        return $false
+    }
 }
 
 $success = $true
@@ -35,7 +48,9 @@ if (-not (Set-PowerTimeout -Setting "standby-timeout" -AcValue 0 -DcValue 60)) {
 
 Write-Output "  Hibernate: disabled"
 if (-not (Set-PowerTimeout -Setting "hibernate-timeout" -AcValue 0 -DcValue 0)) { $success = $false }
-powercfg /hibernate off 2>&1 | Out-Null
+Invoke-NativeCommand -FilePath "powercfg" `
+    -Arguments @("/hibernate", "off") `
+    -FailureMessage "Failed to disable hibernate" | Out-Null
 
 if (-not $success) {
     Write-Warning "Some power settings may not have been applied."

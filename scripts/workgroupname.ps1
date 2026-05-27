@@ -1,12 +1,7 @@
 # Define script parameters
 param (
-    [string]$systemPurpose,
-    [string]$systemOwnership,
-    [string]$userPassword,
     [string]$computerName,
-    [string]$workgroupName,
-    [string]$dwAgentCode,
-    [string]$dedicatedUserName
+    [string]$workgroupName
 )
 
 Write-Output "Configuring computer name and workgroup..."
@@ -23,7 +18,7 @@ if ($currentComputerName -ne $computerName) {
         Write-Output "  Computer name changed successfully."
     }
     catch {
-        Write-Error "Failed to rename computer: $_"
+        throw "Failed to rename computer: $($_.Exception.Message)"
     }
 }
 else {
@@ -38,7 +33,7 @@ if ($currentWorkgroup -ne $workgroupName) {
         Write-Output "  Workgroup changed successfully."
     }
     catch {
-        Write-Error "Failed to change workgroup: $_"
+        throw "Failed to change workgroup: $($_.Exception.Message)"
     }
 }
 else {

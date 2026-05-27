@@ -1,7 +1,12 @@
 Computer
 SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions
 DenyDeviceClasses
-MULTI_SZ:{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+DWORD:1
+
+Computer
+SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions\DenyDeviceClasses
+2
+SZ:{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
 
 Computer
 SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions

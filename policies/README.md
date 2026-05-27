@@ -8,9 +8,10 @@ This directory contains Local Group Policy settings in LGPO text format for conf
 policies/
 ├── config.json                  # Policy-to-scope mapping
 ├── config.schema.json           # JSON schema for validation
-├── applocker/                   # AppLocker policies (generated at runtime)
+├── applocker/                   # AppLocker policy templates (shared.xml, dedicated.xml)
 ├── system/                      # Computer-level policies (HKLM)
 │   ├── bloatware/               # Game Bar, Spotlight, Widgets, Web Search
+│   ├── bitlocker/               # BitLocker-related hardening safe for removable media workflows
 │   ├── logon-experience/        # First-run animations
 │   ├── microsoft-account/       # Block MS Account auth
 │   ├── microsoft-store/         # Block Store + app installer
@@ -60,42 +61,55 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | `personal` | Personal workstations (single user) |
 | `dedicated` | Dedicated workstations (specific function) |
 
+> **Note:** all policies in `config.json` currently use `purposes: ["all"]`. The purpose dimension is kept in the schema and the apply pipeline as a reserved future hook so that purpose-specific policies can be added without restructuring `config.json`. `scripts/ci/generate-policy-matrix.sh` enforces this assumption: it fails fast if any policy adopts a purpose-specific scope so the matrix cannot silently misrepresent it.
+
 ## Policy Matrix
 
+The table below is generated from `config.json` by `scripts/ci/generate-policy-matrix.sh`. Do not edit by hand - run `./scripts/ci/generate-policy-matrix.sh write` after changing `config.json` (CI enforces this).
+
+<!-- BEGIN_POLICY_MATRIX -->
 | Scope | Category | Policy | Description | Shared | Personal | Dedicated |
 |:-----:|----------|--------|-------------|:------:|:--------:|:---------:|
-| system | bloatware | Disable web search | No web results or suggestions in Start menu | x | x | x |
-| system | bloatware | Disable Spotlight | Remove tips and suggestions | x | x | x |
-| system | bloatware | Disable Widgets | Remove Widgets panel | x | x | x |
-| system | bloatware | Disable Game Bar | Suppress Game Bar popups | x | x | x |
-| system | logon-experience | Disable logon animations | Skip first-run animation, hide Switch User | x | x | x |
-| system | microsoft-account | Disable Microsoft Account | Block MS/Work/School accounts | x | | |
-| system | microsoft-store | Disable Store | Block ms-appinstaller:// and promotions | x | | |
-| system | onedrive | Disable OneDrive sync | Prevent cloud sync | x | | |
-| system | oobe | Skip privacy wizard | Skip OOBE privacy wizard | x | x | x |
-| system | privacy | Disable tracking | Telemetry, location, ads | x | x | x |
-| system | privacy | Disable clipboard history | No clipboard history/cross-device | x | | x |
-| system | privacy | Disable activity history | No Timeline/activity uploads | x | x | x |
-| system | security | Disable autorun | Block USB/CD autorun | x | x | x |
-| system | security | Hide shutdown button | Only allow restart | x | | |
-| system | security | NTLM hardening | Force NTLMv2 only, refuse LM/NTLM | x | x | x |
-| system | security | Defender Network Protection | Block malicious domains | x | x | x |
-| system | windows-update | Configure auto-update | Daily at 3 AM | x | x | x |
-| user | browser | Edge profile | Ephemeral profiles, no history/sync | x | | |
-| user | browser | Edge privacy | Tracking prevention, no telemetry | x | x | x |
-| user | browser | Edge autofill | No passwords, creditcards, import | x | | |
-| user | browser | Edge UI | No Copilot, rewards, shopping; sets homepage | x | x | x |
-| user | browser | Edge developer tools | Disable F12 developer tools | x | | |
-| user | browser | Edge extensions | Block all extension installs | x | | |
-| user | personalization | Branded wallpaper | ZuidWest wallpaper (locked) | x | | |
-| user | personalization | Black wallpaper | Solid black background (locked) | | | x |
-| user | security | Disable Command Prompt | Block cmd.exe but allow batch files | x | | |
-| user | security | Disable Registry Editor | Block regedit.exe access | x | | |
-| user | security | Disable PowerShell | Block scripts, allow interactive shell | x | | |
-| user | security | Disable Run dialog | Block Win+R access | x | | |
-| user | security | Disable Task Manager | Block Task Manager access | x | | |
-| user | security | Disable Control Panel | Block Control Panel and Settings | x | | |
-| user | security | Disable network settings | Block network property changes | x | | |
+| system | bitlocker | Removable Media Safe | Apply BitLocker-related hardening without blocking writes to SD cards or USB media | x | x | x |
+| system | bloatware | Disable Game Bar | Disable Game Bar popups and DVR (not installed on LTSC) | x | x | x |
+| system | bloatware | Disable Spotlight | Disable Windows Spotlight tips and suggestions | x | x | x |
+| system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | x | x | x |
+| system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | x | x | x |
+| system | bluetooth | Disable Bluetooth | Disable Bluetooth by blocking Bluetooth device class and disabling bthserv | x | x | x |
+| system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | x | x | x |
+| system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | x |   |   |
+| system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | x |   |   |
+| system | onedrive | Disable OneDrive Sync | Disable OneDrive file synchronization | x |   |   |
+| system | oobe | Skip Privacy Wizard | Skip privacy wizard during Windows setup | x | x | x |
+| system | privacy | Disable Activity History | Disable Windows Activity History and Timeline | x | x | x |
+| system | privacy | Disable Clipboard History | Disable clipboard history and cross-device clipboard | x |   | x |
+| system | privacy | Disable Recall | Disable Windows Recall AI screenshot feature | x |   | x |
+| system | privacy | Disable Tracking | Disable telemetry, location, advertising ID and tracking | x | x | x |
+| system | security | Defender Network Protection | Enable Defender Network Protection to block malicious domains | x | x | x |
+| system | security | Defender PUA Protection | Enable Defender PUA (Potentially Unwanted Application) Protection | x | x | x |
+| system | security | Disable Autorun | Disable autorun for USB, CD and other drives | x | x | x |
+| system | security | Hide Shutdown Button | Hide shutdown button, only allow restart | x |   |   |
+| system | security | NTLM Hardening | Force NTLMv2 only authentication (LmCompatibilityLevel 5) | x | x | x |
+| system | security | SmartScreen | Enable Windows SmartScreen for apps and files | x | x | x |
+| system | wifi | Disable WiFi | Disable WiFi by disabling WLAN AutoConfig service | x |   | x |
+| system | windows-update | Configure Auto Update | Configure automatic updates daily at 3:00 AM | x | x | x |
+| system | windows-update | Disable Auto Reboot | Prevent automatic reboot after updates (dedicated systems have auto-login) |   |   | x |
+| user | browser | Edge Autofill | Disable Edge autofill and data import | x |   |   |
+| user | browser | Edge Developer Tools | Disable Edge Developer Tools (F12) | x |   |   |
+| user | browser | Edge Extensions | Block all Edge extension installations | x |   |   |
+| user | browser | Edge Privacy | Edge tracking prevention and security | x | x | x |
+| user | browser | Edge Profile | Edge ephemeral profiles, no history, no sync | x |   |   |
+| user | browser | Edge UI | Disable Edge bloatware UI elements and set homepage to zuidwestupdate.nl | x | x | x |
+| user | personalization | Set Wallpaper Black | Set solid black wallpaper for dedicated systems |   |   | x |
+| user | personalization | Set Wallpaper Branded | Set branded ZuidWest wallpaper for shared and personal systems | x | x |   |
+| user | security | Disable Command Prompt | Disable Command Prompt for non-admin users | x |   |   |
+| user | security | Disable Control Panel | Disable Control Panel and Settings app for non-admin users | x |   |   |
+| user | security | Disable Network Settings | Disable network connection property changes for non-admin users | x |   |   |
+| user | security | Disable PowerShell | Disable PowerShell for non-admin users | x |   |   |
+| user | security | Disable Registry Editor | Disable Registry Editor for non-admin users | x |   |   |
+| user | security | Disable Run Dialog | Disable Run dialog (Win+R) for non-admin users | x |   |   |
+| user | security | Disable Task Manager | Disable Task Manager for non-admin users | x |   |   |
+<!-- END_POLICY_MATRIX -->
 
 ## File Format
 
