@@ -1,0 +1,14 @@
+User
+Software\Policies\Microsoft\Edge
+BrowserSignin
+DWORD:1
+
+User
+Software\Policies\Microsoft\Edge
+RestrictSigninToPattern
+SZ:(?i)^[^@]+@(zuidwestupdate\.nl|zuidwesttv\.nl|zuidwestfm\.nl)$
+
+User
+Software\Policies\Microsoft\Edge
+MSAWebSiteSSOUsingThisProfileAllowed
+DWORD:0

@@ -73,6 +73,8 @@ The Microsoft Store app is removed for all ownerships via the debloat phase (`Mi
 | Thunderbird     | x     |    |           |       |
 | VLC             | x     | x  | x         |       |
 
+Personal systems additionally receive Google Chrome regardless of purpose.
+
 Applications are installed via **winget**, except Spotify and MS Office which use direct downloads. Spotify has winget limitations in admin context; Office uses the Office Deployment Tool with a custom config (`config/office.xml`) for Dutch language and excluded apps. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
 
 ### Shared Systems
@@ -135,6 +137,9 @@ All systems have Windows sounds disabled.
 ## Policy Framework
 
 Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix.
+
+Edge and Chrome sign-in are disabled on shared and dedicated systems. Personal
+systems allow only ZuidWest work/school account addresses.
 
 ## Security Hardening
 

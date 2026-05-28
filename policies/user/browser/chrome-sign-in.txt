@@ -1,0 +1,9 @@
+User
+Software\Policies\Google\Chrome
+BrowserSignin
+DWORD:1
+
+User
+Software\Policies\Google\Chrome
+RestrictSigninToPattern
+SZ:(?i)^[^@]+@(zuidwestupdate\.nl|zuidwesttv\.nl|zuidwestfm\.nl)$

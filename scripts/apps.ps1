@@ -7,8 +7,9 @@ param (
 . (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
-This script installs applications based on the specified purpose.
+This script installs applications based on the specified purpose and ownership.
 'systemPurpose' should be "radio", "tv", "editorial", or "plain".
+'systemOwnership' should be "shared", "personal", or "dedicated".
 #>
 
 function New-Shortcut {
@@ -37,6 +38,7 @@ function New-Shortcut {
 # Winget package IDs (apps installed via winget)
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
+    "chrome"        = "Google.Chrome"
     "creativecloud" = "Adobe.CreativeCloud"
     "libreoffice"   = "TheDocumentFoundation.LibreOffice"
     "msteams"       = "Microsoft.Teams"
@@ -56,6 +58,17 @@ $appsByPurpose = @{
     "plain"     = @()
 }
 
+# Applications by ownership. Empty entries are intentional: every supported
+# ownership is explicit, even when it has no ownership-specific apps.
+$appsByOwnership = @{
+    "personal"  = @("chrome")
+    "shared"    = @()
+    "dedicated" = @()
+}
+
+$validPurposes = @($appsByPurpose.Keys | Sort-Object)
+$validOwnership = @($appsByOwnership.Keys | Sort-Object)
+
 # Validate parameters
 if (-not $systemPurpose) {
     throw "'systemPurpose' parameter must be provided."
@@ -63,14 +76,26 @@ if (-not $systemPurpose) {
 
 $systemPurpose = $systemPurpose.ToLower()
 if (-not $appsByPurpose.ContainsKey($systemPurpose)) {
-    throw "Invalid 'systemPurpose': $systemPurpose. Valid values: radio, tv, editorial, plain"
+    throw "Invalid 'systemPurpose': $systemPurpose. Valid values: $($validPurposes -join ', ')"
 }
 
-# Get apps for this purpose
-$apps = $appsByPurpose[$systemPurpose]
+if (-not $systemOwnership) {
+    throw "'systemOwnership' parameter must be provided."
+}
+
+$systemOwnership = $systemOwnership.ToLower()
+if (-not $appsByOwnership.ContainsKey($systemOwnership)) {
+    throw "Invalid 'systemOwnership': $systemOwnership. Valid values: $($validOwnership -join ', ')"
+}
+
+# Merge purpose and ownership app selections; Unique avoids duplicate installs
+# if an app is later selected by both dimensions.
+$apps = @($appsByPurpose[$systemPurpose])
+$apps += $appsByOwnership[$systemOwnership]
+$apps = @($apps | Select-Object -Unique)
 
 if ($apps.Count -eq 0) {
-    Write-Output "No apps to install for '$systemPurpose'."
+    Write-Output "No apps to install for purpose '$systemPurpose' and ownership '$systemOwnership'."
     return
 }
 
@@ -135,7 +160,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "Winget not available. A reboot may be required."
 }
 
-Write-Output "Installing apps for '$systemPurpose'..."
+Write-Output "Installing apps for purpose '$systemPurpose' and ownership '$systemOwnership'..."
 
 $failedApps = [System.Collections.Generic.List[string]]::new()
 
@@ -157,7 +182,7 @@ foreach ($app in $apps) {
     $packageId = $appDefinitions[$app]
 
     if (-not $packageId) {
-        throw "App '$app' is selected for purpose '$systemPurpose' but is not defined in the app catalog. This is a baseline bug; add it to either the winget definitions or the special-installer list."
+        throw "App '$app' is selected for purpose '$systemPurpose' and ownership '$systemOwnership' but is not defined in the app catalog. This is a baseline bug; add it to either the winget definitions or the special-installer list."
     }
 
     Write-Output "Installing $app ($packageId)..."
