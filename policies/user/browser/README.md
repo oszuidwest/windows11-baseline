@@ -1,6 +1,6 @@
 # Browser Policies
 
-Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions.
+Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions. Browser sign-in is disabled except on personal systems, where only ZuidWest work/school accounts are allowed.
 
 ## Policies
 
@@ -12,10 +12,29 @@ Shared systems only. Profiles are deleted on exit.
 |---------|-------|--------|
 | `ForceEphemeralProfiles` | 1 | Profiles deleted when browser session ends |
 | `SyncDisabled` | 1 | Disables data synchronization |
-| `BrowserSignin` | 0 | Disables browser sign-in completely |
 | `HideFirstRunExperience` | 1 | Hides first-run experience and splash screen |
 | `BrowserAddProfileEnabled` | 0 | Prevents users from creating new profiles |
 | `BrowserGuestModeEnabled` | 0 | Disables guest profile browsing mode |
+
+### `edge-sign-in.txt`
+
+Personal systems only. Edge sign-in is allowed only for ZuidWest work/school
+account UPNs in the `zuidwestupdate.nl`, `zuidwesttv.nl`, and `zuidwestfm.nl`
+domains.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `BrowserSignin` | 1 | Allows browser sign-in for accounts matching the allowed pattern |
+| `RestrictSigninToPattern` | `(?i)^[^@]+@(zuidwestupdate\.nl\|zuidwesttv\.nl\|zuidwestfm\.nl)$` | Blocks personal/non-ZuidWest accounts from Edge sign-in |
+| `MSAWebSiteSSOUsingThisProfileAllowed` | 0 | Blocks personal Microsoft account SSO in non-MSA profiles |
+
+### `edge-disable-sign-in.txt`
+
+Shared and dedicated systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `BrowserSignin` | 0 | Disables Edge browser sign-in completely |
 
 ### `edge-privacy.txt`
 
@@ -101,10 +120,28 @@ Shared systems only. Profiles are deleted on exit and browsing history is not sa
 |---------|-------|--------|
 | `ForceEphemeralProfiles` | 1 | Profiles deleted when browser session ends |
 | `SyncDisabled` | 1 | Disables data synchronization |
-| `BrowserSignin` | 0 | Disables browser sign-in completely |
 | `BrowserGuestModeEnabled` | 0 | Disables guest profile browsing mode |
 | `ProfilePickerOnStartupAvailability` | 1 | Disables the profile picker at startup |
 | `SavingBrowserHistoryDisabled` | 1 | Prevents saving browsing history |
+
+### `chrome-sign-in.txt`
+
+Personal systems only. Chrome sign-in is allowed only for ZuidWest Google
+account addresses in the `zuidwestupdate.nl`, `zuidwesttv.nl`, and `zuidwestfm.nl`
+domains.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `BrowserSignin` | 1 | Allows Chrome sign-in for accounts matching the allowed pattern |
+| `RestrictSigninToPattern` | `(?i)^[^@]+@(zuidwestupdate\.nl\|zuidwesttv\.nl\|zuidwestfm\.nl)$` | Blocks personal/non-ZuidWest Google accounts from Chrome sign-in |
+
+### `chrome-disable-sign-in.txt`
+
+Shared and dedicated systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `BrowserSignin` | 0 | Disables Chrome browser sign-in completely |
 
 ### `chrome-privacy.txt`
 

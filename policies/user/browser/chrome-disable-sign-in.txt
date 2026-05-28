@@ -1,0 +1,4 @@
+User
+Software\Policies\Google\Chrome
+BrowserSignin
+DWORD:0

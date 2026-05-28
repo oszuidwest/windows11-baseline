@@ -21,7 +21,7 @@ policies/
 │   ├── security/                # Autorun, shutdown, NTLM, Defender
 │   └── windows-update/          # Auto-update configuration
 └── user/                        # User-level policies (HKCU, non-admin only)
-    ├── browser/                 # Edge: profile, privacy, autofill, UI, devtools, extensions
+    ├── browser/                 # Edge/Chrome browser policies
     ├── personalization/         # Wallpaper settings
     └── security/                # CMD, Registry, PowerShell, Run, Task Manager, Control Panel, Network
 ```
@@ -96,15 +96,19 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | windows-update | Disable Auto Reboot | Prevent automatic reboot after updates (dedicated systems have auto-login) |   |   | x |
 | user | browser | Chrome Autofill | Disable Chrome password manager, autofill, passkeys, payments, and imports | x |   |   |
 | user | browser | Chrome Developer Tools | Disable Chrome Developer Tools (F12) | x |   |   |
+| user | browser | Chrome Disable Sign In | Disable Chrome sign-in on shared and dedicated systems | x |   | x |
 | user | browser | Chrome Extensions | Block all Chrome extension installations | x | x | x |
 | user | browser | Chrome Privacy | Chrome privacy, safe browsing, and telemetry defaults | x | x | x |
 | user | browser | Chrome Profile | Chrome ephemeral profiles, no history, no sync | x |   |   |
+| user | browser | Chrome Sign In | Allow only ZuidWest Google accounts for Chrome sign-in on personal systems |   | x |   |
 | user | browser | Chrome UI | Block Chrome notifications/popups, set ZuidWest homepage, and remove promotional UI | x | x | x |
 | user | browser | Edge Autofill | Disable Edge autofill and data import | x |   |   |
 | user | browser | Edge Developer Tools | Disable Edge Developer Tools (F12) | x |   |   |
+| user | browser | Edge Disable Sign In | Disable Edge sign-in on shared and dedicated systems | x |   | x |
 | user | browser | Edge Extensions | Block all Edge extension installations | x |   |   |
 | user | browser | Edge Privacy | Edge tracking prevention and security | x | x | x |
 | user | browser | Edge Profile | Edge ephemeral profiles, no history, no sync | x |   |   |
+| user | browser | Edge Sign In | Allow only ZuidWest work/school accounts for Edge sign-in on personal systems |   | x |   |
 | user | browser | Edge UI | Disable Edge bloatware UI elements and set homepage to zuidwestupdate.nl | x | x | x |
 | user | personalization | Set Wallpaper Black | Set solid black wallpaper for dedicated systems |   |   | x |
 | user | personalization | Set Wallpaper Branded | Set branded ZuidWest wallpaper for shared and personal systems | x | x |   |

@@ -91,6 +91,16 @@
       "ownership": ["shared"],
       "description": "Edge ephemeral profiles, no history, no sync"
     },
+    "user/browser/edge-sign-in.txt": {
+      "purposes": ["all"],
+      "ownership": ["personal"],
+      "description": "Allow only ZuidWest work/school accounts for Edge sign-in on personal systems"
+    },
+    "user/browser/edge-disable-sign-in.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared", "dedicated"],
+      "description": "Disable Edge sign-in on shared and dedicated systems"
+    },
     "user/browser/edge-privacy.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
@@ -155,6 +165,16 @@
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Chrome ephemeral profiles, no history, no sync"
+    },
+    "user/browser/chrome-sign-in.txt": {
+      "purposes": ["all"],
+      "ownership": ["personal"],
+      "description": "Allow only ZuidWest Google accounts for Chrome sign-in on personal systems"
+    },
+    "user/browser/chrome-disable-sign-in.txt": {
+      "purposes": ["all"],
+      "ownership": ["shared", "dedicated"],
+      "description": "Disable Chrome sign-in on shared and dedicated systems"
     },
     "user/browser/chrome-privacy.txt": {
       "purposes": ["all"],
