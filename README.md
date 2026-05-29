@@ -22,17 +22,13 @@ The installer is interactive and prompts for:
 - **Create user with auto-login?** (dedicated only)
 - **DWService agent code** (optional)
 
-Deployment values are not accepted as command-line parameters. Use the prompts; `-OnlyRun` is the only supported installer option.
+Deployment values are not accepted as command-line parameters; `-OnlyRun` is the only supported installer option.
 
 ### Updating Existing Systems
 
-Use the `-OnlyRun` parameter to selectively run specific scripts on already-deployed systems. The installer still prompts for any values needed by the selected scripts:
+`-OnlyRun` re-runs specific scripts on an already-deployed system (pass one or more names, comma-separated). The installer still prompts for any values those scripts need:
 
 ```powershell
-# Update policies only (prompts for purpose and ownership)
-Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 -OnlyRun 'policies' }`"" -Verb RunAs
-
-# Update multiple components
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 -OnlyRun 'policies','hardening' }`"" -Verb RunAs
 ```
 
@@ -43,14 +39,14 @@ Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservic
 A full install also registers an auto-update Scheduled Task (`\ZuidWest\PolicyAutoUpdate`) so policy changes pushed to `main` propagate to every deployed machine without a manual re-run.
 
 - **Triggers:** system startup (15 min jitter), any user logon (5 min jitter), hourly thereafter (60 min jitter).
-- **What it does:** reads the public commits.atom feed at `https://github.com/oszuidwest/windows11-baseline/commits/main.atom` (not the REST API, so no 60 req/h/IP quota) to learn the current `main` commit SHA. If it matches the last applied SHA, exits silently. If different, downloads the archive for that SHA into `C:\ProgramData\ZuidWest\policy-update\staging`, then re-runs `policies` and `applocker` against that staged copy via the `$env:WINDOWS11_BASELINE_DEPLOY_PATH` override. If github.com rate-limits a fleet behind one NAT, the updater persists the backoff window from the response headers and skips checks until it passes.
-- **Runtime layout:** all ZuidWest-managed deployment/runtime files live under `C:\ProgramData\ZuidWest`.
-  - `C:\ProgramData\ZuidWest\deploy` - current full-install deploy cache
-  - `C:\ProgramData\ZuidWest\policy-update\state.json` - purpose, ownership, repo coordinates, enabled flag, last applied SHA
-  - `C:\ProgramData\ZuidWest\policy-update\update.ps1` - the auto-updater payload (self-refreshes from `scripts/lib/policy-auto-updater.ps1` on each successful apply)
-  - `C:\ProgramData\ZuidWest\Logs\policy-auto-update.log` - rotated at 5 MB
+- **What it does:** reads the public commits.atom feed at `https://github.com/oszuidwest/windows11-baseline/commits/main.atom` (not the REST API, so no 60 req/h/IP quota) to learn the current `main` commit SHA. If it matches the last applied SHA, exits silently. Otherwise it downloads that SHA's archive into `C:\ProgramData\ZuidWest\policy-update\staging` and re-runs `policies` and `applocker` against the staged copy via the `$env:WINDOWS11_BASELINE_DEPLOY_PATH` override. On rate-limiting (e.g. a fleet behind one NAT), the backoff window from the response headers is persisted and further checks skip until it passes.
+- **Runtime layout** under `C:\ProgramData\ZuidWest`:
+  - `deploy\` - current full-install deploy cache
+  - `policy-update\state.json` - schema version, enabled flag, repo coordinates, purpose/ownership, scripts to re-apply, and SHA/timestamp tracking (last applied, last self-update, last check, backoff)
+  - `policy-update\update.ps1` - auto-updater payload (self-refreshes from `scripts/lib/policy-auto-updater.ps1` on each successful apply)
+  - `Logs\policy-auto-update.log` - rotated at 5 MB
 
-To refresh the task or change which scripts get re-applied, re-run `install.ps1 -OnlyRun policyupdate`. To pause auto-update on a machine without deleting the task, set `enabled` to `false` in `C:\ProgramData\ZuidWest\policy-update\state.json`; set it back to `true` to resume. To disable fully, delete the Scheduled Task: `Unregister-ScheduledTask -TaskPath '\ZuidWest\' -TaskName 'PolicyAutoUpdate' -Confirm:$false`.
+Re-run `install.ps1 -OnlyRun policyupdate` to refresh the task or change which scripts get re-applied. To pause auto-update without deleting the task, set `enabled` to `false` in `state.json` (set back to `true` to resume). To disable fully: `Unregister-ScheduledTask -TaskPath '\ZuidWest\' -TaskName 'PolicyAutoUpdate' -Confirm:$false`.
 
 ## Configuration Options
 
@@ -71,7 +67,7 @@ To refresh the task or change which scripts get re-applied, re-run `install.ps1 
 | Personal | Company-issued laptops for employees | Custom | No | Blocked |
 | Dedicated | Single-function systems (e.g., playout servers) | Custom (optional) | Optional | Blocked |
 
-The Microsoft Store app is removed for all ownerships via the debloat phase (`Microsoft.WindowsStore` is in the global removal list, including its provisioned package so it does not return for new users). Shared systems additionally block `StoreInstaller.exe` (the web installer from `get.microsoft.com`) via AppLocker as defense-in-depth.
+The Microsoft Store (`Microsoft.WindowsStore` plus its provisioned package, so it does not return for new users) is removed for all ownerships during the debloat phase. Shared systems additionally block `StoreInstaller.exe` (the web installer from `get.microsoft.com`) via AppLocker as defense-in-depth.
 
 ## Application Matrix
 
@@ -89,7 +85,7 @@ The Microsoft Store app is removed for all ownerships via the debloat phase (`Mi
 
 Personal systems additionally receive Google Chrome regardless of purpose.
 
-Applications are installed via **winget**, except Spotify and MS Office which use direct downloads. Spotify has winget limitations in admin context; Office uses the Office Deployment Tool with a custom config (`config/office.xml`) for Dutch language and excluded apps. On LTSC systems (which lack Microsoft Store), winget is automatically installed with all required dependencies from the official GitHub releases.
+Apps install via **winget**, except Spotify (winget fails in admin context, so it uses the standalone installer) and MS Office (Office Deployment Tool with `config/office.xml`: Dutch language, custom exclusions). LTSC has no Microsoft Store, so winget itself is auto-installed with all dependencies from the official GitHub releases.
 
 ### Shared Systems
 
@@ -109,13 +105,13 @@ Dedicated systems (e.g., playout servers) receive:
 
 ### AppLocker
 
-On Windows 11 24H2, the traditional GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor). Additionally, Copilot cannot be reliably blocked via GPO in 24H2. This baseline uses **AppLocker** to block unwanted apps based on ownership. The policy XML lives as checked-in templates in `policies/applocker/` (`shared.xml`, `dedicated.xml`); `scripts/applocker.ps1` selects the matching template and applies it via `AppLockerPolicyTool.exe`:
+On Windows 11 24H2, the GPO "Turn off the Store application" is [no longer honored](https://learn.microsoft.com/en-us/answers/questions/5563743/windows-11-24h2-cannot-block-microsoft-store-ignor) and Copilot cannot be reliably blocked via GPO either, so this baseline uses **AppLocker** instead. `scripts/applocker.ps1` selects the matching template from `policies/applocker/` (`shared.xml`, `dedicated.xml`, `personal.xml`) and applies it via `AppLockerPolicyTool.exe`:
 
 | Ownership | Blocked Apps |
 |-----------|--------------|
 | Shared | Store, Copilot, StoreInstaller.exe |
 | Dedicated | Copilot only |
-| Personal | Nothing blocked |
+| Personal | Nothing blocked (reset template clears any rules left by earlier shared/dedicated deployments) |
 
 The Application Identity service is automatically enabled by the script.
 
@@ -150,16 +146,15 @@ All systems have Windows sounds disabled.
 
 ## Policy Framework
 
-Policies are applied via LGPO.exe based on system purpose and ownership. Configuration is defined in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full policy matrix.
+Policies are applied via LGPO.exe based on purpose and ownership, configured in `policies/config.json`. See [`policies/README.md`](policies/README.md) for the full matrix.
 
-Edge and Chrome sign-in are disabled on shared and dedicated systems. Personal
-systems allow only ZuidWest work/school account addresses.
+Edge and Chrome sign-in are disabled on shared and dedicated systems; personal systems allow only ZuidWest work/school account addresses.
 
 ## Security Hardening
 
-All systems first receive the official **Microsoft Windows 11 v24H2 Security Baseline** from the Microsoft Security Compliance Toolkit, applied locally with LGPO.exe. The package is downloaded from Microsoft at deployment time and verified with a pinned SHA-256 hash before use. The Microsoft BitLocker GPO is intentionally skipped because it blocks writing to removable drives that are not BitLocker-protected; editorial and camera workflows need normal access to SD cards. ZuidWest applies a removable-media-safe BitLocker hardening policy afterwards.
+All systems first receive the official **Microsoft Windows 11 v24H2 Security Baseline** (Microsoft Security Compliance Toolkit), applied locally with LGPO.exe. The package is downloaded at deployment time and verified against a pinned SHA-256 hash. Microsoft's BitLocker GPO is intentionally skipped because it blocks writes to non-BitLocker removable drives, breaking editorial and camera SD-card workflows; ZuidWest applies a removable-media-safe BitLocker policy afterwards.
 
-Additional defense-in-depth hardening beyond Windows 11 24H2 defaults disables the Remote Registry service, blocks AutoRun on all drive types, and removes pre-installed bloatware. Protocol hardening enforces NTLMv2-only authentication (level 5) to prevent downgrade attacks. Windows Defender Network Protection provides real-time blocking of connections to known malicious and phishing domains. Telemetry is disabled to minimize data exposure. These measures complement the SMB signing and LSA protection already enabled by default in 24H2.
+Additional defense-in-depth beyond 24H2 defaults: Remote Registry disabled, AutoRun blocked on all drive types, pre-installed bloatware removed, NTLMv2-only authentication (level 5) to prevent downgrade attacks, Windows Defender Network Protection enabled (real-time blocking of malicious/phishing domains), and telemetry disabled. SMB signing and LSA protection are already on by default in 24H2.
 
 ## LTSC Compatibility
 
