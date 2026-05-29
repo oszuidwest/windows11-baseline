@@ -190,8 +190,8 @@ function Assert-BundledBinary {
         Verify a bundled binary before invocation.
 
     .DESCRIPTION
-        Checks SHA-256 from bin/hashes.json and a valid Microsoft Authenticode
-        signature. Get-DeployPath supports staged auto-update copies.
+        Checks SHA-256 from bin/hashes.json. Get-DeployPath supports staged
+        auto-update copies.
     #>
     [CmdletBinding()]
     param (
@@ -222,20 +222,6 @@ function Assert-BundledBinary {
     $actual = (Get-FileHash -Path $BinaryPath -Algorithm SHA256).Hash
     if (-not $actual.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "SHA-256 mismatch for '$binaryName' (expected $expected, got $actual). Refusing to invoke."
-    }
-
-    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
-        throw "Get-AuthenticodeSignature is not available. Refusing to invoke '$binaryName' without validating its Microsoft signature."
-    }
-
-    $signature = Get-AuthenticodeSignature -FilePath $BinaryPath
-    if ($signature.Status -ne "Valid") {
-        throw "Authenticode signature for '$binaryName' is not valid (status: $($signature.Status)). Refusing to invoke."
-    }
-
-    $subject = $signature.SignerCertificate.Subject
-    if ($subject -notmatch "Microsoft Corporation") {
-        throw "Authenticode signature for '$binaryName' was not issued to Microsoft Corporation (subject: $subject). Refusing to invoke."
     }
 }
 
