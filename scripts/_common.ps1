@@ -104,6 +104,85 @@ function Invoke-Download {
     }
 }
 
+function Save-DeploymentStateAtomic {
+    <#
+    .SYNOPSIS
+        Atomically write a JSON state file, keeping a single-generation backup.
+
+    .DESCRIPTION
+        Writes the JSON serialisation of $State to "$Path.tmp", then uses
+        [System.IO.File]::Replace (which on NTFS maps to ReplaceFileW) to
+        atomically swap it into place and move the previous contents to
+        "$Path.bak". For first-time writes (no existing file at $Path) it
+        falls back to a plain Move-Item.
+
+        The contract: power loss or crash during the write leaves either the
+        old contents intact at $Path, or the new contents at $Path with the
+        old contents at "$Path.bak". The state file is never partially
+        truncated. Pair with Read-DeploymentState for the matching .bak
+        fallback on read.
+
+    .PARAMETER Path
+        Absolute path to the state file (e.g. state.json).
+
+    .PARAMETER State
+        Any object that ConvertTo-Json can serialise.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        $State
+    )
+
+    if (-not $PSCmdlet.ShouldProcess($Path, "Atomic state write")) {
+        return
+    }
+
+    $tmpPath = "$Path.tmp"
+    $bakPath = "$Path.bak"
+    $State | ConvertTo-Json -Depth 6 | Set-Content -Path $tmpPath -Encoding UTF8 -Force
+    if (Test-Path $Path) {
+        [System.IO.File]::Replace($tmpPath, $Path, $bakPath)
+    }
+    else {
+        Move-Item -Path $tmpPath -Destination $Path -Force
+    }
+}
+
+function Read-DeploymentState {
+    <#
+    .SYNOPSIS
+        Read a JSON state file, falling back to the .bak generation on corruption.
+
+    .DESCRIPTION
+        Reads $Path. If the JSON parse fails (truncation, partial write before
+        Save-DeploymentStateAtomic landed) and "$Path.bak" exists, it logs a
+        warning and returns the parsed backup instead. If both are corrupt,
+        the original parse exception is rethrown.
+    #>
+    [OutputType([object])]
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    try {
+        return Get-Content -Path $Path -Raw | ConvertFrom-Json
+    }
+    catch {
+        $bakPath = "$Path.bak"
+        if (Test-Path $bakPath) {
+            Write-Warning "State file at $Path appears corrupt; falling back to $bakPath"
+            return Get-Content -Path $bakPath -Raw | ConvertFrom-Json
+        }
+        throw
+    }
+}
+
 function Assert-BundledBinary {
     <#
     .SYNOPSIS

@@ -27,6 +27,12 @@
          the staging directory back over its install location, and removes the
          staging directory.
 
+    State writes use Save-StateAtomicLocal (defined inline at startup so it
+    is available before the staged scripts/_common.ps1 is sourced). Reads use
+    Read-StateOrBakLocal, which falls back to "$statePath.bak" if the main
+    file fails to parse. This protects the updater from being permanently
+    bricked by a power loss or crash mid-write.
+
     A single-instance file lock prevents overlapping runs when multiple
     triggers fire close together (e.g. boot + logon).
 
@@ -46,6 +52,41 @@ $logDir = Join-Path $env:ProgramData "ZuidWest\Logs"
 $logPath = Join-Path $logDir "policy-auto-update.log"
 $lockPath = Join-Path $persistentRoot "update.lock"
 $selfPath = $PSCommandPath
+
+# Inline copies of the atomic state helpers. The canonical implementations
+# live in scripts/_common.ps1, but we need them before the staged _common.ps1
+# is sourced (we have to read state.json to know which repo to download from).
+# Re-defining them after dot-sourcing is harmless: the bodies are identical.
+function Save-StateAtomicLocal {
+    param (
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)]$State
+    )
+    $tmpPath = "$Path.tmp"
+    $bakPath = "$Path.bak"
+    $State | ConvertTo-Json -Depth 6 | Set-Content -Path $tmpPath -Encoding UTF8 -Force
+    if (Test-Path $Path) {
+        [System.IO.File]::Replace($tmpPath, $Path, $bakPath)
+    }
+    else {
+        Move-Item -Path $tmpPath -Destination $Path -Force
+    }
+}
+
+function Read-StateOrBakLocal {
+    param ([Parameter(Mandatory)][string]$Path)
+    try {
+        return Get-Content -Path $Path -Raw | ConvertFrom-Json
+    }
+    catch {
+        $bakPath = "$Path.bak"
+        if (Test-Path $bakPath) {
+            Write-UpdateLog "State at $Path corrupt; falling back to $bakPath." "WARN"
+            return Get-Content -Path $bakPath -Raw | ConvertFrom-Json
+        }
+        throw
+    }
+}
 
 function Write-UpdateLog {
     param (
@@ -101,7 +142,7 @@ try {
         return
     }
 
-    $state = Get-Content -Path $statePath -Raw | ConvertFrom-Json
+    $state = Read-StateOrBakLocal -Path $statePath
 
     $repoOwner = $state.repoOwner
     $repoName = $state.repoName
@@ -146,7 +187,7 @@ try {
     # Record the check time even when there is nothing to apply.
     $now = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     $state.lastCheckAt = $now
-    $state | ConvertTo-Json -Depth 4 | Set-Content -Path $statePath -Encoding UTF8
+    Save-StateAtomicLocal -Path $statePath -State $state
 
     if ($state.lastAppliedSha -eq $remoteSha) {
         Write-UpdateLog "Already at $remoteSha; nothing to do."
@@ -247,7 +288,7 @@ try {
 
     $state.lastAppliedSha = $remoteSha
     $state.lastAppliedAt = $now
-    $state | ConvertTo-Json -Depth 4 | Set-Content -Path $statePath -Encoding UTF8
+    Save-StateAtomicLocal -Path $statePath -State $state
 
     # Refresh the deployed copy of this script so updater fixes shipped via main propagate.
     $newSelf = Join-Path $stagingRoot "scripts\lib\policy-auto-updater.ps1"

@@ -17,6 +17,7 @@ param (
 
     Persistent files (under C:\ProgramData\ZuidWest\policy-update\):
       - state.json        Deployment context, repo coordinates, last SHA
+      - state.json.bak    Previous generation, kept by Save-DeploymentStateAtomic
       - update.ps1        Copy of scripts/lib/policy-auto-updater.ps1
       - staging/          Created/destroyed per run (download workspace)
 
@@ -77,7 +78,7 @@ $state = [ordered]@{
 
 if (Test-Path $statePath) {
     try {
-        $previous = Get-Content -Path $statePath -Raw | ConvertFrom-Json
+        $previous = Read-DeploymentState -Path $statePath
         foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastCheckAt")) {
             if ($previous.PSObject.Properties.Name -contains $key) {
                 $state[$key] = $previous.$key
@@ -89,7 +90,7 @@ if (Test-Path $statePath) {
     }
 }
 
-$state | ConvertTo-Json -Depth 4 | Set-Content -Path $statePath -Encoding UTF8
+Save-DeploymentStateAtomic -Path $statePath -State $state
 Write-Output "Deployment state: $statePath"
 Write-Output "  Purpose:    $($state.systemPurpose)"
 Write-Output "  Ownership:  $($state.systemOwnership)"
