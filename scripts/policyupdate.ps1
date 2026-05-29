@@ -27,8 +27,9 @@ param (
         fire is jittered 0-60 minutes after its anchor. A fleet behind one
         NAT spreads its GitHub checks across the hour rather than all firing
         in lockstep.
-      - The updater uses conditional ETag requests, which always saves
-        bandwidth and may also reduce rate-limit pressure (see the payload).
+      - The updater asks github.com's commits.atom feed (not api.github.com)
+        for the current branch HEAD SHA, so the check does not consume the
+        unauthenticated REST API budget at all.
 
     Re-running this script (via install.ps1 -OnlyRun policyupdate) refreshes
     state.json with the current purpose/ownership and reinstalls the payload
@@ -71,7 +72,7 @@ if (-not (Test-Path $persistentRoot)) {
 # fresh -OnlyRun policyupdate does not force a redundant policy reapply on the
 # next tick.
 $state = [ordered]@{
-    schemaVersion     = 3
+    schemaVersion     = 4
     repoOwner         = "oszuidwest"
     repoName          = "windows11-baseline"
     branch            = "main"
@@ -81,7 +82,6 @@ $state = [ordered]@{
     lastAppliedSha    = $null
     lastAppliedAt     = $null
     lastSelfUpdateSha = $null
-    lastEtag          = $null
     lastCheckAt       = $null
     backoffUntil      = $null
 }
@@ -97,7 +97,7 @@ if (Test-Path $statePath) {
 }
 
 if ($previous) {
-    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastEtag", "lastCheckAt", "backoffUntil")) {
+    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastCheckAt", "backoffUntil")) {
         if ($previous.PSObject.Properties.Name -contains $key -and $null -ne $previous.$key) {
             $state[$key] = $previous.$key
         }
@@ -132,7 +132,6 @@ if ($contextChanged) {
     $state.lastAppliedSha = $null
     $state.lastAppliedAt = $null
     $state.lastSelfUpdateSha = $null
-    $state.lastEtag = $null
     $state.backoffUntil = $null
     Write-Output "Deployment context changed since previous install; cleared applied-SHA tracking. Next auto-update tick will reapply."
 }
@@ -181,7 +180,7 @@ $task = New-ScheduledTask `
     -Trigger @($startupTrigger, $logonTrigger, $hourlyTrigger) `
     -Principal $principal `
     -Settings $settings `
-    -Description "Streekomroep ZuidWest baseline policy auto-update. Polls GitHub (conditional requests, ETag cache, backoff on 403/429) for new commits on the configured branch and re-applies the policies + AppLocker layer when the SHA changes."
+    -Description "Streekomroep ZuidWest baseline policy auto-update. Polls github.com's commits.atom feed (not the REST API) for new commits on the configured branch and re-applies the policies + AppLocker layer when the SHA changes."
 
 Register-ScheduledTask -TaskName $taskName -TaskPath $taskFolder -InputObject $task -Force | Out-Null
 Write-Output "Scheduled Task registered: $taskFullPath"

@@ -10,19 +10,19 @@
     for the HEAD commit SHA of the configured branch, and short-circuits when
     that SHA matches the SHAs already applied on this machine.
 
-    Rate-limit posture (GitHub unauthenticated cap is 60 req/h/IP):
-      - Conditional requests via If-None-Match always save bandwidth on the
-        steady-state poll. Whether the 304 also avoids spending rate-limit
-        quota is documented as conditional on the request being
-        authenticated, so this implementation does not rely on it for the
-        unauthenticated case; the backoff handler below is the actual
-        defence.
-      - On 403/429 the response headers are honoured per GitHub's REST API
-        best practices: Retry-After takes precedence (it signals the
-        secondary / abuse-detection limit), then X-RateLimit-Reset is used
-        only when X-RateLimit-Remaining is 0, with a 1-minute floor
-        fallback. The resulting wake time is persisted to state.backoffUntil
-        and short-circuits subsequent ticks until it passes.
+    Rate-limit posture:
+      - The SHA check goes to the public atom feed at
+        https://github.com/<owner>/<repo>/commits/<branch>.atom,
+        not the REST API. github.com is not bound by the 60 req/h/IP
+        unauthenticated REST API limit, so a fleet-wide hourly poll does
+        not compete for that budget.
+      - On 429 from github.com the response headers are honoured per
+        GitHub's REST API best practices (the github.com general rate
+        limiter uses the same conventions): Retry-After first, then
+        X-RateLimit-Reset only when X-RateLimit-Remaining is 0, with a
+        1-minute floor fallback. The resulting wake time is persisted to
+        state.backoffUntil and short-circuits subsequent ticks until it
+        passes.
       - The scheduled-task trigger anchored by policyupdate.ps1 uses
         -RandomDelay so each fleet member fires at a different minute
         within the hour.
@@ -187,33 +187,43 @@ function Get-BackoffUntilFromHeaders {
     return $now.AddMinutes(1)
 }
 
-function Invoke-GitHubApiCommitCheck {
+function Invoke-AtomBranchCheck {
     <#
     .SYNOPSIS
-        Conditional GET against /commits/<branch> with ETag caching.
+        Resolve a branch's HEAD commit SHA via the public commits.atom feed.
 
     .DESCRIPTION
-        Returns a pscustomobject with one of three shapes:
-          Status="ok"        : new data; .Sha and .Etag populated
-          Status="notModified": 304 response; ETag unchanged
-          Status="rateLimited": 403/429; .BackoffUntil populated
-        Network failure throws.
+        Fetches https://github.com/<owner>/<repo>/commits/<branch>.atom and
+        regex-extracts the first 40-char SHA. The atom feed reflects the
+        branch HEAD in real time (no CI required to maintain a sentinel
+        file) and runs against github.com rather than api.github.com, so
+        it does not consume the unauthenticated REST API budget.
+
+        The first <entry> in the feed corresponds to the most recent
+        commit, and every entry id has the form
+        "tag:github.com,2008:Grit::Commit/<sha40>". Matching that pattern
+        with -match returns the first occurrence, which is the HEAD
+        commit. Regex over the body is used instead of full XML parsing
+        because it is faster, allocation-light, and tolerant of unrelated
+        atom-format changes (e.g. new namespaces).
+
+        Returns a pscustomobject:
+          Status="ok"          : .Sha populated with the 40-char SHA
+          Status="rateLimited" : .BackoffUntil populated (DateTime UTC) and
+                                 .StatusCode
+        Other errors throw (network failures, parse failures, 404s).
     #>
     [OutputType([pscustomobject])]
     param (
         [Parameter(Mandatory)][string]$Owner,
         [Parameter(Mandatory)][string]$Repo,
-        [Parameter(Mandatory)][string]$Branch,
-        [string]$Etag
+        [Parameter(Mandatory)][string]$Branch
     )
 
-    $url = "https://api.github.com/repos/$Owner/$Repo/commits/$Branch"
+    $url = "https://github.com/$Owner/$Repo/commits/$Branch.atom"
     $headers = @{
         "User-Agent" = "windows11-baseline-policy-auto-update"
-        "Accept"     = "application/vnd.github+json"
-    }
-    if ($Etag) {
-        $headers["If-None-Match"] = $Etag
+        "Accept"     = "application/atom+xml"
     }
 
     $previousProgress = $ProgressPreference
@@ -227,12 +237,12 @@ function Invoke-GitHubApiCommitCheck {
             throw
         }
         $statusCode = [int]$webResponse.StatusCode
-        if ($statusCode -eq 304) {
-            return [pscustomobject]@{ Status = "notModified" }
-        }
         if ($statusCode -eq 403 -or $statusCode -eq 429) {
             $until = Get-BackoffUntilFromHeaders -Headers $webResponse.Headers
             return [pscustomobject]@{ Status = "rateLimited"; BackoffUntil = $until; StatusCode = $statusCode }
+        }
+        if ($statusCode -eq 404) {
+            throw "Atom feed at $url returned 404; branch '$Branch' may not exist."
         }
         throw
     }
@@ -240,14 +250,14 @@ function Invoke-GitHubApiCommitCheck {
         $ProgressPreference = $previousProgress
     }
 
-    $parsed = $response.Content | ConvertFrom-Json
-    $newEtag = $response.Headers["ETag"]
-    if ($newEtag -is [array]) { $newEtag = $newEtag[0] }
-    return [pscustomobject]@{
-        Status = "ok"
-        Sha    = $parsed.sha
-        Etag   = $newEtag
+    if ($response.Content -match 'tag:github\.com,2008:Grit::Commit/([a-fA-F0-9]{40})') {
+        return [pscustomobject]@{
+            Status = "ok"
+            Sha    = $Matches[1].ToLower()
+        }
     }
+
+    throw "Could not parse latest commit SHA from atom feed at $url."
 }
 
 if (-not (Test-Path $logDir)) {
@@ -286,7 +296,7 @@ try {
     $state = Read-StateOrBakLocal -Path $statePath
 
     # Ensure newer schema fields exist even when reading an older state file.
-    foreach ($field in @('lastSelfUpdateSha', 'lastEtag', 'backoffUntil', 'lastCheckAt')) {
+    foreach ($field in @('lastSelfUpdateSha', 'backoffUntil', 'lastCheckAt')) {
         if (-not ($state.PSObject.Properties.Name -contains $field)) {
             $state | Add-Member -NotePropertyName $field -NotePropertyValue $null -Force
         }
@@ -318,9 +328,7 @@ try {
 
     Write-UpdateLog "Checking $repoOwner/$repoName@$branch (purpose=$purpose, ownership=$ownership)."
 
-    # Send a conditional request. Only the first request (or after a real change)
-    # spends a unit of the unauthenticated rate-limit budget; 304s are free.
-    $check = Invoke-GitHubApiCommitCheck -Owner $repoOwner -Repo $repoName -Branch $branch -Etag $state.lastEtag
+    $check = Invoke-AtomBranchCheck -Owner $repoOwner -Repo $repoName -Branch $branch
 
     $now = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
@@ -328,48 +336,24 @@ try {
         $state.backoffUntil = $check.BackoffUntil.ToString("yyyy-MM-ddTHH:mm:ssZ")
         $state.lastCheckAt = $now
         Save-StateAtomicLocal -Path $statePath -State $state
-        Write-UpdateLog "GitHub API returned $($check.StatusCode); backoff until $($state.backoffUntil)." "WARN"
+        Write-UpdateLog "github.com returned $($check.StatusCode); backoff until $($state.backoffUntil)." "WARN"
         return
     }
 
-    # Clear any stale backoff now that the API is answering normally again.
+    # Clear any stale backoff now that github.com is answering normally again.
     $state.backoffUntil = $null
     $state.lastCheckAt = $now
 
-    if ($check.Status -eq "notModified") {
-        # Server confirms our cached version is current. Use the SHA we last applied
-        # as the target so we can still retry a stalled self-copy from this run.
-        $remoteSha = $state.lastAppliedSha
-        if (-not $remoteSha) {
-            # We have an ETag but no recorded SHA (unusual). Force a fresh request
-            # next tick by dropping the ETag.
-            $state.lastEtag = $null
-            Save-StateAtomicLocal -Path $statePath -State $state
-            Write-UpdateLog "304 received but no lastAppliedSha; cleared ETag, will fetch full payload next tick." "WARN"
-            return
-        }
-        Write-UpdateLog "API returned 304 (no change); target SHA $remoteSha."
-        $pendingEtag = $state.lastEtag
-    }
-    else {
-        $remoteSha = $check.Sha
-        if (-not $remoteSha) {
-            Write-UpdateLog "GitHub API response did not include a SHA; aborting." "ERROR"
-            return
-        }
-        # The new ETag goes into state ONLY after a successful apply below; if we
-        # crash between here and there, the next tick will re-fetch the same SHA.
-        $pendingEtag = $check.Etag
+    $remoteSha = $check.Sha
+    if (-not $remoteSha) {
+        Write-UpdateLog "Atom feed did not contain a SHA; aborting." "ERROR"
+        return
     }
 
     $policyCurrent = $state.lastAppliedSha -eq $remoteSha
     $selfCurrent = $state.lastSelfUpdateSha -eq $remoteSha
 
     if ($policyCurrent -and $selfCurrent) {
-        # Fully caught up. Persist lastCheckAt (and, on a fresh 200, the new ETag).
-        if ($check.Status -eq "ok") {
-            $state.lastEtag = $pendingEtag
-        }
         Save-StateAtomicLocal -Path $statePath -State $state
         Write-UpdateLog "Already at $remoteSha; nothing to do."
         return
@@ -468,9 +452,6 @@ try {
             # there does not force a re-apply on the next tick.
             $state.lastAppliedSha = $remoteSha
             $state.lastAppliedAt = $now
-            if ($check.Status -eq "ok") {
-                $state.lastEtag = $pendingEtag
-            }
             Save-StateAtomicLocal -Path $statePath -State $state
             Write-UpdateLog "Applied policy SHA $remoteSha."
         }
@@ -496,9 +477,6 @@ try {
             try {
                 Copy-Item -Path $newSelf -Destination $selfPath -Force
                 $state.lastSelfUpdateSha = $remoteSha
-                if ($check.Status -eq "ok") {
-                    $state.lastEtag = $pendingEtag
-                }
                 Save-StateAtomicLocal -Path $statePath -State $state
                 Write-UpdateLog "Auto-updater payload refreshed at $selfPath."
             }
