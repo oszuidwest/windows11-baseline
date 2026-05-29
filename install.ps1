@@ -181,7 +181,25 @@ $installerInputNames = @(
     "personalUserName"
 )
 
-# Derive requirements from each script's param() block so prompting and splatting stay in sync.
+# Explicit installer input requirements. This is the source of truth for prompting;
+# the AST check below only verifies this map against each script's param() block.
+$scriptRequirements = @{
+    'applocker'        = @('systemOwnership')
+    'apps'             = @('systemPurpose', 'systemOwnership')
+    'debloat'          = @()
+    'dwservice'        = @('dwAgentCode')
+    'hardening'        = @()
+    'policies'         = @('systemPurpose', 'systemOwnership')
+    'power'            = @('systemPurpose', 'systemOwnership')
+    'securitybaseline' = @()
+    'sounds'           = @()
+    'time'             = @()
+    'updates'          = @()
+    'users'            = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
+    'workgroupname'    = @('computerName', 'workgroupName')
+}
+
+# Discover scripts so -OnlyRun validation and execution still follow the deployed filesystem.
 $scriptsDir = Join-Path $deployDir "scripts"
 if (-not (Test-Path $scriptsDir)) {
     Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
@@ -190,19 +208,63 @@ if (-not (Test-Path $scriptsDir)) {
 $scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
         Where-Object { $_.BaseName -ne "_common" } |
         Sort-Object Name)
-
-$scriptRequirements = @{}
+$discoveredScriptParams = @{}
 $scriptFiles | ForEach-Object {
     # Public script names strip a leading ordering underscore: _securitybaseline.ps1 -> securitybaseline.
     $scriptName = $_.BaseName -replace '^_', ''
-    $scriptRequirements[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
+    $discoveredScriptParams[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
+}
+
+$discoveredScriptNames = @($scriptFiles | ForEach-Object { $_.BaseName -replace '^_', '' })
+$mappedScriptNames = @($scriptRequirements.Keys)
+
+$missingMappings = @($discoveredScriptNames | Where-Object { $_ -notin $mappedScriptNames })
+if ($missingMappings.Count -gt 0) {
+    Write-FatalInstallError -Message "Installer requirement map is missing script(s): $($missingMappings -join ', ')"
+}
+
+$staleMappings = @($mappedScriptNames | Where-Object { $_ -notin $discoveredScriptNames })
+if ($staleMappings.Count -gt 0) {
+    Write-FatalInstallError -Message "Installer requirement map contains script(s) that no longer exist: $($staleMappings -join ', ')"
 }
 
 # Reverse-drift check: a script param that install.ps1 cannot collect would otherwise splat $null silently.
-foreach ($script in $scriptRequirements.Keys) {
-    foreach ($paramName in $scriptRequirements[$script]) {
-        if ($paramName -notin $installerInputNames) {
-            Write-FatalInstallError -Message "Script '$script' declares parameter -$paramName but install.ps1 does not collect it. Add it to the installer input list."
+$detectedParamCount = @($discoveredScriptParams.Values | ForEach-Object { $_ }).Count
+$mappedParamCount = @($scriptRequirements.Values | ForEach-Object { $_ }).Count
+$canValidateParamDrift = -not ($mappedParamCount -gt 0 -and $detectedParamCount -eq 0)
+
+if (-not $canValidateParamDrift) {
+    Write-Warning "Could not detect script parameters for drift checking; continuing with the explicit installer prompt map."
+}
+
+if ($canValidateParamDrift) {
+    foreach ($script in $scriptRequirements.Keys) {
+        $detectedParams = @($discoveredScriptParams[$script])
+        $mappedParams = @($scriptRequirements[$script])
+
+        foreach ($paramName in $detectedParams) {
+            if ($paramName -notin $installerInputNames) {
+                Write-FatalInstallError -Message "Script '$script' declares parameter -$paramName but install.ps1 does not collect it. Add it to the installer input list."
+            }
+        }
+
+        $missingParams = @($detectedParams | Where-Object { $_ -notin $mappedParams })
+        if ($missingParams.Count -gt 0) {
+            Write-FatalInstallError -Message "Script '$script' declares parameter(s) not in the installer requirement map: $($missingParams -join ', ')"
+        }
+
+        $staleParams = @($mappedParams | Where-Object { $_ -notin $detectedParams })
+        if ($staleParams.Count -gt 0) {
+            Write-FatalInstallError -Message "Installer requirement map lists parameter(s) not declared by script '$script': $($staleParams -join ', ')"
+        }
+    }
+}
+else {
+    foreach ($script in $scriptRequirements.Keys) {
+        foreach ($paramName in $scriptRequirements[$script]) {
+            if ($paramName -notin $installerInputNames) {
+                Write-FatalInstallError -Message "Installer requirement map for '$script' references -$paramName but install.ps1 does not collect it. Add it to the installer input list."
+            }
         }
     }
 }

@@ -111,8 +111,9 @@ function Get-ScriptParameterNames {
         [string]$Path
     )
 
+    $tokens = $null
     $parseErrors = $null
-    $ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$null, [ref]$parseErrors)
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$parseErrors)
     if ($parseErrors) {
         throw "PowerShell parse errors in $($Path): $($parseErrors -join '; ')"
     }
