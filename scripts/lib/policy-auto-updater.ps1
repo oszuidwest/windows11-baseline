@@ -8,9 +8,11 @@
     Reads its deployment state from C:\ProgramData\ZuidWest\policy-update\state.json
     (written at install time by scripts/policyupdate.ps1), asks the GitHub API
     for the HEAD commit SHA of the configured branch, and short-circuits when
-    that SHA matches the SHA last applied to this machine.
+    that SHA matches the SHAs already applied on this machine.
 
-    On a new SHA the script:
+    On a SHA that differs from either state.lastAppliedSha (policies need
+    re-running) or state.lastSelfUpdateSha (the deployed copy of this script
+    is out of date) the updater:
 
       1. Downloads the repository archive for that exact SHA into a staging
          directory under C:\ProgramData\ZuidWest\policy-update\staging.
@@ -19,13 +21,16 @@
          the existing sub-scripts (which use Get-DeployPath / Join-DeployPath
          from scripts/_common.ps1) operate on the freshly downloaded copy
          without touching C:\Windows\deploy.
-      3. Runs each script listed in state.scriptsToReapply (default: policies,
-         applocker), passing systemPurpose / systemOwnership from the state
-         file. Sub-scripts are invoked directly, not via install.ps1, so the
-         updater is fully non-interactive.
-      4. Persists the new SHA, copies the latest version of this payload from
-         the staging directory back over its install location, and removes the
-         staging directory.
+      3. If policy is stale: runs each script listed in state.scriptsToReapply
+         (default: policies, applocker), passing systemPurpose /
+         systemOwnership from the state file. Sub-scripts are invoked
+         directly, not via install.ps1, so the updater is fully
+         non-interactive.
+      4. If the self-copy is stale: copies the staged
+         scripts/lib/policy-auto-updater.ps1 over this script.
+      5. Persists progress per stage. Policy SHA and self-update SHA are
+         tracked separately, so a self-copy that fails (file locked, AV
+         scanning) does not prevent the retry on the next tick.
 
     State writes use Save-StateAtomicLocal (defined inline at startup so it
     is available before the staged scripts/_common.ps1 is sourced). Reads use
@@ -144,6 +149,13 @@ try {
 
     $state = Read-StateOrBakLocal -Path $statePath
 
+    # Ensure newer schema fields exist even when reading an older state file.
+    foreach ($field in @('lastSelfUpdateSha', 'lastCheckAt')) {
+        if (-not ($state.PSObject.Properties.Name -contains $field)) {
+            $state | Add-Member -NotePropertyName $field -NotePropertyValue $null -Force
+        }
+    }
+
     $repoOwner = $state.repoOwner
     $repoName = $state.repoName
     $branch = $state.branch
@@ -189,12 +201,15 @@ try {
     $state.lastCheckAt = $now
     Save-StateAtomicLocal -Path $statePath -State $state
 
-    if ($state.lastAppliedSha -eq $remoteSha) {
+    $policyCurrent = $state.lastAppliedSha -eq $remoteSha
+    $selfCurrent = $state.lastSelfUpdateSha -eq $remoteSha
+
+    if ($policyCurrent -and $selfCurrent) {
         Write-UpdateLog "Already at $remoteSha; nothing to do."
         return
     }
 
-    Write-UpdateLog "New SHA $remoteSha (was $($state.lastAppliedSha)); preparing staged apply."
+    Write-UpdateLog "Stale: policy=$(-not $policyCurrent), self=$(-not $selfCurrent). Target SHA $remoteSha; preparing staged apply."
 
     if (Test-Path $stagingRoot) {
         Remove-Item -Path $stagingRoot -Recurse -Force
@@ -243,66 +258,83 @@ try {
     try {
         . $commonPath
 
-        foreach ($scriptName in $scriptsToReapply) {
-            $candidates = @(
-                (Join-Path $stagingRoot "scripts\$scriptName.ps1"),
-                (Join-Path $stagingRoot "scripts\_$scriptName.ps1")
-            )
-            $scriptPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-            if (-not $scriptPath) {
-                Write-UpdateLog "Script '$scriptName' not found in staging; skipping." "WARN"
-                continue
-            }
-
-            $detectedParams = Get-ScriptParameterNames -Path $scriptPath
-            $scriptParams = @{}
-            $unsupportedParam = $null
-            foreach ($paramName in $detectedParams) {
-                switch ($paramName) {
-                    "systemPurpose" { $scriptParams["systemPurpose"] = $purpose }
-                    "systemOwnership" { $scriptParams["systemOwnership"] = $ownership }
-                    default { $unsupportedParam = $paramName }
+        if (-not $policyCurrent) {
+            foreach ($scriptName in $scriptsToReapply) {
+                $candidates = @(
+                    (Join-Path $stagingRoot "scripts\$scriptName.ps1"),
+                    (Join-Path $stagingRoot "scripts\_$scriptName.ps1")
+                )
+                $scriptPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+                if (-not $scriptPath) {
+                    Write-UpdateLog "Script '$scriptName' not found in staging; skipping." "WARN"
+                    continue
                 }
-            }
 
-            if ($unsupportedParam) {
-                Write-UpdateLog "Script '$scriptName' declares -$unsupportedParam which the auto-updater cannot supply; aborting." "ERROR"
-                return
-            }
+                $detectedParams = Get-ScriptParameterNames -Path $scriptPath
+                $scriptParams = @{}
+                $unsupportedParam = $null
+                foreach ($paramName in $detectedParams) {
+                    switch ($paramName) {
+                        "systemPurpose" { $scriptParams["systemPurpose"] = $purpose }
+                        "systemOwnership" { $scriptParams["systemOwnership"] = $ownership }
+                        default { $unsupportedParam = $paramName }
+                    }
+                }
 
-            Write-UpdateLog "Running $scriptName..."
-            $childOutput = & $scriptPath @scriptParams *>&1
-            foreach ($entry in $childOutput) {
-                $text = if ($entry -is [string]) { $entry } else { $entry.ToString() }
-                foreach ($line in ($text -split "`r?`n")) {
-                    if ($line) {
-                        Write-UpdateLog "[$scriptName] $line"
+                if ($unsupportedParam) {
+                    Write-UpdateLog "Script '$scriptName' declares -$unsupportedParam which the auto-updater cannot supply; aborting." "ERROR"
+                    return
+                }
+
+                Write-UpdateLog "Running $scriptName..."
+                $childOutput = & $scriptPath @scriptParams *>&1
+                foreach ($entry in $childOutput) {
+                    $text = if ($entry -is [string]) { $entry } else { $entry.ToString() }
+                    foreach ($line in ($text -split "`r?`n")) {
+                        if ($line) {
+                            Write-UpdateLog "[$scriptName] $line"
+                        }
                     }
                 }
             }
+
+            # Persist policy progress before attempting the self-copy so a failure
+            # there does not force a re-apply on the next tick.
+            $state.lastAppliedSha = $remoteSha
+            $state.lastAppliedAt = $now
+            Save-StateAtomicLocal -Path $statePath -State $state
+            Write-UpdateLog "Applied policy SHA $remoteSha."
+        }
+        else {
+            Write-UpdateLog "Policy already at $remoteSha; only refreshing the deployed updater."
         }
     }
     finally {
         Remove-Item -Path "Env:WINDOWS11_BASELINE_DEPLOY_PATH" -ErrorAction SilentlyContinue
     }
 
-    $state.lastAppliedSha = $remoteSha
-    $state.lastAppliedAt = $now
-    Save-StateAtomicLocal -Path $statePath -State $state
-
-    # Refresh the deployed copy of this script so updater fixes shipped via main propagate.
-    $newSelf = Join-Path $stagingRoot "scripts\lib\policy-auto-updater.ps1"
-    if (Test-Path $newSelf) {
-        try {
-            Copy-Item -Path $newSelf -Destination $selfPath -Force
-            Write-UpdateLog "Auto-updater payload refreshed at $selfPath."
+    if (-not $selfCurrent) {
+        # Refresh the deployed copy of this script so updater fixes shipped via main
+        # propagate. Track success separately from the policy SHA: a failed copy
+        # (file locked, AV scan) will be retried on the next tick because
+        # lastSelfUpdateSha stays behind lastAppliedSha and the short-circuit at
+        # the top of the run only fires when BOTH match the target.
+        $newSelf = Join-Path $stagingRoot "scripts\lib\policy-auto-updater.ps1"
+        if (-not (Test-Path $newSelf)) {
+            Write-UpdateLog "Staging does not contain scripts\lib\policy-auto-updater.ps1; skipping self-update." "WARN"
         }
-        catch {
-            Write-UpdateLog "Could not refresh auto-updater payload (will retry next run): $($_.Exception.Message)" "WARN"
+        else {
+            try {
+                Copy-Item -Path $newSelf -Destination $selfPath -Force
+                $state.lastSelfUpdateSha = $remoteSha
+                Save-StateAtomicLocal -Path $statePath -State $state
+                Write-UpdateLog "Auto-updater payload refreshed at $selfPath."
+            }
+            catch {
+                Write-UpdateLog "Self-update copy failed (will retry next run): $($_.Exception.Message)" "WARN"
+            }
         }
     }
-
-    Write-UpdateLog "Applied $remoteSha."
 }
 catch {
     Write-UpdateLog "Auto-update failed: $($_.Exception.Message)" "ERROR"

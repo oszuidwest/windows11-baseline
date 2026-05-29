@@ -64,22 +64,23 @@ if (-not (Test-Path $persistentRoot)) {
 # fresh -OnlyRun policyupdate does not force a redundant policy reapply on the
 # next tick.
 $state = [ordered]@{
-    schemaVersion    = 1
-    repoOwner        = "oszuidwest"
-    repoName         = "windows11-baseline"
-    branch           = "main"
-    systemPurpose    = $systemPurpose.ToLower()
-    systemOwnership  = $systemOwnership.ToLower()
-    scriptsToReapply = @("policies", "applocker")
-    lastAppliedSha   = $null
-    lastAppliedAt    = $null
-    lastCheckAt      = $null
+    schemaVersion     = 1
+    repoOwner         = "oszuidwest"
+    repoName          = "windows11-baseline"
+    branch            = "main"
+    systemPurpose     = $systemPurpose.ToLower()
+    systemOwnership   = $systemOwnership.ToLower()
+    scriptsToReapply  = @("policies", "applocker")
+    lastAppliedSha    = $null
+    lastAppliedAt     = $null
+    lastSelfUpdateSha = $null
+    lastCheckAt       = $null
 }
 
 if (Test-Path $statePath) {
     try {
         $previous = Read-DeploymentState -Path $statePath
-        foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastCheckAt")) {
+        foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastCheckAt")) {
             if ($previous.PSObject.Properties.Name -contains $key) {
                 $state[$key] = $previous.$key
             }
