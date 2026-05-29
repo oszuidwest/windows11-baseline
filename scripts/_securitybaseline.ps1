@@ -1,19 +1,15 @@
 param()
 
-. (Join-Path $PSScriptRoot "_common.ps1")
-
 <#
 .SYNOPSIS
     Applies the Microsoft Windows 11 24H2 Security Baseline.
 
 .DESCRIPTION
-    Downloads the official Microsoft Security Compliance Toolkit baseline package,
-    verifies the package hash, extracts it, and applies the Windows 11 24H2 GPO
-    backups to local policy with LGPO.exe.
-
-    The Microsoft baseline is applied before the ZuidWest-specific policy layer,
-    so local policies in policies/config.json can override or extend it.
+    Downloads, verifies, extracts, and applies the official Microsoft baseline
+    before the ZuidWest-specific policy layer.
 #>
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 $ErrorActionPreference = "Stop"
 

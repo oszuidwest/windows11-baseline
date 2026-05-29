@@ -18,8 +18,7 @@ BEGIN_MARKER="<!-- BEGIN_POLICY_MATRIX -->"
 END_MARKER="<!-- END_POLICY_MATRIX -->"
 
 humanize() {
-    # Convert dash-separated slug to "Title Case Words", then fix known acronyms
-    # and brand spellings. New acronyms go in the sed pipeline below.
+    # Title-case slugs, then fix known acronyms and brand spellings.
     echo "$1" | awk '{
         n = split($0, parts, "-");
         for (i = 1; i <= n; i++) {
@@ -44,10 +43,7 @@ humanize() {
 }
 
 generate_table() {
-    # Defensive guard: this generator only models the ownership dimension.
-    # Every policy in config.json currently has purposes: ["all"]. If that ever
-    # changes, the matrix would silently misrepresent purpose-specific policies
-    # as applying to all purposes. Fail fast instead.
+    # This matrix only models ownership; fail on purpose-specific policies.
     local purpose_specific
     purpose_specific=$(jq -r '
         [.policies | to_entries[]
@@ -66,7 +62,7 @@ generate_table() {
     echo "| Scope | Category | Policy | Description | Shared | Personal | Dedicated |"
     echo "|:-----:|----------|--------|-------------|:------:|:--------:|:---------:|"
 
-    # Emit TSV: scope, category, slug, description, shared, personal, dedicated
+    # Emit TSV so the shell loop does not parse JSON.
     jq -r '
         .policies
         | to_entries

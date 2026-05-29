@@ -5,54 +5,31 @@ param (
     [bool]$seedInstalledSha
 )
 
+<#
+.SYNOPSIS
+    Installs the scheduled policy auto-updater.
+
+.DESCRIPTION
+    Writes state under C:\ProgramData\ZuidWest\policy-update, copies the
+    auto-updater payload there, and registers \ZuidWest\PolicyAutoUpdate.
+    The task runs as SYSTEM at startup, logon, and hourly with jitter; it polls
+    github.com's commits.atom feed and reapplies policies/AppLocker when the
+    SHA or deployment context changes.
+
+    Full installs seed the downloaded SHA to avoid a duplicate first apply.
+    -OnlyRun policyupdate refreshes state and task registration without seeding
+    unless policies and applocker ran in the same invocation.
+
+.PARAMETER systemPurpose
+    radio, tv, editorial, or plain.
+
+.PARAMETER systemOwnership
+    shared, personal, or dedicated.
+#>
+
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_common.ps1")
-
-<#
-.SYNOPSIS
-    Installs the periodic-and-at-logon policy auto-update mechanism.
-
-.DESCRIPTION
-    Persists deployment state, deploys the auto-updater payload to a stable
-    runtime location under C:\ProgramData\ZuidWest, and registers a Scheduled
-    Task that re-applies the policy + AppLocker layers whenever the configured
-    GitHub branch advances.
-
-    Persistent files (under C:\ProgramData\ZuidWest\policy-update\):
-      - state.json        Deployment context, repo coordinates, last SHA
-      - state.json.bak    Previous generation, kept by Save-DeploymentStateAtomic
-      - update.ps1        Copy of scripts/lib/policy-auto-updater.ps1
-      - staging/          Created/destroyed per run (download workspace)
-
-    Scheduled Task: \ZuidWest\PolicyAutoUpdate
-      - Runs as SYSTEM at: system startup, any user logon, hourly
-      - Every trigger (startup, logon, hourly) carries -RandomDelay so the
-        fleet does not poll in lockstep after a maintenance reboot, a
-        morning logon rush, or on the hour. Windows are 15 min, 5 min, and
-        60 min respectively.
-      - The updater asks github.com's commits.atom feed (not api.github.com)
-        for the current branch HEAD SHA, so the check does not consume the
-        unauthenticated REST API budget at all.
-
-    Re-running this script (via install.ps1 -OnlyRun policyupdate) refreshes
-    state.json with the current purpose/ownership and reinstalls the payload
-    + task definition. If any context field (purpose, ownership, repo, branch,
-    scriptsToReapply) actually changed, the recorded lastAppliedSha and
-    lastSelfUpdateSha are cleared so the next auto-update tick re-applies
-    against the new context even when main has not moved.
-
-    Full installs pass the exact commit SHA that install.ps1 downloaded and
-    applied. In that case the state is seeded with that SHA to avoid a redundant
-    first scheduled-task apply. -OnlyRun policyupdate does not seed unless the
-    installer also ran policies and applocker in the same invocation.
-
-.PARAMETER systemPurpose
-    The purpose of the system: "radio", "tv", "editorial", or "plain".
-
-.PARAMETER systemOwnership
-    The ownership type: "shared", "personal", or "dedicated".
-#>
 
 if (-not $systemPurpose -or -not $systemOwnership) {
     throw "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."

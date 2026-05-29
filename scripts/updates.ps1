@@ -1,18 +1,17 @@
 param()
 
-. (Join-Path $PSScriptRoot "_common.ps1")
-
 <#
 .SYNOPSIS
-    Checks for and installs Windows updates.
+    Installs available Windows updates.
 
 .DESCRIPTION
-    Uses the Windows Update Agent API to search for, download, and install
-    all available updates. Runs at the end of the baseline deployment.
+    Uses the Windows Update Agent API to search, download, and install software updates.
 
 .NOTES
     A reboot may be required after updates are installed.
 #>
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 Write-Output "Checking for Windows updates..."
 

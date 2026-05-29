@@ -2,23 +2,21 @@ param (
     [string]$dwAgentCode
 )
 
-. (Join-Path $PSScriptRoot "_common.ps1")
-
 <#
 .SYNOPSIS
     Installs DWService remote access agent.
 
 .DESCRIPTION
-    Downloads and installs DWService agent for remote support and management.
-    Configures as a persistent remote-access agent using the provided agent code from dwservice.net.
+    Downloads DWService and configures it with the provided dwservice.net agent code.
 
 .PARAMETER dwAgentCode
-    The agent code from dwservice.net for remote access configuration.
+    Agent code used to bind this machine.
 
 .NOTES
-    DWService is installed on all systems (shared, personal, dedicated).
-    If no agent code is provided, installation is skipped.
+    Installation is skipped when no code is provided.
 #>
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 if (-not $dwAgentCode) {
     Write-Output "Skipping DWService installation (no agent code provided)."

@@ -3,13 +3,18 @@ param (
     [string]$systemOwnership
 )
 
-. (Join-Path $PSScriptRoot "_common.ps1")
-
 <#
-This script installs applications based on the specified purpose and ownership.
-'systemPurpose' should be "radio", "tv", "editorial", or "plain".
-'systemOwnership' should be "shared", "personal", or "dedicated".
+.SYNOPSIS
+    Installs apps selected by purpose and ownership.
+
+.PARAMETER systemPurpose
+    radio, tv, editorial, or plain.
+
+.PARAMETER systemOwnership
+    shared, personal, or dedicated.
 #>
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 function New-Shortcut {
     [CmdletBinding(SupportsShouldProcess)]
@@ -77,7 +82,6 @@ function Install-WingetDependencyPackage {
     }
 }
 
-# App catalog.
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
     "chrome"        = "Google.Chrome"
@@ -98,7 +102,7 @@ $appsByPurpose = @{
     "plain"     = @()
 }
 
-# Empty ownership entries are intentional.
+# Keep empty ownership entries explicit.
 $appsByOwnership = @{
     "personal"  = @("chrome")
     "shared"    = @()
@@ -126,7 +130,7 @@ if (-not $appsByOwnership.ContainsKey($systemOwnership)) {
     throw "Invalid 'systemOwnership': $systemOwnership. Valid values: $($validOwnership -join ', ')"
 }
 
-# Avoid duplicates if an app is selected by both dimensions.
+# Deduplicate purpose and ownership selections.
 $apps = @($appsByPurpose[$systemPurpose])
 $apps += $appsByOwnership[$systemOwnership]
 $apps = @($apps | Select-Object -Unique)
@@ -194,12 +198,11 @@ Write-Output "Installing apps for purpose '$systemPurpose' and ownership '$syste
 
 $failedApps = [System.Collections.Generic.List[string]]::new()
 
-# `winget install` exit codes that mean "no-op, package already in the requested state".
-# Treated as success so `-OnlyRun apps` is idempotent on already-deployed workstations.
-# Codes verified against microsoft/winget-cli AppInstallerErrors.h:
-#   0x8A15002B UPDATE_NOT_APPLICABLE       (-1978335189) - winget itself
-#   0x8A150061 PACKAGE_ALREADY_INSTALLED   (-1978335135) - winget itself
-#   0x8A15010D INSTALL_ALREADY_INSTALLED   (-1978334963) - underlying MSI/EXE installer
+# Treat no-op winget results as idempotent success.
+# Verified against microsoft/winget-cli AppInstallerErrors.h:
+#   0x8A15002B UPDATE_NOT_APPLICABLE (-1978335189)
+#   0x8A150061 PACKAGE_ALREADY_INSTALLED (-1978335135)
+#   0x8A15010D INSTALL_ALREADY_INSTALLED (-1978334963)
 $wingetSuccessExitCodes = @(0, -1978335189, -1978335135, -1978334963)
 
 foreach ($app in $apps) {

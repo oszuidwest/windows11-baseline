@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Check that every https:// URL referenced from scripts/ is reachable, and that
-# the Microsoft Security Baseline still matches its pinned SHA-256.
+# Check script URLs and the pinned Microsoft Security Baseline SHA-256.
 #
-# Outputs one report line per URL. Writes any failures to $GITHUB_OUTPUT under
-# `broken_urls_report` so the calling workflow can decide whether to file an
-# issue. Returns 0 even when URLs are broken: the workflow inspects the report
-# rather than failing the job.
+# Writes failures to $GITHUB_OUTPUT as `broken_urls_report`. Returns 0 even
+# when URLs are broken; the workflow inspects the report.
 
 set -uo pipefail
 
@@ -26,8 +23,8 @@ check_url() {
     fi
 }
 
-# Extract every https:// URL from scripts/*.ps1, tag with file:line for the issue body.
-# Uses grep -oE (POSIX extended) so this works on both GNU and BSD grep.
+# Extract script URLs and keep file:line for issue text.
+# grep -oE stays portable across GNU and BSD grep.
 urls_found=0
 while IFS= read -r line; do
     file=$(echo "$line" | cut -d: -f1)
@@ -38,15 +35,14 @@ while IFS= read -r line; do
     check_url "$url" "$file:$lineno"
 done < <(grep -nE 'https://[^"'\''[:space:]]+' scripts/*.ps1)
 
-# Fail loudly if URL extraction collapsed silently (regex tooling mismatch, etc.).
+# Fail loudly if URL extraction collapses silently.
 if [ "$urls_found" -eq 0 ]; then
     echo "ERROR: no URLs extracted from scripts/*.ps1 - extraction tooling broken." >&2
     exit 2
 fi
 
-# Extra check: the Microsoft Security Baseline is pinned with SHA-256. A 200 on
-# the URL is not enough - if Microsoft replaces the artifact, the pin breaks.
-# Perl is used instead of grep -P for portability (BSD grep has no -P).
+# Also verify the pinned baseline hash; HTTP 200 is not enough.
+# Perl stays portable; BSD grep has no -P.
 baseline_url=$(perl -ne 'if (/baselineUrl\s*=\s*"([^"]+)"/) { print $1; last }' scripts/_securitybaseline.ps1)
 expected_sha=$(perl -ne 'if (/expectedSha256\s*=\s*"([^"]+)"/) { print $1; last }' scripts/_securitybaseline.ps1)
 

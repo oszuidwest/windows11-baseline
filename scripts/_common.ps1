@@ -364,7 +364,8 @@ function Read-DeploymentPassword {
     }
 }
 
-# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/windows/win32/api/wuapi/ne-wuapi-operationresultcode
+# WUA OperationResultCode orcSucceeded == 2.
+# https://learn.microsoft.com/en-us/windows/win32/api/wuapi/ne-wuapi-operationresultcode
 $script:WuaSucceededCode = 2
 
 function Test-WuaSucceeded {

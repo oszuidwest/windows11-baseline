@@ -1,15 +1,14 @@
 param()
 
-. (Join-Path $PSScriptRoot "_common.ps1")
-
 <#
 .SYNOPSIS
     Disables Windows system sounds.
 
 .DESCRIPTION
-    This script disables all Windows system sounds by modifying the Default User
-    profile. This ensures all new users will have sounds disabled.
+    Updates the Default User profile so new users start with the None sound scheme.
 #>
+
+. (Join-Path $PSScriptRoot "_common.ps1")
 
 Write-Output "Disabling Windows system sounds..."
 

@@ -1,20 +1,15 @@
 <#
 .SYNOPSIS
-    Scheduled-task payload that re-applies the ZuidWest baseline policy layer
-    whenever the configured GitHub branch advances.
+    Scheduled task payload for policy auto-update.
 
 .DESCRIPTION
-    Runs as SYSTEM. It checks GitHub's commits.atom feed for the configured
-    branch, downloads the exact SHA into staging, runs the configured policy
-    scripts from that staged copy, and refreshes this updater when needed.
+    Runs as SYSTEM. Polls GitHub's commits.atom feed, stages the exact SHA,
+    reapplies configured policy scripts, and refreshes this payload when needed.
 
-    State is stored under C:\ProgramData\ZuidWest\policy-update. Policy and
-    self-update SHAs are tracked separately so one successful stage is not
-    repeated because the other failed. State writes are atomic with a .bak
-    fallback; a file lock drops overlapping boot/logon runs.
-
-    The updater uses the public atom feed instead of api.github.com and honors
-    Retry-After / X-RateLimit-* backoff headers when github.com rate-limits.
+    State lives under C:\ProgramData\ZuidWest\policy-update. Policy and payload
+    SHAs are tracked independently; writes are atomic with .bak fallback, and a
+    lock skips overlapping boot/logon runs. Retry-After/X-RateLimit headers
+    control rate-limit backoff.
 
 .NOTES
     Source file: scripts/lib/policy-auto-updater.ps1
@@ -34,7 +29,7 @@ $logPath = Join-Path $logDir "policy-auto-update.log"
 $lockPath = Join-Path $persistentRoot "update.lock"
 $selfPath = $PSCommandPath
 
-# Needed before staged _common.ps1 is available.
+# Local helper used before staged _common.ps1 is available.
 function Save-StateAtomicLocal {
     param (
         [Parameter(Mandatory)][string]$Path,
@@ -90,12 +85,11 @@ function Write-UpdateLog {
 function Get-BackoffUntilFromHeaders {
     <#
     .SYNOPSIS
-        Compute when polling may resume after a 403/429 from github.com.
+        Computes the next poll time after a 403/429.
 
     .DESCRIPTION
-        Follows GitHub's retry ordering: Retry-After first, then
-        X-RateLimit-Reset when remaining is 0, otherwise a 1-minute floor.
-        Returns a UTC DateTime.
+        Uses Retry-After, then X-RateLimit-Reset when remaining is 0, otherwise
+        a one-minute fallback. Returns UTC.
     #>
     [OutputType([datetime])]
     param ($Headers)
@@ -135,11 +129,11 @@ function Get-BackoffUntilFromHeaders {
 function Invoke-AtomBranchCheck {
     <#
     .SYNOPSIS
-        Resolve a branch's HEAD commit SHA via the public commits.atom feed.
+        Resolves a branch HEAD SHA via commits.atom.
 
     .DESCRIPTION
-        Returns Status="ok" with .Sha, or Status="rateLimited" with
-        .BackoffUntil and .StatusCode. Other errors throw.
+        Returns Status="ok" with .Sha or Status="rateLimited" with backoff data.
+        Other errors throw.
     #>
     [OutputType([pscustomobject])]
     param (

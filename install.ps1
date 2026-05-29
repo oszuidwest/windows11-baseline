@@ -1,5 +1,5 @@
 param(
-    # Validated after download against the discovered scripts to avoid a stale ValidateSet.
+    # Validated after download to avoid a stale ValidateSet.
     [string[]]$OnlyRun
 )
 
@@ -379,7 +379,7 @@ if ('personalUserName' -in $requiredParams -and $systemOwnership -eq "personal")
     } while (-not $personalUserName)
 }
 
-# Resolve account name first so the password prompt can enforce the username-substring rule.
+# Resolve account first for username-substring password validation.
 if ('userPassword' -in $requiredParams) {
     $plannedUser = Resolve-DeploymentUserName -SystemPurpose $systemPurpose -SystemOwnership $systemOwnership `
         -DedicatedUserName $dedicatedUserName -PersonalUserName $personalUserName

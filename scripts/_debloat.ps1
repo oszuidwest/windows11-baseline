@@ -1,8 +1,8 @@
 param()
 
 <#
-This script removes bloatware from Windows 11.
-Runs for all system purposes and ownership types.
+.SYNOPSIS
+    Removes bundled Windows apps.
 #>
 
 function Remove-BloatwareApp {

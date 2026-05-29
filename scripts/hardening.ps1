@@ -1,8 +1,8 @@
 param()
 
 <#
-This script applies additional security hardening.
-Runs for all system purposes and ownership types.
+.SYNOPSIS
+    Applies extra security hardening.
 #>
 
 Write-Output "Applying security hardening..."

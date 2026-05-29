@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    AppLocker policy for personal systems: no enforcement.
-
-    Applied via scripts/applocker.ps1 so that re-deploying a previously
-    shared or dedicated machine as personal explicitly clears any
-    enforced rule collections (EnforcementMode="NotConfigured" with no
-    rules). Without this, the AppLocker rules from the previous
-    template would remain in LGPO until manually cleared.
+    Personal systems use an empty, not-configured AppLocker policy.
+    Applying it clears rules left by shared/dedicated deployments.
 -->
 <AppLockerPolicy Version="1">
     <RuleCollection Type="Exe" EnforcementMode="NotConfigured"/>

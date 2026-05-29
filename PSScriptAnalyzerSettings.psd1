@@ -2,13 +2,13 @@
     Severity     = @('Error', 'Warning', 'Information')
 
     ExcludeRules = @(
-        # We pass all params to child scripts by design (splatting pattern)
+        # Child scripts receive params via splatting.
         'PSReviewUnusedParameter',
 
-        # Write-Host is acceptable for user-facing deployment scripts
+        # Deployment scripts use Write-Host for prompts.
         'PSAvoidUsingWriteHost',
 
-        # Functions like Get-ApplicablePolicies are clearer with plural nouns in this context
+        # Plural names are clearer for local helpers.
         'PSUseSingularNouns'
     )
 

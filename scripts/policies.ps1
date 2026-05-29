@@ -3,28 +3,24 @@ param (
     [string]$systemOwnership
 )
 
+<#
+.SYNOPSIS
+    Applies LGPO policies selected by purpose and ownership.
+
+.DESCRIPTION
+    Reads policies/config.json, filters matching policies, and applies them
+    with LGPO.exe. User policies target non-admin accounts only.
+
+.PARAMETER systemPurpose
+    radio, tv, editorial, or plain.
+
+.PARAMETER systemOwnership
+    shared, personal, or dedicated.
+#>
+
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_common.ps1")
-
-<#
-.SYNOPSIS
-    Applies Windows Group Policies based on system purpose and ownership.
-
-.DESCRIPTION
-    This script reads the policy configuration from policies/config.json,
-    filters policies based on the system's purpose and ownership type,
-    and applies them using LGPO.exe.
-
-    - Computer policies (HKLM) are applied machine-wide
-    - User policies (HKCU) are applied to non-administrator accounts only
-
-.PARAMETER systemPurpose
-    The purpose of the system: "radio", "tv", "editorial", or "plain"
-
-.PARAMETER systemOwnership
-    The ownership type: "shared", "personal", or "dedicated"
-#>
 
 $deployPath = Get-DeployPath
 $lgpoPath = Join-DeployPath "bin\LGPO.exe"

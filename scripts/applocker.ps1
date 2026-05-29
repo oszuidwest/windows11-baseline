@@ -2,38 +2,24 @@ param (
     [string]$systemOwnership
 )
 
+<#
+.SYNOPSIS
+    Applies ownership-specific AppLocker policy templates.
+
+.DESCRIPTION
+    Shared systems block Store, Copilot, and StoreInstaller.exe. Dedicated
+    systems block Copilot. Personal systems apply an empty reset template to
+    clear rules from earlier shared/dedicated deployments.
+
+    Requires Windows Enterprise/Education/LTSC and AppIdSvc.
+
+.PARAMETER systemOwnership
+    shared, personal, or dedicated.
+#>
+
 $ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_common.ps1")
-
-<#
-.SYNOPSIS
-    Applies AppLocker policies to block unwanted applications.
-
-.DESCRIPTION
-    This script applies a checked-in AppLocker policy template based on system ownership:
-
-    Shared systems (policies/applocker/shared.xml):
-    - Blocks Microsoft Store application
-    - Blocks Microsoft Copilot application
-    - Blocks StoreInstaller.exe (web installer from get.microsoft.com)
-
-    Dedicated systems (policies/applocker/dedicated.xml):
-    - Blocks Microsoft Copilot application only
-    - Microsoft Store appx is still removed via the debloat phase
-
-    Personal systems (policies/applocker/personal.xml):
-    - No enforcement. An empty policy is still applied so that a machine
-      previously deployed as shared or dedicated has its existing AppLocker
-      rules cleared rather than left in place.
-
-    Prerequisites:
-    - Windows Enterprise or Education edition (LTSC qualifies)
-    - Application Identity service must be running
-
-.PARAMETER systemOwnership
-    The ownership type: "shared", "personal", or "dedicated"
-#>
 
 $appLockerToolPath = Join-DeployPath "bin\AppLockerPolicyTool.exe"
 $appLockerTemplateDir = Join-DeployPath "policies\applocker"
