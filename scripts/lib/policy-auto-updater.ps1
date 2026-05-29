@@ -258,7 +258,7 @@ try {
     $state = Read-StateOrBakLocal -Path $statePath
 
     # Ensure newer schema fields exist even when reading an older state file.
-    foreach ($field in @('lastSelfUpdateSha', 'lastEtag', 'backoffUntil', 'lastCheckAt', 'pollOffsetMinutes')) {
+    foreach ($field in @('lastSelfUpdateSha', 'lastEtag', 'backoffUntil', 'lastCheckAt')) {
         if (-not ($state.PSObject.Properties.Name -contains $field)) {
             $state | Add-Member -NotePropertyName $field -NotePropertyValue $null -Force
         }

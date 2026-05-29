@@ -23,12 +23,12 @@ param (
 
     Scheduled Task: \ZuidWest\PolicyAutoUpdate
       - Runs as SYSTEM at: system startup, any user logon, hourly
-      - The hourly trigger uses a per-install random minute offset stored in
-        state.pollOffsetMinutes so a fleet behind one NAT spreads the
-        unauthenticated GitHub API checks across the hour instead of all
-        firing in lockstep.
-      - The updater itself uses conditional ETag requests, so steady-state
-        polling does not burn rate-limit quota.
+      - The hourly trigger uses New-ScheduledTaskTrigger -RandomDelay so each
+        fire is jittered 0-60 minutes after its anchor. A fleet behind one
+        NAT spreads its GitHub checks across the hour rather than all firing
+        in lockstep.
+      - The updater uses conditional ETag requests, which always saves
+        bandwidth and may also reduce rate-limit pressure (see the payload).
 
     Re-running this script (via install.ps1 -OnlyRun policyupdate) refreshes
     state.json with the current purpose/ownership and reinstalls the payload
@@ -71,14 +71,13 @@ if (-not (Test-Path $persistentRoot)) {
 # fresh -OnlyRun policyupdate does not force a redundant policy reapply on the
 # next tick.
 $state = [ordered]@{
-    schemaVersion     = 2
+    schemaVersion     = 3
     repoOwner         = "oszuidwest"
     repoName          = "windows11-baseline"
     branch            = "main"
     systemPurpose     = $systemPurpose.ToLower()
     systemOwnership   = $systemOwnership.ToLower()
     scriptsToReapply  = @("policies", "applocker")
-    pollOffsetMinutes = Get-Random -Minimum 0 -Maximum 60
     lastAppliedSha    = $null
     lastAppliedAt     = $null
     lastSelfUpdateSha = $null
@@ -98,7 +97,7 @@ if (Test-Path $statePath) {
 }
 
 if ($previous) {
-    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastEtag", "lastCheckAt", "backoffUntil", "pollOffsetMinutes")) {
+    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastEtag", "lastCheckAt", "backoffUntil")) {
         if ($previous.PSObject.Properties.Name -contains $key -and $null -ne $previous.$key) {
             $state[$key] = $previous.$key
         }
@@ -144,7 +143,6 @@ Write-Output "  Purpose:    $($state.systemPurpose)"
 Write-Output "  Ownership:  $($state.systemOwnership)"
 Write-Output "  Repo:       $($state.repoOwner)/$($state.repoName)@$($state.branch)"
 Write-Output "  Re-apply:   $($state.scriptsToReapply -join ', ')"
-Write-Output "  Poll offset:$($state.pollOffsetMinutes) min past the hour"
 
 Copy-Item -Path $payloadSource -Destination $updaterPath -Force
 Write-Output "Updater payload: $updaterPath"
@@ -157,12 +155,12 @@ $action = New-ScheduledTaskAction `
 $startupTrigger = New-ScheduledTaskTrigger -AtStartup
 $logonTrigger = New-ScheduledTaskTrigger -AtLogOn
 
-# Hourly: a -Once trigger anchored shortly after install plus a per-install
-# random minute offset, repeating every hour for a far-future duration. The
-# offset spreads the fleet's polling across the hour so a small office NAT
-# does not burn the unauthenticated GitHub API budget at xx:00 every hour.
+# Hourly: a -Once trigger anchored five minutes after install, repeating every
+# hour for a far-future duration. -RandomDelay adds 0-60 minutes of jitter to
+# each fire so a fleet behind one NAT does not all hit GitHub at xx:05.
 $hourlyTrigger = New-ScheduledTaskTrigger `
-    -Once -At (Get-Date).AddMinutes(5 + $state.pollOffsetMinutes) `
+    -Once -At (Get-Date).AddMinutes(5) `
+    -RandomDelay (New-TimeSpan -Minutes 60) `
     -RepetitionInterval (New-TimeSpan -Hours 1) `
     -RepetitionDuration (New-TimeSpan -Days 365000)
 
@@ -189,7 +187,7 @@ Register-ScheduledTask -TaskName $taskName -TaskPath $taskFolder -InputObject $t
 Write-Output "Scheduled Task registered: $taskFullPath"
 
 Write-Output ""
-Write-Output "Triggers: system startup, any user logon, hourly (offset +$($state.pollOffsetMinutes) min)."
+Write-Output "Triggers: system startup, any user logon, hourly with 0-60 min random delay."
 Write-Output "Logs:     $(Join-Path $env:ProgramData 'ZuidWest\Logs\policy-auto-update.log')"
 Write-Output ""
 Write-Output "=== Policy Auto-Update Installation complete ==="
