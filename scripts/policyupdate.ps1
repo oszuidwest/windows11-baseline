@@ -23,10 +23,10 @@ param (
 
     Scheduled Task: \ZuidWest\PolicyAutoUpdate
       - Runs as SYSTEM at: system startup, any user logon, hourly
-      - The hourly trigger uses New-ScheduledTaskTrigger -RandomDelay so each
-        fire is jittered 0-60 minutes after its anchor. A fleet behind one
-        NAT spreads its GitHub checks across the hour rather than all firing
-        in lockstep.
+      - Every trigger (startup, logon, hourly) carries -RandomDelay so the
+        fleet does not poll in lockstep after a maintenance reboot, a
+        morning logon rush, or on the hour. Windows are 15 min, 5 min, and
+        60 min respectively.
       - The updater asks github.com's commits.atom feed (not api.github.com)
         for the current branch HEAD SHA, so the check does not consume the
         unauthenticated REST API budget at all.
@@ -151,12 +151,15 @@ $action = New-ScheduledTaskAction `
     -Execute "PowerShell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$updaterPath`""
 
-$startupTrigger = New-ScheduledTaskTrigger -AtStartup
-$logonTrigger = New-ScheduledTaskTrigger -AtLogOn
+# Every trigger jitters with -RandomDelay so the fleet does not poll in
+# lockstep. Without this, a post-maintenance reboot fleet-wide or a 09:00
+# logon rush would land all checks on github.com within the same minute.
+$startupTrigger = New-ScheduledTaskTrigger -AtStartup `
+    -RandomDelay (New-TimeSpan -Minutes 15)
 
-# Hourly: a -Once trigger anchored five minutes after install, repeating every
-# hour for a far-future duration. -RandomDelay adds 0-60 minutes of jitter to
-# each fire so a fleet behind one NAT does not all hit GitHub at xx:05.
+$logonTrigger = New-ScheduledTaskTrigger -AtLogOn `
+    -RandomDelay (New-TimeSpan -Minutes 5)
+
 $hourlyTrigger = New-ScheduledTaskTrigger `
     -Once -At (Get-Date).AddMinutes(5) `
     -RandomDelay (New-TimeSpan -Minutes 60) `
@@ -186,7 +189,7 @@ Register-ScheduledTask -TaskName $taskName -TaskPath $taskFolder -InputObject $t
 Write-Output "Scheduled Task registered: $taskFullPath"
 
 Write-Output ""
-Write-Output "Triggers: system startup, any user logon, hourly with 0-60 min random delay."
+Write-Output "Triggers: startup (jitter 15 min), logon (jitter 5 min), hourly (jitter 60 min)."
 Write-Output "Logs:     $(Join-Path $env:ProgramData 'ZuidWest\Logs\policy-auto-update.log')"
 Write-Output ""
 Write-Output "=== Policy Auto-Update Installation complete ==="
