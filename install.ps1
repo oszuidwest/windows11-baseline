@@ -9,9 +9,14 @@ param(
     [string[]]$OnlyRun
 )
 
+$ErrorActionPreference = "Stop"
+
 $script:ZuidWestRoot = Join-Path $env:ProgramData "ZuidWest"
 $script:InstallLogRoot = Join-Path $script:ZuidWestRoot "Logs"
 $script:DeployRoot = Join-Path $script:ZuidWestRoot "deploy"
+$script:RepoOwner = "oszuidwest"
+$script:RepoName = "windows11-baseline"
+$script:RepoBranch = "main"
 
 # Function to check for admin rights
 function Test-Admin {
@@ -73,6 +78,40 @@ function Wait-BeforeExit {
     Read-Host -Prompt $Prompt | Out-Null
 }
 
+function Resolve-GitHubBranchSha {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Owner,
+
+        [Parameter(Mandatory)]
+        [string]$Repo,
+
+        [Parameter(Mandatory)]
+        [string]$Branch
+    )
+
+    $url = "https://github.com/$Owner/$Repo/commits/$Branch.atom"
+    $headers = @{
+        "User-Agent" = "windows11-baseline-installer"
+        "Accept"     = "application/atom+xml"
+    }
+
+    $previousProgressPreference = $ProgressPreference
+    try {
+        $ProgressPreference = "SilentlyContinue"
+        $response = Invoke-WebRequest -Uri $url -Headers $headers -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+    }
+
+    if ($response.Content -match 'tag:github\.com,2008:Grit::Commit/([a-fA-F0-9]{40})') {
+        return $Matches[1].ToLower()
+    }
+
+    throw "Could not resolve latest commit SHA from $url"
+}
+
 function Write-FatalInstallError {
     param (
         [Parameter(Mandatory)]
@@ -84,7 +123,7 @@ function Write-FatalInstallError {
     )
 
     Write-Output ""
-    Write-Error $Message
+    Write-Error -Message $Message -ErrorAction Continue
     if ($ErrorRecord) {
         Write-Output "Details: $ErrorRecord"
     }
@@ -129,9 +168,18 @@ Write-Output ""
 
 # Download before prompting so we can source _common.ps1 and validate the password input.
 $deployDir = $script:DeployRoot
-$zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
+$installedSha = $null
+try {
+    Write-Output "Resolving $($script:RepoOwner)/$($script:RepoName)@$($script:RepoBranch)..."
+    $installedSha = Resolve-GitHubBranchSha -Owner $script:RepoOwner -Repo $script:RepoName -Branch $script:RepoBranch
+    Write-Output "Resolved commit SHA: $installedSha"
+}
+catch {
+    Write-FatalInstallError -Message "Failed to resolve the current deployment commit." -ErrorRecord $_
+}
+
+$zipUrl = "https://github.com/$($script:RepoOwner)/$($script:RepoName)/archive/$installedSha.zip"
 $zipFilePath = Join-Path $deployDir "main.zip"
-$sourceDir = Join-Path $deployDir "windows11-baseline-main"
 
 if (Test-Path $deployDir) {
     Remove-Item -Path $deployDir -Recurse -Force
@@ -153,15 +201,16 @@ catch {
 
 Remove-Item -Path $zipFilePath -Force
 
-if (Test-Path $sourceDir) {
-    Write-Output "Moving contents from $sourceDir to $deployDir..."
-    Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
-    Remove-Item -Path $sourceDir -Recurse -Force
-    Write-Output "Contents moved and $sourceDir removed."
+$extractedDirs = @(Get-ChildItem -Path $deployDir -Directory)
+if ($extractedDirs.Count -ne 1) {
+    Write-FatalInstallError -Message "Expected exactly one extracted repository directory under $deployDir, found $($extractedDirs.Count)."
 }
-else {
-    Write-FatalInstallError -Message "$sourceDir does not exist. Exiting..."
-}
+
+$sourceDir = $extractedDirs[0].FullName
+Write-Output "Moving contents from $sourceDir to $deployDir..."
+Get-ChildItem -Path $sourceDir -Force | Move-Item -Destination $deployDir -Force
+Remove-Item -Path $sourceDir -Recurse -Force
+Write-Output "Contents moved and $sourceDir removed."
 
 $commonPath = Join-Path $deployDir "scripts\_common.ps1"
 if (-not (Test-Path $commonPath)) {
@@ -182,7 +231,9 @@ $installerInputNames = @(
     "userPassword",
     "dwAgentCode",
     "dedicatedUserName",
-    "personalUserName"
+    "personalUserName",
+    "installedSha",
+    "seedInstalledSha"
 )
 
 # Explicit installer input requirements. This is the source of truth for prompting;
@@ -194,7 +245,7 @@ $scriptRequirements = @{
     'dwservice'        = @('dwAgentCode')
     'hardening'        = @()
     'policies'         = @('systemPurpose', 'systemOwnership')
-    'policyupdate'     = @('systemPurpose', 'systemOwnership')
+    'policyupdate'     = @('systemPurpose', 'systemOwnership', 'installedSha', 'seedInstalledSha')
     'power'            = @('systemPurpose', 'systemOwnership')
     'securitybaseline' = @()
     'sounds'           = @()
@@ -381,6 +432,8 @@ $allParams = @{
     dwAgentCode       = $dwAgentCode
     dedicatedUserName = $dedicatedUserName
     personalUserName  = $personalUserName
+    installedSha      = $installedSha
+    seedInstalledSha  = (-not $OnlyRun) -or (('policyupdate' -in $OnlyRun) -and ('policies' -in $OnlyRun) -and ('applocker' -in $OnlyRun))
 }
 
 foreach ($scriptFile in $scriptFiles) {

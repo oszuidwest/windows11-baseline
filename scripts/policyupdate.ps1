@@ -1,7 +1,11 @@
 param (
     [string]$systemPurpose,
-    [string]$systemOwnership
+    [string]$systemOwnership,
+    [string]$installedSha,
+    [bool]$seedInstalledSha
 )
+
+$ErrorActionPreference = "Stop"
 
 . (Join-Path $PSScriptRoot "_common.ps1")
 
@@ -38,6 +42,11 @@ param (
     lastSelfUpdateSha are cleared so the next auto-update tick re-applies
     against the new context even when main has not moved.
 
+    Full installs pass the exact commit SHA that install.ps1 downloaded and
+    applied. In that case the state is seeded with that SHA to avoid a redundant
+    first scheduled-task apply. -OnlyRun policyupdate does not seed unless the
+    installer also ran policies and applocker in the same invocation.
+
 .PARAMETER systemPurpose
     The purpose of the system: "radio", "tv", "editorial", or "plain".
 
@@ -72,7 +81,8 @@ if (-not (Test-Path $persistentRoot)) {
 # fresh -OnlyRun policyupdate does not force a redundant policy reapply on the
 # next tick.
 $state = [ordered]@{
-    schemaVersion     = 4
+    schemaVersion     = 5
+    enabled           = $true
     repoOwner         = "oszuidwest"
     repoName          = "windows11-baseline"
     branch            = "main"
@@ -97,7 +107,7 @@ if (Test-Path $statePath) {
 }
 
 if ($previous) {
-    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastCheckAt", "backoffUntil")) {
+    foreach ($key in @("enabled", "lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastCheckAt", "backoffUntil")) {
         if ($previous.PSObject.Properties.Name -contains $key -and $null -ne $previous.$key) {
             $state[$key] = $previous.$key
         }
@@ -136,14 +146,27 @@ if ($contextChanged) {
     Write-Output "Deployment context changed since previous install; cleared applied-SHA tracking. Next auto-update tick will reapply."
 }
 
+if ($seedInstalledSha) {
+    if (-not $installedSha -or $installedSha -notmatch '^[a-fA-F0-9]{40}$') {
+        throw "Cannot seed policy auto-update state: installedSha must be a 40-character commit SHA."
+    }
+
+    $seedSha = $installedSha.ToLower()
+    $state.lastAppliedSha = $seedSha
+    $state.lastAppliedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $state.lastSelfUpdateSha = $seedSha
+    Write-Output "Seeded applied SHA from installer download: $seedSha"
+}
+
 Save-DeploymentStateAtomic -Path $statePath -State $state
 Write-Output "Deployment state: $statePath"
+Write-Output "  Enabled:    $($state.enabled)"
 Write-Output "  Purpose:    $($state.systemPurpose)"
 Write-Output "  Ownership:  $($state.systemOwnership)"
 Write-Output "  Repo:       $($state.repoOwner)/$($state.repoName)@$($state.branch)"
 Write-Output "  Re-apply:   $($state.scriptsToReapply -join ', ')"
 
-Copy-Item -Path $payloadSource -Destination $updaterPath -Force
+Copy-Item -Path $payloadSource -Destination $updaterPath -Force -ErrorAction Stop
 Write-Output "Updater payload: $updaterPath"
 
 # Register / refresh the Scheduled Task.
@@ -185,7 +208,7 @@ $task = New-ScheduledTask `
     -Settings $settings `
     -Description "Streekomroep ZuidWest baseline policy auto-update. Polls github.com's commits.atom feed (not the REST API) for new commits on the configured branch and re-applies the policies + AppLocker layer when the SHA changes."
 
-Register-ScheduledTask -TaskName $taskName -TaskPath $taskFolder -InputObject $task -Force | Out-Null
+Register-ScheduledTask -TaskName $taskName -TaskPath $taskFolder -InputObject $task -Force -ErrorAction Stop | Out-Null
 Write-Output "Scheduled Task registered: $taskFullPath"
 
 Write-Output ""

@@ -302,10 +302,28 @@ try {
     $state = Read-StateOrBakLocal -Path $statePath
 
     # Ensure newer schema fields exist even when reading an older state file.
-    foreach ($field in @('lastSelfUpdateSha', 'backoffUntil', 'lastCheckAt')) {
+    $schemaDefaults = @{
+        enabled           = $true
+        lastSelfUpdateSha = $null
+        backoffUntil      = $null
+        lastCheckAt       = $null
+    }
+    foreach ($field in $schemaDefaults.Keys) {
         if (-not ($state.PSObject.Properties.Name -contains $field)) {
-            $state | Add-Member -NotePropertyName $field -NotePropertyValue $null -Force
+            $state | Add-Member -NotePropertyName $field -NotePropertyValue $schemaDefaults[$field] -Force
         }
+    }
+
+    $enabled = $true
+    try {
+        $enabled = [System.Convert]::ToBoolean($state.enabled)
+    }
+    catch {
+        Write-UpdateLog "State field 'enabled' is not a boolean-compatible value; treating auto-update as enabled." "WARN"
+    }
+    if (-not $enabled) {
+        Write-UpdateLog "Auto-update disabled by state.enabled=false; skipping."
+        return
     }
 
     $repoOwner = $state.repoOwner

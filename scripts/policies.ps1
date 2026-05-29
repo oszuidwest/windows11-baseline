@@ -3,6 +3,8 @@ param (
     [string]$systemOwnership
 )
 
+$ErrorActionPreference = "Stop"
+
 . (Join-Path $PSScriptRoot "_common.ps1")
 
 <#

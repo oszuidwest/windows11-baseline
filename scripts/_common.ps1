@@ -247,6 +247,20 @@ function Assert-BundledBinary {
     if (-not $actual.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "SHA-256 mismatch for '$binaryName' (expected $expected, got $actual). Refusing to invoke."
     }
+
+    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        throw "Get-AuthenticodeSignature is not available. Refusing to invoke '$binaryName' without validating its Microsoft signature."
+    }
+
+    $signature = Get-AuthenticodeSignature -FilePath $BinaryPath
+    if ($signature.Status -ne "Valid") {
+        throw "Authenticode signature for '$binaryName' is not valid (status: $($signature.Status)). Refusing to invoke."
+    }
+
+    $subject = $signature.SignerCertificate.Subject
+    if ($subject -notmatch "Microsoft Corporation") {
+        throw "Authenticode signature for '$binaryName' was not issued to Microsoft Corporation (subject: $subject). Refusing to invoke."
+    }
 }
 
 function Get-ScriptParameterNames {
@@ -388,7 +402,7 @@ function Read-DeploymentPassword {
     }
 }
 
-# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wsusss/0a8c5b85-2123-4ed9-a6cd-7d23e23e3786
+# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/windows/win32/api/wuapi/ne-wuapi-operationresultcode
 $script:WuaSucceededCode = 2
 
 function Test-WuaSucceeded {
