@@ -77,9 +77,7 @@ if (-not (Test-Path $persistentRoot)) {
     New-Item -Path $persistentRoot -ItemType Directory -Force | Out-Null
 }
 
-# Build the new state. Preserve the previously applied SHA across re-runs so a
-# fresh -OnlyRun policyupdate does not force a redundant policy reapply on the
-# next tick.
+# Preserve applied SHAs across task refreshes to avoid redundant re-apply.
 $state = [ordered]@{
     schemaVersion     = 5
     enabled           = $true
@@ -114,11 +112,7 @@ if ($previous) {
     }
 }
 
-# Detect a context change: if any of the inputs that drive what gets applied
-# changed since the previous deployment, null out the applied-SHA tracking so
-# the next auto-update tick reapplies against the new context. Without this,
-# an operator running -OnlyRun policyupdate to switch purpose/ownership would
-# update state.json but the updater would short-circuit until main advances.
+# Context changes must force a re-apply even if main has not advanced.
 $contextChanged = $false
 if ($previous) {
     $contextKeys = @('systemPurpose', 'systemOwnership', 'branch', 'repoOwner', 'repoName', 'scriptsToReapply')
@@ -169,14 +163,11 @@ Write-Output "  Re-apply:   $($state.scriptsToReapply -join ', ')"
 Copy-Item -Path $payloadSource -Destination $updaterPath -Force -ErrorAction Stop
 Write-Output "Updater payload: $updaterPath"
 
-# Register / refresh the Scheduled Task.
 $action = New-ScheduledTaskAction `
     -Execute "PowerShell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$updaterPath`""
 
-# Every trigger jitters with -RandomDelay so the fleet does not poll in
-# lockstep. Without this, a post-maintenance reboot fleet-wide or a 09:00
-# logon rush would land all checks on github.com within the same minute.
+# Jitter prevents fleet-wide boot/logon bursts against github.com.
 $startupTrigger = New-ScheduledTaskTrigger -AtStartup `
     -RandomDelay (New-TimeSpan -Minutes 15)
 

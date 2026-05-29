@@ -35,15 +35,13 @@ $ErrorActionPreference = "Stop"
     The ownership type: "shared", "personal", or "dedicated"
 #>
 
-# Paths
 $appLockerToolPath = Join-DeployPath "bin\AppLockerPolicyTool.exe"
 $appLockerTemplateDir = Join-DeployPath "policies\applocker"
 
 Write-Output "=== AppLocker Configuration ==="
 Write-Output ""
 
-# Select template based on ownership. "personal" applies an empty policy so a
-# re-deploy from shared/dedicated to personal explicitly clears prior rules.
+# personal.xml clears rules left by earlier shared/dedicated deployments.
 switch ($systemOwnership) {
     "shared" {
         $templateName = "shared.xml"
@@ -78,7 +76,6 @@ if (-not (Test-Path $templatePath)) {
     throw "AppLocker template not found at $templatePath"
 }
 
-# Step 1: Enable and start the Application Identity service
 Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
 $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
@@ -113,7 +110,6 @@ else {
 
 Write-Output ""
 
-# Step 2: Apply AppLocker policy template
 Write-Output "Applying AppLocker policy from $templateName..."
 
 try {
@@ -128,7 +124,6 @@ catch {
 
 Write-Output ""
 
-# Step 3: Verify policy was applied
 Write-Output "Verifying AppLocker policy..."
 
 try {
@@ -151,7 +146,7 @@ Write-Output "  Executable rules: $exeRuleCount"
 Write-Output "  Packaged app rules: $appxRuleCount"
 
 if ($isResetTemplate) {
-    # personal.xml: rule collections must be empty AND not enforced.
+    # Reset template must leave managed collections empty and not enforced.
     if ($exeRuleCount -ne 0 -or $appxRuleCount -ne 0) {
         throw "AppLocker reset applied but rules remain (Exe=$exeRuleCount, Appx=$appxRuleCount)."
     }

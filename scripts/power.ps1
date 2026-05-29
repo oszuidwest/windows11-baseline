@@ -56,16 +56,14 @@ if (-not $success) {
     Write-Warning "Some power settings may not have been applied."
 }
 
-# Disable NIC power management for AoIP reliability (radio, tv, dedicated)
+# Keep audio/video network links awake on production systems.
 if ($systemPurpose -in @("radio", "tv") -or $systemOwnership -eq "dedicated") {
     Write-Output "  Disabling NIC power management for AoIP..."
     Get-NetAdapter -Physical | ForEach-Object {
         $adapterName = $_.Name
 
-        # Disable adapter power saving
         Set-NetAdapterPowerManagement -Name $adapterName -WakeOnMagicPacket Disabled -WakeOnPattern Disabled -DeviceSleepOnDisconnect Disabled -ErrorAction SilentlyContinue
 
-        # Disable Energy Efficient Ethernet (prevents latency spikes)
         Set-NetAdapterAdvancedProperty -Name $adapterName -RegistryKeyword "*EEE" -RegistryValue 0 -ErrorAction SilentlyContinue
 
         Write-Output "    $adapterName configured"

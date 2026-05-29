@@ -1,4 +1,3 @@
-# Define script parameters
 param (
     [string]$computerName,
     [string]$workgroupName
@@ -6,11 +5,9 @@ param (
 
 Write-Output "Configuring computer name and workgroup..."
 
-# Fetch current system properties
 $currentComputerName = (Get-CimInstance -ClassName Win32_ComputerSystem).Name
 $currentWorkgroup = (Get-CimInstance -ClassName Win32_ComputerSystem).Domain
 
-# Check and update the computer name if necessary
 if ($currentComputerName -ne $computerName) {
     Write-Output "Changing computer name from $currentComputerName to $computerName..."
     try {
@@ -25,7 +22,6 @@ else {
     Write-Output "Computer name is already $computerName. No change needed."
 }
 
-# Check and update the workgroup if necessary
 if ($currentWorkgroup -ne $workgroupName) {
     Write-Output "Changing workgroup from $currentWorkgroup to $workgroupName..."
     try {

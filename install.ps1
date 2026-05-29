@@ -1,11 +1,5 @@
-#===============================================================
-# Windows 11 Baseline for Streekomroep ZuidWest
-#===============================================================
-
 param(
-    # Valid script names are derived from scripts/*.ps1 after download; see the validation block
-    # near the discovery code below. ValidateSet would lock us to a hardcoded list and drift from
-    # the filesystem.
+    # Validated after download against the discovered scripts to avoid a stale ValidateSet.
     [string[]]$OnlyRun
 )
 
@@ -18,7 +12,6 @@ $script:RepoOwner = "oszuidwest"
 $script:RepoName = "windows11-baseline"
 $script:RepoBranch = "main"
 
-# Function to check for admin rights
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -152,12 +145,10 @@ trap {
     Write-FatalInstallError -Message "Unexpected fatal error." -ErrorRecord $_
 }
 
-# Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
     Write-FatalInstallError -Message "This script must be run as an administrator. Exiting..."
 }
 
-# Welcome message
 Write-Output ""
 Write-Output "=========================================="
 Write-Output " Windows 11 Baseline - Streekomroep ZuidWest"
@@ -166,7 +157,7 @@ Write-Output ""
 Write-Output "This script will configure a Windows 11 system with the specified settings."
 Write-Output ""
 
-# Download before prompting so we can source _common.ps1 and validate the password input.
+# Download first so _common.ps1 can validate later prompts.
 $deployDir = $script:DeployRoot
 $installedSha = $null
 try {
@@ -220,7 +211,6 @@ if (-not (Test-Path $commonPath)) {
 
 Write-Output ""
 
-# Valid options
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
 $installerInputNames = @(
@@ -236,8 +226,7 @@ $installerInputNames = @(
     "seedInstalledSha"
 )
 
-# Explicit installer input requirements. This is the source of truth for prompting;
-# the AST check below only verifies this map against each script's param() block.
+# Source of truth for prompts; AST parsing only checks this map for drift.
 $scriptRequirements = @{
     'applocker'        = @('systemOwnership')
     'apps'             = @('systemPurpose', 'systemOwnership')
@@ -255,7 +244,7 @@ $scriptRequirements = @{
     'workgroupname'    = @('computerName', 'workgroupName')
 }
 
-# Discover scripts so -OnlyRun validation and execution still follow the deployed filesystem.
+# Keep -OnlyRun validation and execution tied to the deployed filesystem.
 $scriptsDir = Join-Path $deployDir "scripts"
 if (-not (Test-Path $scriptsDir)) {
     Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
@@ -266,7 +255,7 @@ $scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
         Sort-Object Name)
 $discoveredScriptParams = @{}
 $scriptFiles | ForEach-Object {
-    # Public script names strip a leading ordering underscore: _securitybaseline.ps1 -> securitybaseline.
+    # _securitybaseline.ps1 is exposed as securitybaseline.
     $scriptName = $_.BaseName -replace '^_', ''
     $discoveredScriptParams[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
 }
@@ -284,7 +273,7 @@ if ($staleMappings.Count -gt 0) {
     Write-FatalInstallError -Message "Installer requirement map contains script(s) that no longer exist: $($staleMappings -join ', ')"
 }
 
-# Reverse-drift check: a script param that install.ps1 cannot collect would otherwise splat $null silently.
+# Prevent silently splatting $null for params the installer cannot collect.
 $detectedParamCount = @($discoveredScriptParams.Values | ForEach-Object { $_ }).Count
 $mappedParamCount = @($scriptRequirements.Values | ForEach-Object { $_ }).Count
 $canValidateParamDrift = -not ($mappedParamCount -gt 0 -and $detectedParamCount -eq 0)
@@ -325,7 +314,6 @@ else {
     }
 }
 
-# Validate -OnlyRun against the discovered script names.
 if ($OnlyRun) {
     $validScriptNames = @($scriptRequirements.Keys | Sort-Object)
     $unknown = @($OnlyRun | Where-Object { $_ -notin $validScriptNames })
@@ -334,16 +322,13 @@ if ($OnlyRun) {
     }
 }
 
-# Determine which parameters are required based on -OnlyRun
 if ($OnlyRun) {
     $requiredParams = @($OnlyRun | ForEach-Object { $scriptRequirements[$_] } | Select-Object -Unique)
 }
 else {
-    # Full installation: collect requirements for all scripts
     $requiredParams = @($scriptRequirements.Values | ForEach-Object { $_ } | Select-Object -Unique)
 }
 
-# Get and validate system purpose if required.
 if ('systemPurpose' -in $requiredParams) {
     do {
         Write-Output "System purpose options: $($validPurposes -join ', ')"
@@ -356,7 +341,6 @@ if ('systemPurpose' -in $requiredParams) {
     Write-Output ""
 }
 
-# Get and validate system ownership if required.
 if ('systemOwnership' -in $requiredParams) {
     do {
         Write-Output "System ownership options: $($validOwnership -join ', ')"
@@ -369,17 +353,14 @@ if ('systemOwnership' -in $requiredParams) {
     Write-Output ""
 }
 
-# Get computer name if required.
 if ('computerName' -in $requiredParams) {
     $computerName = Read-Host -Prompt "Enter the computer name"
 }
 
-# Get workgroup name if required.
 if ('workgroupName' -in $requiredParams) {
     $workgroupName = Read-Host -Prompt "Enter the workgroup name"
 }
 
-# For dedicated systems, ask if a user with auto-login should be created
 if ('dedicatedUserName' -in $requiredParams -and $systemOwnership -eq "dedicated") {
     Write-Output ""
     $createUser = (Read-Host -Prompt "Create a user with auto-login? (y/n)").ToLower().Trim()
@@ -388,7 +369,6 @@ if ('dedicatedUserName' -in $requiredParams -and $systemOwnership -eq "dedicated
     }
 }
 
-# For personal systems, ask for username (required)
 if ('personalUserName' -in $requiredParams -and $systemOwnership -eq "personal") {
     Write-Output ""
     do {
@@ -410,7 +390,6 @@ if ('userPassword' -in $requiredParams) {
     }
 }
 
-# Get DWService agent code if required.
 if ('dwAgentCode' -in $requiredParams) {
     Write-Output ""
     Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
@@ -418,10 +397,6 @@ if ('dwAgentCode' -in $requiredParams) {
 }
 
 Write-Output ""
-
-#===============================================================
-# Execute all scripts in the scripts directory
-#===============================================================
 
 $allParams = @{
     systemPurpose     = $systemPurpose
@@ -439,7 +414,6 @@ $allParams = @{
 foreach ($scriptFile in $scriptFiles) {
     $scriptName = $scriptFile.BaseName -replace '^_', ''
 
-    # Skip scripts not in -OnlyRun list (if specified)
     if ($OnlyRun -and $scriptName -notin $OnlyRun) {
         Write-Output "Skipping: $($scriptFile.Name) (not in -OnlyRun list)"
         continue

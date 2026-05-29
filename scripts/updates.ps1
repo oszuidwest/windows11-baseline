@@ -16,11 +16,9 @@ param()
 
 Write-Output "Checking for Windows updates..."
 
-# Create Windows Update Session
 $updateSession = New-Object -ComObject Microsoft.Update.Session
 $updateSearcher = $updateSession.CreateUpdateSearcher()
 
-# Search for updates
 Write-Output "Searching for available updates..."
 try {
     $searchResult = $updateSearcher.Search("IsInstalled=0 and Type='Software'")
@@ -41,7 +39,6 @@ foreach ($update in $updates) {
     Write-Output "  - $($update.Title)"
 }
 
-# Create update collection for download
 $updatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
 foreach ($update in $updates) {
     if (-not $update.IsDownloaded) {
@@ -49,7 +46,6 @@ foreach ($update in $updates) {
     }
 }
 
-# Download updates
 if ($updatesToDownload.Count -gt 0) {
     Write-Output ""
     Write-Output "Downloading $($updatesToDownload.Count) update(s)..."
@@ -77,7 +73,6 @@ if ($updatesToDownload.Count -gt 0) {
     Write-Output "  All $downloadedCount update(s) downloaded."
 }
 
-# Create update collection for installation
 $updatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
 foreach ($update in $updates) {
     if ($update.IsDownloaded) {
@@ -85,7 +80,6 @@ foreach ($update in $updates) {
     }
 }
 
-# Install updates
 if ($updatesToInstall.Count -gt 0) {
     Write-Output ""
     Write-Output "Installing $($updatesToInstall.Count) update(s)..."

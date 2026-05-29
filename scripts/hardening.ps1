@@ -7,7 +7,6 @@ Runs for all system purposes and ownership types.
 
 Write-Output "Applying security hardening..."
 
-# Disable Remote Registry service (attack surface reduction)
 Write-Output "Disabling Remote Registry service..."
 try {
     Stop-Service -Name RemoteRegistry -Force -ErrorAction SilentlyContinue

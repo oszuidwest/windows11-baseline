@@ -4,60 +4,17 @@
     whenever the configured GitHub branch advances.
 
 .DESCRIPTION
-    Runs as SYSTEM under the "ZuidWest\PolicyAutoUpdate" Scheduled Task.
-    Reads its deployment state from C:\ProgramData\ZuidWest\policy-update\state.json
-    (written at install time by scripts/policyupdate.ps1), reads github.com's
-    public commits.atom feed for the configured branch to learn the HEAD
-    commit SHA, and short-circuits when that SHA matches the SHAs already
-    applied on this machine.
+    Runs as SYSTEM. It checks GitHub's commits.atom feed for the configured
+    branch, downloads the exact SHA into staging, runs the configured policy
+    scripts from that staged copy, and refreshes this updater when needed.
 
-    Rate-limit posture:
-      - The SHA check goes to the public atom feed at
-        https://github.com/<owner>/<repo>/commits/<branch>.atom,
-        not the REST API. github.com is not bound by the 60 req/h/IP
-        unauthenticated REST API limit, so a fleet-wide hourly poll does
-        not compete for that budget.
-      - On 429 from github.com the response headers are honoured per
-        GitHub's REST API best practices (the github.com general rate
-        limiter uses the same conventions): Retry-After first, then
-        X-RateLimit-Reset only when X-RateLimit-Remaining is 0, with a
-        1-minute floor fallback. The resulting wake time is persisted to
-        state.backoffUntil and short-circuits subsequent ticks until it
-        passes.
-      - The scheduled-task triggers anchored by policyupdate.ps1 use
-        -RandomDelay so startup, logon, and hourly checks do not fire in
-        lockstep across the fleet.
+    State is stored under C:\ProgramData\ZuidWest\policy-update. Policy and
+    self-update SHAs are tracked separately so one successful stage is not
+    repeated because the other failed. State writes are atomic with a .bak
+    fallback; a file lock drops overlapping boot/logon runs.
 
-    On a SHA that differs from either state.lastAppliedSha (policies need
-    re-running) or state.lastSelfUpdateSha (the deployed copy of this script
-    is out of date) the updater:
-
-      1. Downloads the repository archive for that exact SHA into a staging
-         directory under C:\ProgramData\ZuidWest\policy-update\staging.
-      2. Points the baseline's deploy-path override
-         ($env:WINDOWS11_BASELINE_DEPLOY_PATH) at the staging directory so
-         the existing sub-scripts (which use Get-DeployPath / Join-DeployPath
-         from scripts/_common.ps1) operate on the freshly downloaded copy
-         without touching the persistent deploy cache.
-      3. If policy is stale: runs each script listed in state.scriptsToReapply
-         (default: policies, applocker), passing systemPurpose /
-         systemOwnership from the state file. Sub-scripts are invoked
-         directly, not via install.ps1, so the updater is fully
-         non-interactive.
-      4. If the self-copy is stale: copies the staged
-         scripts/lib/policy-auto-updater.ps1 over this script.
-      5. Persists progress per stage. Policy SHA and self-update SHA are
-         tracked separately, so a self-copy that fails (file locked, AV
-         scanning) does not prevent the retry on the next tick.
-
-    State writes use Save-StateAtomicLocal (defined inline at startup so it
-    is available before the staged scripts/_common.ps1 is sourced). Reads use
-    Read-StateOrBakLocal, which falls back to "$statePath.bak" if the main
-    file fails to parse. This protects the updater from being permanently
-    bricked by a power loss or crash mid-write.
-
-    A single-instance file lock prevents overlapping runs when multiple
-    triggers fire close together (e.g. boot + logon).
+    The updater uses the public atom feed instead of api.github.com and honors
+    Retry-After / X-RateLimit-* backoff headers when github.com rate-limits.
 
 .NOTES
     Source file: scripts/lib/policy-auto-updater.ps1
@@ -77,10 +34,7 @@ $logPath = Join-Path $logDir "policy-auto-update.log"
 $lockPath = Join-Path $persistentRoot "update.lock"
 $selfPath = $PSCommandPath
 
-# Inline copies of the atomic state helpers. The canonical implementations
-# live in scripts/_common.ps1, but we need them before the staged _common.ps1
-# is sourced (we have to read state.json to know which repo to download from).
-# Re-defining them after dot-sourcing is harmless: the bodies are identical.
+# Needed before staged _common.ps1 is available.
 function Save-StateAtomicLocal {
     param (
         [Parameter(Mandatory)][string]$Path,
@@ -127,7 +81,7 @@ function Write-UpdateLog {
         Add-Content -Path $logPath -Value $line -Encoding UTF8 -ErrorAction Stop
     }
     catch {
-        # Best-effort logging: never let the log writer itself break the updater.
+        # Logging must never break the updater.
         $null = $_
     }
     Write-Output $line
@@ -139,21 +93,9 @@ function Get-BackoffUntilFromHeaders {
         Compute when polling may resume after a 403/429 from github.com.
 
     .DESCRIPTION
-        Implements the resume-time logic from GitHub's REST API best practices
-        guide (https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
-        Although the auto-updater talks to github.com's commits.atom feed and
-        not to api.github.com, github.com's general rate limiter uses the same
-        Retry-After / X-RateLimit-* header conventions, so the same ordering
-        applies:
-
-          1. If Retry-After is set, wait that many seconds (it carries the
-             secondary / abuse-detection limit and takes precedence).
-          2. Otherwise, if X-RateLimit-Remaining is 0, wait until
-             X-RateLimit-Reset (Unix epoch seconds, the primary-limit reset).
-          3. Otherwise fall back to a 1-minute floor; subsequent scheduled
-             ticks effectively give us exponential spacing across the hour.
-
-        Output is a DateTime in UTC.
+        Follows GitHub's retry ordering: Retry-After first, then
+        X-RateLimit-Reset when remaining is 0, otherwise a 1-minute floor.
+        Returns a UTC DateTime.
     #>
     [OutputType([datetime])]
     param ($Headers)
@@ -164,7 +106,6 @@ function Get-BackoffUntilFromHeaders {
         return $now.AddMinutes(1)
     }
 
-    # 1. Retry-After wins when set: secondary rate / abuse detection.
     $retryRaw = $Headers["Retry-After"]
     if ($retryRaw) {
         $seconds = 0
@@ -173,7 +114,6 @@ function Get-BackoffUntilFromHeaders {
         }
     }
 
-    # 2. Primary limit exhausted (Remaining == 0): honour X-RateLimit-Reset.
     $remaining = -1
     $remainingRaw = $Headers["X-RateLimit-Remaining"]
     if ($remainingRaw) {
@@ -189,7 +129,6 @@ function Get-BackoffUntilFromHeaders {
         }
     }
 
-    # 3. No header hints: GitHub recommends at least one minute before retry.
     return $now.AddMinutes(1)
 }
 
@@ -199,25 +138,8 @@ function Invoke-AtomBranchCheck {
         Resolve a branch's HEAD commit SHA via the public commits.atom feed.
 
     .DESCRIPTION
-        Fetches https://github.com/<owner>/<repo>/commits/<branch>.atom and
-        regex-extracts the first 40-char SHA. The atom feed reflects the
-        branch HEAD in real time (no CI required to maintain a sentinel
-        file) and runs against github.com rather than api.github.com, so
-        it does not consume the unauthenticated REST API budget.
-
-        The first <entry> in the feed corresponds to the most recent
-        commit, and every entry id has the form
-        "tag:github.com,2008:Grit::Commit/<sha40>". Matching that pattern
-        with -match returns the first occurrence, which is the HEAD
-        commit. Regex over the body is used instead of full XML parsing
-        because it is faster, allocation-light, and tolerant of unrelated
-        atom-format changes (e.g. new namespaces).
-
-        Returns a pscustomobject:
-          Status="ok"          : .Sha populated with the 40-char SHA
-          Status="rateLimited" : .BackoffUntil populated (DateTime UTC) and
-                                 .StatusCode
-        Other errors throw (network failures, parse failures, 404s).
+        Returns Status="ok" with .Sha, or Status="rateLimited" with
+        .BackoffUntil and .StatusCode. Other errors throw.
     #>
     [OutputType([pscustomobject])]
     param (
@@ -270,7 +192,7 @@ if (-not (Test-Path $logDir)) {
     New-Item -Path $logDir -ItemType Directory -Force | Out-Null
 }
 
-# Rotate the log once it grows past ~5 MB to keep deploys tidy without losing recent history.
+# Keep one rotated log generation.
 if (Test-Path $logPath) {
     try {
         if ((Get-Item $logPath).Length -gt 5MB) {
@@ -278,12 +200,11 @@ if (Test-Path $logPath) {
         }
     }
     catch {
-        # Non-fatal: continue writing to the existing log.
         $null = $_
     }
 }
 
-# Single-instance lock. Boot + logon triggers can fire seconds apart; ignore overlapping runs.
+# Boot and logon triggers can overlap.
 $lockStream = $null
 try {
     $lockStream = [System.IO.File]::Open($lockPath, 'Create', 'Write', 'None')
@@ -301,7 +222,7 @@ try {
 
     $state = Read-StateOrBakLocal -Path $statePath
 
-    # Ensure newer schema fields exist even when reading an older state file.
+    # Backfill newer state fields.
     $schemaDefaults = @{
         enabled           = $true
         lastSelfUpdateSha = $null
@@ -338,7 +259,7 @@ try {
         return
     }
 
-    # Honour any active backoff window before doing anything that touches the network.
+    # Do not touch the network during backoff.
     if ($state.backoffUntil) {
         $until = [datetime]::MinValue
         if ([datetime]::TryParse([string]$state.backoffUntil, [ref]$until)) {
@@ -364,7 +285,7 @@ try {
         return
     }
 
-    # Clear any stale backoff now that github.com is answering normally again.
+    # Clear stale backoff after a successful check.
     $state.backoffUntil = $null
     $state.lastCheckAt = $now
 
@@ -410,7 +331,7 @@ try {
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $stagingRoot)
     Remove-Item -Path $zipPath -Force
 
-    # GitHub archives extract to <repo>-<sha>/...; flatten so $stagingRoot is the repo root.
+    # Flatten GitHub's <repo>-<sha>/ archive wrapper.
     $extracted = Get-ChildItem -Path $stagingRoot -Directory | Select-Object -First 1
     if (-not $extracted) {
         Write-UpdateLog "Extracted archive did not contain a directory; aborting." "ERROR"
@@ -425,9 +346,7 @@ try {
         return
     }
 
-    # Redirect Get-DeployPath to the staging directory so policies.ps1 / applocker.ps1
-    # read their inputs (policies/, bin/) from the freshly downloaded copy instead of
-    # the persistent deploy cache. install.ps1 might be running concurrently; this keeps us isolated.
+    # Run sub-scripts against staging, isolated from any concurrent install.
     $env:WINDOWS11_BASELINE_DEPLOY_PATH = $stagingRoot
     try {
         . $commonPath
@@ -440,9 +359,7 @@ try {
                 )
                 $scriptPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
                 if (-not $scriptPath) {
-                    # Hard fail. Skipping would let lastAppliedSha advance and
-                    # short-circuit the missing script forever, even though the
-                    # operator explicitly requested it.
+                    # Do not advance lastAppliedSha when requested scripts are missing.
                     Write-UpdateLog "Script '$scriptName' is in scriptsToReapply but not found in staging; aborting (lastAppliedSha not advanced)." "ERROR"
                     return
                 }
@@ -475,8 +392,7 @@ try {
                 }
             }
 
-            # Persist policy progress before attempting the self-copy so a failure
-            # there does not force a re-apply on the next tick.
+            # Self-update failure should not force policy re-apply.
             $state.lastAppliedSha = $remoteSha
             $state.lastAppliedAt = $now
             Save-StateAtomicLocal -Path $statePath -State $state
@@ -491,11 +407,7 @@ try {
     }
 
     if (-not $selfCurrent) {
-        # Refresh the deployed copy of this script so updater fixes shipped via main
-        # propagate. Track success separately from the policy SHA: a failed copy
-        # (file locked, AV scan) will be retried on the next tick because
-        # lastSelfUpdateSha stays behind lastAppliedSha and the short-circuit at
-        # the top of the run only fires when BOTH match the target.
+        # Retry independently via lastSelfUpdateSha when this copy fails.
         $newSelf = Join-Path $stagingRoot "scripts\lib\policy-auto-updater.ps1"
         if (-not (Test-Path $newSelf)) {
             Write-UpdateLog "Staging does not contain scripts\lib\policy-auto-updater.ps1; skipping self-update." "WARN"

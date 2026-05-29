@@ -124,26 +124,11 @@ function Invoke-Download {
 function Save-DeploymentStateAtomic {
     <#
     .SYNOPSIS
-        Atomically write a JSON state file, keeping a single-generation backup.
+        Atomically write JSON state with one .bak generation.
 
     .DESCRIPTION
-        Writes the JSON serialisation of $State to "$Path.tmp", then uses
-        [System.IO.File]::Replace (which on NTFS maps to ReplaceFileW) to
-        atomically swap it into place and move the previous contents to
-        "$Path.bak". For first-time writes (no existing file at $Path) it
-        falls back to a plain Move-Item.
-
-        The contract: power loss or crash during the write leaves either the
-        old contents intact at $Path, or the new contents at $Path with the
-        old contents at "$Path.bak". The state file is never partially
-        truncated. Pair with Read-DeploymentState for the matching .bak
-        fallback on read.
-
-    .PARAMETER Path
-        Absolute path to the state file (e.g. state.json).
-
-    .PARAMETER State
-        Any object that ConvertTo-Json can serialise.
+        Writes to "$Path.tmp", swaps it into place with File.Replace when
+        possible, and keeps "$Path.bak" for read fallback.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -172,13 +157,10 @@ function Save-DeploymentStateAtomic {
 function Read-DeploymentState {
     <#
     .SYNOPSIS
-        Read a JSON state file, falling back to the .bak generation on corruption.
+        Read JSON state, falling back to .bak if the main file is corrupt.
 
     .DESCRIPTION
-        Reads $Path. If the JSON parse fails (truncation, partial write before
-        Save-DeploymentStateAtomic landed) and "$Path.bak" exists, it logs a
-        warning and returns the parsed backup instead. If both are corrupt,
-        the original parse exception is rethrown.
+        If both generations fail, the original parse exception is rethrown.
     #>
     [OutputType([object])]
     [CmdletBinding()]
@@ -203,19 +185,11 @@ function Read-DeploymentState {
 function Assert-BundledBinary {
     <#
     .SYNOPSIS
-        Verify a binary in bin/ matches the SHA-256 declared in bin/hashes.json.
+        Verify a bundled binary before invocation.
 
     .DESCRIPTION
-        Reads the hashes manifest under the current deploy path (Get-DeployPath
-        honours $env:WINDOWS11_BASELINE_DEPLOY_PATH, so this works when the
-        auto-updater is operating against a staged copy too). Computes the
-        SHA-256 of the binary and throws if it does not match. Calling this
-        before every native invocation of a bundled Microsoft EXE prevents a
-        compromised or accidentally swapped repo copy from being executed.
-
-    .PARAMETER BinaryPath
-        Absolute path to the binary to verify. The lookup key into hashes.json
-        is the file name (e.g. "LGPO.exe").
+        Checks SHA-256 from bin/hashes.json and a valid Microsoft Authenticode
+        signature. Get-DeployPath supports staged auto-update copies.
     #>
     [CmdletBinding()]
     param (
@@ -485,9 +459,7 @@ function Assert-WuaOperationSucceeded {
     throw "Windows Update $($Phase.ToLower()) reported $name ($code).$detail"
 }
 
-# install.ps1 publishes the active transcript path to $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH;
-# child scripts (invoked via &) read it to suspend/resume the parent transcript around plaintext
-# secrets (e.g. registry writes that would otherwise be captured).
+# Child scripts suspend the parent transcript around plaintext secrets.
 function Suspend-InstallTranscript {
     if (-not $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH) {
         return $false
