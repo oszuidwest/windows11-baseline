@@ -225,10 +225,10 @@ function Read-DeploymentPassword {
         [string]$Prompt = "Enter the user password"
     )
 
-    Write-Output "Password requirements for '$AccountName':"
-    Write-Output "  - At least 8 characters"
-    Write-Output "  - Characters from at least 3 of: uppercase, lowercase, numbers, symbols"
-    Write-Output "  - Must not contain parts of the username"
+    Write-Host "Password requirements for '$AccountName':"
+    Write-Host "  - At least 8 characters"
+    Write-Host "  - Characters from at least 3 of: uppercase, lowercase, numbers, symbols"
+    Write-Host "  - Must not contain parts of the username"
 
     while ($true) {
         $securePassword = Read-Host -Prompt $Prompt -AsSecureString
@@ -238,7 +238,7 @@ function Read-DeploymentPassword {
         }
         catch {
             Write-Warning $_.Exception.Message
-            Write-Output ""
+            Write-Host ""
         }
     }
 }
