@@ -1,0 +1,5 @@
+User
+Software\Policies\Google\Chrome
+AllowedDomainsForApps
+SZ:zuidwestupdate.nl,zuidwesttv.nl,zuidwestfm.nl
+
