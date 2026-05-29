@@ -11,7 +11,6 @@ function Remove-BloatwareApp {
         [string]$AppName
     )
 
-    # Remove installed packages for all users
     Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "*$AppName*" } |
         ForEach-Object {
@@ -21,7 +20,7 @@ function Remove-BloatwareApp {
             }
         }
 
-    # Remove provisioned packages (prevents reinstallation)
+    # Remove provisioning so packages do not return for new users.
     Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue |
         Where-Object { $_.DisplayName -like "*$AppName*" -or $_.PackageName -like "*$AppName*" } |
         ForEach-Object {

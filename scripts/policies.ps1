@@ -3,6 +3,8 @@ param (
     [string]$systemOwnership
 )
 
+$ErrorActionPreference = "Stop"
+
 . (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
@@ -24,7 +26,6 @@ param (
     The ownership type: "shared", "personal", or "dedicated"
 #>
 
-# Paths
 $deployPath = Get-DeployPath
 $lgpoPath = Join-DeployPath "bin\LGPO.exe"
 $policiesPath = Join-DeployPath "policies"
@@ -61,7 +62,6 @@ function Get-ApplicablePolicies {
             $fullPath = Join-Path $policiesPath $policyPath
 
             if (Test-Path $fullPath) {
-                # Determine if Computer or User policy by reading first line
                 $firstLine = Get-Content $fullPath -First 1
                 if ($firstLine -eq "Computer") {
                     $applicable.Computer += $fullPath
@@ -102,12 +102,10 @@ function Set-Policy {
         [hashtable]$policies
     )
 
-    # Create temp directory
     if (-not (Test-Path $tempPath)) {
         New-Item -ItemType Directory -Path $tempPath -Force | Out-Null
     }
 
-    # Process Computer policies
     if ($policies.Computer.Count -gt 0 -and $PSCmdlet.ShouldProcess("Computer local policy", "Apply $($policies.Computer.Count) policies")) {
         Write-Output "`nApplying $($policies.Computer.Count) computer policies..."
 
@@ -127,7 +125,6 @@ function Set-Policy {
         Write-Output "  Computer policies applied successfully"
     }
 
-    # Process User policies
     if ($policies.User.Count -gt 0 -and $PSCmdlet.ShouldProcess("Non-admin user local policy", "Apply $($policies.User.Count) policies")) {
         Write-Output "`nApplying $($policies.User.Count) user policies (non-admin accounts)..."
 
@@ -147,15 +144,12 @@ function Set-Policy {
         Write-Output "  User policies applied successfully"
     }
 
-    # Cleanup temp files
     Remove-Item -Path $tempPath -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-# Main execution
 Write-Output "=== Windows 11 Policy Application ==="
 Write-Output ""
 
-# Validate parameters (install.ps1 already validates values, just check presence)
 if (-not $systemPurpose -or -not $systemOwnership) {
     throw "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
 }
@@ -163,12 +157,8 @@ if (-not $systemPurpose -or -not $systemOwnership) {
 $systemPurpose = $systemPurpose.ToLower()
 $systemOwnership = $systemOwnership.ToLower()
 
-# Verify LGPO.exe exists
-if (-not (Test-Path $lgpoPath)) {
-    throw "LGPO.exe not found at $lgpoPath"
-}
+Assert-BundledBinary -BinaryPath $lgpoPath
 
-# Verify config exists
 if (-not (Test-Path $configPath)) {
     throw "Policy configuration not found at $configPath"
 }
@@ -177,10 +167,9 @@ Write-Output "Purpose: $systemPurpose"
 Write-Output "Ownership: $systemOwnership"
 Write-Output ""
 
-# Download wallpaper for shared and personal systems
 if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
     $wallpaperUrl = "https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png"
-    $wallpaperDir = "C:\ProgramData\ZuidWest\wallpaper"
+    $wallpaperDir = Join-ZuidWestPath "wallpaper"
     $wallpaperPath = Join-Path $wallpaperDir "wallpaper.png"
 
     Write-Output "Downloading wallpaper..."
@@ -199,10 +188,8 @@ if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
 
 Write-Output "Finding applicable policies..."
 
-# Load configuration
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 
-# Get applicable policies
 $applicablePolicies = Get-ApplicablePolicies -config $config -purpose $systemPurpose -ownership $systemOwnership
 
 $totalPolicies = $applicablePolicies.Computer.Count + $applicablePolicies.User.Count
@@ -214,7 +201,6 @@ if ($totalPolicies -eq 0) {
 
 Write-Output "`nFound $totalPolicies applicable policies"
 
-# Apply policies
 Set-Policy -policies $applicablePolicies
 
 Write-Output "`n=== Policy application complete ==="

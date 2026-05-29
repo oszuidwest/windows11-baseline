@@ -13,11 +13,9 @@ param()
 
 Write-Output "Disabling Windows system sounds..."
 
-# Path to Default User profile
 $defaultUserHive = "C:\Users\Default\NTUSER.DAT"
 $tempKey = "HKU\DefaultUser"
 
-# Load the Default User registry hive
 Write-Output "Loading Default User registry hive..."
 try {
     Invoke-NativeCommand -FilePath "reg.exe" `
@@ -31,7 +29,6 @@ catch {
 try {
     $errorCount = 0
 
-    # Set sound scheme to None
     $schemePath = "Registry::$tempKey\AppEvents\Schemes"
     if (Test-Path $schemePath) {
         try {
@@ -44,7 +41,6 @@ try {
         }
     }
 
-    # Clear all individual sound events
     $basePath = "Registry::$tempKey\AppEvents\Schemes\Apps"
     if (Test-Path $basePath) {
         $apps = Get-ChildItem -Path $basePath -ErrorAction SilentlyContinue
@@ -77,13 +73,12 @@ try {
     }
 }
 finally {
-    # Force release of all registry handles
+    # Release registry handles before unloading the hive.
     [gc]::Collect()
     [gc]::WaitForPendingFinalizers()
     [gc]::Collect()
     Start-Sleep -Seconds 1
 
-    # Try to unload with retries
     $maxRetries = 5
     $retryCount = 0
     $unloaded = $false

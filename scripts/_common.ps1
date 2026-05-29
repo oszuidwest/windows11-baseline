@@ -3,12 +3,29 @@
     Shared helpers for Windows 11 baseline deployment scripts.
 #>
 
+function Get-ZuidWestRoot {
+    return (Join-Path $env:ProgramData "ZuidWest")
+}
+
+function Join-ZuidWestPath {
+    param (
+        [Parameter(Mandatory, Position = 0)]
+        [string[]]$ChildPath
+    )
+
+    $path = Get-ZuidWestRoot
+    foreach ($child in $ChildPath) {
+        $path = Join-Path $path $child
+    }
+    return $path
+}
+
 function Get-DeployPath {
     if ($env:WINDOWS11_BASELINE_DEPLOY_PATH) {
         return $env:WINDOWS11_BASELINE_DEPLOY_PATH
     }
 
-    return "C:\Windows\deploy"
+    return (Join-ZuidWestPath "deploy")
 }
 
 function Join-DeployPath {
@@ -101,6 +118,122 @@ function Invoke-Download {
     }
     finally {
         $ProgressPreference = $previousProgressPreference
+    }
+}
+
+function Save-DeploymentStateAtomic {
+    <#
+    .SYNOPSIS
+        Atomically write JSON state with one .bak generation.
+
+    .DESCRIPTION
+        Writes to "$Path.tmp", swaps it into place with File.Replace when
+        possible, and keeps "$Path.bak" for read fallback.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path,
+
+        [Parameter(Mandatory)]
+        $State
+    )
+
+    if (-not $PSCmdlet.ShouldProcess($Path, "Atomic state write")) {
+        return
+    }
+
+    $tmpPath = "$Path.tmp"
+    $bakPath = "$Path.bak"
+    $State | ConvertTo-Json -Depth 6 | Set-Content -Path $tmpPath -Encoding UTF8 -Force
+    if (Test-Path $Path) {
+        [System.IO.File]::Replace($tmpPath, $Path, $bakPath)
+    }
+    else {
+        Move-Item -Path $tmpPath -Destination $Path -Force
+    }
+}
+
+function Read-DeploymentState {
+    <#
+    .SYNOPSIS
+        Read JSON state, falling back to .bak if the main file is corrupt.
+
+    .DESCRIPTION
+        If both generations fail, the original parse exception is rethrown.
+    #>
+    [OutputType([object])]
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    try {
+        return Get-Content -Path $Path -Raw | ConvertFrom-Json
+    }
+    catch {
+        $bakPath = "$Path.bak"
+        if (Test-Path $bakPath) {
+            Write-Warning "State file at $Path appears corrupt; falling back to $bakPath"
+            return Get-Content -Path $bakPath -Raw | ConvertFrom-Json
+        }
+        throw
+    }
+}
+
+function Assert-BundledBinary {
+    <#
+    .SYNOPSIS
+        Verify a bundled binary before invocation.
+
+    .DESCRIPTION
+        Checks SHA-256 from bin/hashes.json and a valid Microsoft Authenticode
+        signature. Get-DeployPath supports staged auto-update copies.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]$BinaryPath
+    )
+
+    if (-not (Test-Path $BinaryPath)) {
+        throw "Bundled binary not found at $BinaryPath"
+    }
+
+    $manifestPath = Join-DeployPath "bin", "hashes.json"
+    if (-not (Test-Path $manifestPath)) {
+        throw "Bundled binary manifest not found at $manifestPath. Refusing to run an unverified binary."
+    }
+
+    $manifest = Get-Content -Path $manifestPath -Raw | ConvertFrom-Json
+    if (-not $manifest.binaries) {
+        throw "Bundled binary manifest at $manifestPath is missing a 'binaries' object."
+    }
+
+    $binaryName = Split-Path -Path $BinaryPath -Leaf
+    $expected = $manifest.binaries.$binaryName
+    if (-not $expected) {
+        throw "No expected SHA-256 declared for '$binaryName' in $manifestPath. Add it in the same commit as the binary bump."
+    }
+
+    $actual = (Get-FileHash -Path $BinaryPath -Algorithm SHA256).Hash
+    if (-not $actual.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "SHA-256 mismatch for '$binaryName' (expected $expected, got $actual). Refusing to invoke."
+    }
+
+    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        throw "Get-AuthenticodeSignature is not available. Refusing to invoke '$binaryName' without validating its Microsoft signature."
+    }
+
+    $signature = Get-AuthenticodeSignature -FilePath $BinaryPath
+    if ($signature.Status -ne "Valid") {
+        throw "Authenticode signature for '$binaryName' is not valid (status: $($signature.Status)). Refusing to invoke."
+    }
+
+    $subject = $signature.SignerCertificate.Subject
+    if ($subject -notmatch "Microsoft Corporation") {
+        throw "Authenticode signature for '$binaryName' was not issued to Microsoft Corporation (subject: $subject). Refusing to invoke."
     }
 }
 
@@ -243,7 +376,7 @@ function Read-DeploymentPassword {
     }
 }
 
-# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wsusss/0a8c5b85-2123-4ed9-a6cd-7d23e23e3786
+# WUA orcSucceeded == 2. See https://learn.microsoft.com/en-us/windows/win32/api/wuapi/ne-wuapi-operationresultcode
 $script:WuaSucceededCode = 2
 
 function Test-WuaSucceeded {
@@ -326,9 +459,7 @@ function Assert-WuaOperationSucceeded {
     throw "Windows Update $($Phase.ToLower()) reported $name ($code).$detail"
 }
 
-# install.ps1 publishes the active transcript path to $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH;
-# child scripts (invoked via &) read it to suspend/resume the parent transcript around plaintext
-# secrets (e.g. registry writes that would otherwise be captured).
+# Child scripts suspend the parent transcript around plaintext secrets.
 function Suspend-InstallTranscript {
     if (-not $env:WINDOWS11_BASELINE_TRANSCRIPT_PATH) {
         return $false

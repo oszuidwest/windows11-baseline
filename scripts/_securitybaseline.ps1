@@ -38,9 +38,7 @@ Write-Output "=== Microsoft Windows 11 24H2 Security Baseline ==="
 Write-Output ""
 
 try {
-    if (-not (Test-Path $lgpoPath)) {
-        throw "LGPO.exe not found at $lgpoPath"
-    }
+    Assert-BundledBinary -BinaryPath $lgpoPath
 
     $currentBuild = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").CurrentBuildNumber
     if ($currentBuild -ne "26100") {

@@ -20,7 +20,6 @@ param (
     If no agent code is provided, installation is skipped.
 #>
 
-# Skip if no agent code provided
 if (-not $dwAgentCode) {
     Write-Output "Skipping DWService installation (no agent code provided)."
     return
@@ -31,7 +30,6 @@ Write-Output "Installing DWService..."
 $installerPath = Join-DeployPath "dwagent.exe"
 $dwServiceUrl = "https://www.dwservice.net/download/dwagent.exe"
 
-# Download DWService installer
 Write-Output "Downloading DWService agent..."
 try {
     Invoke-Download -Uri $dwServiceUrl -OutFile $installerPath
@@ -41,7 +39,6 @@ catch {
     throw "Failed to download DWService: $($_.Exception.Message)"
 }
 
-# Run the DWService installer with the configured agent code.
 Write-Output "Installing DWService with agent code..."
 $maxMinutes = 5
 try {

@@ -1,15 +1,17 @@
-#===============================================================
-# Windows 11 Baseline for Streekomroep ZuidWest
-#===============================================================
-
 param(
-    # Valid script names are derived from scripts/*.ps1 after download; see the validation block
-    # near the discovery code below. ValidateSet would lock us to a hardcoded list and drift from
-    # the filesystem.
+    # Validated after download against the discovered scripts to avoid a stale ValidateSet.
     [string[]]$OnlyRun
 )
 
-# Function to check for admin rights
+$ErrorActionPreference = "Stop"
+
+$script:ZuidWestRoot = Join-Path $env:ProgramData "ZuidWest"
+$script:InstallLogRoot = Join-Path $script:ZuidWestRoot "Logs"
+$script:DeployRoot = Join-Path $script:ZuidWestRoot "deploy"
+$script:RepoOwner = "oszuidwest"
+$script:RepoName = "windows11-baseline"
+$script:RepoBranch = "main"
+
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
@@ -21,7 +23,7 @@ $script:InstallLogPath = $null
 function Initialize-InstallLog {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $logDirectories = @(
-        (Join-Path $env:ProgramData "ZuidWest\Logs"),
+        $script:InstallLogRoot,
         $env:TEMP
     )
 
@@ -69,6 +71,40 @@ function Wait-BeforeExit {
     Read-Host -Prompt $Prompt | Out-Null
 }
 
+function Resolve-GitHubBranchSha {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Owner,
+
+        [Parameter(Mandatory)]
+        [string]$Repo,
+
+        [Parameter(Mandatory)]
+        [string]$Branch
+    )
+
+    $url = "https://github.com/$Owner/$Repo/commits/$Branch.atom"
+    $headers = @{
+        "User-Agent" = "windows11-baseline-installer"
+        "Accept"     = "application/atom+xml"
+    }
+
+    $previousProgressPreference = $ProgressPreference
+    try {
+        $ProgressPreference = "SilentlyContinue"
+        $response = Invoke-WebRequest -Uri $url -Headers $headers -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+    }
+
+    if ($response.Content -match 'tag:github\.com,2008:Grit::Commit/([a-fA-F0-9]{40})') {
+        return $Matches[1].ToLower()
+    }
+
+    throw "Could not resolve latest commit SHA from $url"
+}
+
 function Write-FatalInstallError {
     param (
         [Parameter(Mandatory)]
@@ -80,7 +116,7 @@ function Write-FatalInstallError {
     )
 
     Write-Output ""
-    Write-Error $Message
+    Write-Error -Message $Message -ErrorAction Continue
     if ($ErrorRecord) {
         Write-Output "Details: $ErrorRecord"
     }
@@ -109,12 +145,10 @@ trap {
     Write-FatalInstallError -Message "Unexpected fatal error." -ErrorRecord $_
 }
 
-# Ensure the script runs with admin rights
 if (-not (Test-Admin)) {
     Write-FatalInstallError -Message "This script must be run as an administrator. Exiting..."
 }
 
-# Welcome message
 Write-Output ""
 Write-Output "=========================================="
 Write-Output " Windows 11 Baseline - Streekomroep ZuidWest"
@@ -123,11 +157,20 @@ Write-Output ""
 Write-Output "This script will configure a Windows 11 system with the specified settings."
 Write-Output ""
 
-# Download before prompting so we can source _common.ps1 and validate the password input.
-$deployDir = "C:\Windows\deploy"
-$zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
-$zipFilePath = "$deployDir\main.zip"
-$sourceDir = "$deployDir\windows11-baseline-main"
+# Download first so _common.ps1 can validate later prompts.
+$deployDir = $script:DeployRoot
+$installedSha = $null
+try {
+    Write-Output "Resolving $($script:RepoOwner)/$($script:RepoName)@$($script:RepoBranch)..."
+    $installedSha = Resolve-GitHubBranchSha -Owner $script:RepoOwner -Repo $script:RepoName -Branch $script:RepoBranch
+    Write-Output "Resolved commit SHA: $installedSha"
+}
+catch {
+    Write-FatalInstallError -Message "Failed to resolve the current deployment commit." -ErrorRecord $_
+}
+
+$zipUrl = "https://github.com/$($script:RepoOwner)/$($script:RepoName)/archive/$installedSha.zip"
+$zipFilePath = Join-Path $deployDir "main.zip"
 
 if (Test-Path $deployDir) {
     Remove-Item -Path $deployDir -Recurse -Force
@@ -149,15 +192,16 @@ catch {
 
 Remove-Item -Path $zipFilePath -Force
 
-if (Test-Path $sourceDir) {
-    Write-Output "Moving contents from $sourceDir to $deployDir..."
-    Get-ChildItem -Path $sourceDir | Move-Item -Destination $deployDir -Force
-    Remove-Item -Path $sourceDir -Recurse -Force
-    Write-Output "Contents moved and $sourceDir removed."
+$extractedDirs = @(Get-ChildItem -Path $deployDir -Directory)
+if ($extractedDirs.Count -ne 1) {
+    Write-FatalInstallError -Message "Expected exactly one extracted repository directory under $deployDir, found $($extractedDirs.Count)."
 }
-else {
-    Write-FatalInstallError -Message "$sourceDir does not exist. Exiting..."
-}
+
+$sourceDir = $extractedDirs[0].FullName
+Write-Output "Moving contents from $sourceDir to $deployDir..."
+Get-ChildItem -Path $sourceDir -Force | Move-Item -Destination $deployDir -Force
+Remove-Item -Path $sourceDir -Recurse -Force
+Write-Output "Contents moved and $sourceDir removed."
 
 $commonPath = Join-Path $deployDir "scripts\_common.ps1"
 if (-not (Test-Path $commonPath)) {
@@ -167,7 +211,6 @@ if (-not (Test-Path $commonPath)) {
 
 Write-Output ""
 
-# Valid options
 $validPurposes = @("radio", "tv", "editorial", "plain")
 $validOwnership = @("shared", "personal", "dedicated")
 $installerInputNames = @(
@@ -178,11 +221,12 @@ $installerInputNames = @(
     "userPassword",
     "dwAgentCode",
     "dedicatedUserName",
-    "personalUserName"
+    "personalUserName",
+    "installedSha",
+    "seedInstalledSha"
 )
 
-# Explicit installer input requirements. This is the source of truth for prompting;
-# the AST check below only verifies this map against each script's param() block.
+# Source of truth for prompts; AST parsing only checks this map for drift.
 $scriptRequirements = @{
     'applocker'        = @('systemOwnership')
     'apps'             = @('systemPurpose', 'systemOwnership')
@@ -190,6 +234,7 @@ $scriptRequirements = @{
     'dwservice'        = @('dwAgentCode')
     'hardening'        = @()
     'policies'         = @('systemPurpose', 'systemOwnership')
+    'policyupdate'     = @('systemPurpose', 'systemOwnership', 'installedSha', 'seedInstalledSha')
     'power'            = @('systemPurpose', 'systemOwnership')
     'securitybaseline' = @()
     'sounds'           = @()
@@ -199,7 +244,7 @@ $scriptRequirements = @{
     'workgroupname'    = @('computerName', 'workgroupName')
 }
 
-# Discover scripts so -OnlyRun validation and execution still follow the deployed filesystem.
+# Keep -OnlyRun validation and execution tied to the deployed filesystem.
 $scriptsDir = Join-Path $deployDir "scripts"
 if (-not (Test-Path $scriptsDir)) {
     Write-FatalInstallError -Message "Script directory does not exist: $scriptsDir"
@@ -210,7 +255,7 @@ $scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter *.ps1 |
         Sort-Object Name)
 $discoveredScriptParams = @{}
 $scriptFiles | ForEach-Object {
-    # Public script names strip a leading ordering underscore: _securitybaseline.ps1 -> securitybaseline.
+    # _securitybaseline.ps1 is exposed as securitybaseline.
     $scriptName = $_.BaseName -replace '^_', ''
     $discoveredScriptParams[$scriptName] = Get-ScriptParameterNames -Path $_.FullName
 }
@@ -228,7 +273,7 @@ if ($staleMappings.Count -gt 0) {
     Write-FatalInstallError -Message "Installer requirement map contains script(s) that no longer exist: $($staleMappings -join ', ')"
 }
 
-# Reverse-drift check: a script param that install.ps1 cannot collect would otherwise splat $null silently.
+# Prevent silently splatting $null for params the installer cannot collect.
 $detectedParamCount = @($discoveredScriptParams.Values | ForEach-Object { $_ }).Count
 $mappedParamCount = @($scriptRequirements.Values | ForEach-Object { $_ }).Count
 $canValidateParamDrift = -not ($mappedParamCount -gt 0 -and $detectedParamCount -eq 0)
@@ -269,7 +314,6 @@ else {
     }
 }
 
-# Validate -OnlyRun against the discovered script names.
 if ($OnlyRun) {
     $validScriptNames = @($scriptRequirements.Keys | Sort-Object)
     $unknown = @($OnlyRun | Where-Object { $_ -notin $validScriptNames })
@@ -278,16 +322,13 @@ if ($OnlyRun) {
     }
 }
 
-# Determine which parameters are required based on -OnlyRun
 if ($OnlyRun) {
     $requiredParams = @($OnlyRun | ForEach-Object { $scriptRequirements[$_] } | Select-Object -Unique)
 }
 else {
-    # Full installation: collect requirements for all scripts
     $requiredParams = @($scriptRequirements.Values | ForEach-Object { $_ } | Select-Object -Unique)
 }
 
-# Get and validate system purpose if required.
 if ('systemPurpose' -in $requiredParams) {
     do {
         Write-Output "System purpose options: $($validPurposes -join ', ')"
@@ -300,7 +341,6 @@ if ('systemPurpose' -in $requiredParams) {
     Write-Output ""
 }
 
-# Get and validate system ownership if required.
 if ('systemOwnership' -in $requiredParams) {
     do {
         Write-Output "System ownership options: $($validOwnership -join ', ')"
@@ -313,17 +353,14 @@ if ('systemOwnership' -in $requiredParams) {
     Write-Output ""
 }
 
-# Get computer name if required.
 if ('computerName' -in $requiredParams) {
     $computerName = Read-Host -Prompt "Enter the computer name"
 }
 
-# Get workgroup name if required.
 if ('workgroupName' -in $requiredParams) {
     $workgroupName = Read-Host -Prompt "Enter the workgroup name"
 }
 
-# For dedicated systems, ask if a user with auto-login should be created
 if ('dedicatedUserName' -in $requiredParams -and $systemOwnership -eq "dedicated") {
     Write-Output ""
     $createUser = (Read-Host -Prompt "Create a user with auto-login? (y/n)").ToLower().Trim()
@@ -332,7 +369,6 @@ if ('dedicatedUserName' -in $requiredParams -and $systemOwnership -eq "dedicated
     }
 }
 
-# For personal systems, ask for username (required)
 if ('personalUserName' -in $requiredParams -and $systemOwnership -eq "personal") {
     Write-Output ""
     do {
@@ -354,7 +390,6 @@ if ('userPassword' -in $requiredParams) {
     }
 }
 
-# Get DWService agent code if required.
 if ('dwAgentCode' -in $requiredParams) {
     Write-Output ""
     Write-Output "DWService agent code (from dwservice.net, leave empty to skip)"
@@ -362,10 +397,6 @@ if ('dwAgentCode' -in $requiredParams) {
 }
 
 Write-Output ""
-
-#===============================================================
-# Execute all scripts in the scripts directory
-#===============================================================
 
 $allParams = @{
     systemPurpose     = $systemPurpose
@@ -376,12 +407,13 @@ $allParams = @{
     dwAgentCode       = $dwAgentCode
     dedicatedUserName = $dedicatedUserName
     personalUserName  = $personalUserName
+    installedSha      = $installedSha
+    seedInstalledSha  = (-not $OnlyRun) -or (('policyupdate' -in $OnlyRun) -and ('policies' -in $OnlyRun) -and ('applocker' -in $OnlyRun))
 }
 
 foreach ($scriptFile in $scriptFiles) {
     $scriptName = $scriptFile.BaseName -replace '^_', ''
 
-    # Skip scripts not in -OnlyRun list (if specified)
     if ($OnlyRun -and $scriptName -notin $OnlyRun) {
         Write-Output "Skipping: $($scriptFile.Name) (not in -OnlyRun list)"
         continue

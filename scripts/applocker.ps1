@@ -2,6 +2,8 @@ param (
     [string]$systemOwnership
 )
 
+$ErrorActionPreference = "Stop"
+
 . (Join-Path $PSScriptRoot "_common.ps1")
 
 <#
@@ -20,7 +22,10 @@ param (
     - Blocks Microsoft Copilot application only
     - Microsoft Store appx is still removed via the debloat phase
 
-    Personal systems: No AppLocker policies applied.
+    Personal systems (policies/applocker/personal.xml):
+    - No enforcement. An empty policy is still applied so that a machine
+      previously deployed as shared or dedicated has its existing AppLocker
+      rules cleared rather than left in place.
 
     Prerequisites:
     - Windows Enterprise or Education edition (LTSC qualifies)
@@ -30,27 +35,31 @@ param (
     The ownership type: "shared", "personal", or "dedicated"
 #>
 
-# Paths
 $appLockerToolPath = Join-DeployPath "bin\AppLockerPolicyTool.exe"
 $appLockerTemplateDir = Join-DeployPath "policies\applocker"
 
 Write-Output "=== AppLocker Configuration ==="
 Write-Output ""
 
-# Select template based on ownership
+# personal.xml clears rules left by earlier shared/dedicated deployments.
 switch ($systemOwnership) {
     "shared" {
         $templateName = "shared.xml"
         $policyDescription = "Store + Copilot + StoreInstaller.exe"
+        $isResetTemplate = $false
     }
     "dedicated" {
         $templateName = "dedicated.xml"
         $policyDescription = "Copilot only"
+        $isResetTemplate = $false
+    }
+    "personal" {
+        $templateName = "personal.xml"
+        $policyDescription = "no enforcement (clears prior rules)"
+        $isResetTemplate = $true
     }
     default {
-        Write-Output "Skipping AppLocker configuration (only applies to shared/dedicated systems)"
-        Write-Output "Current ownership: $systemOwnership"
-        return
+        throw "Unsupported systemOwnership '$systemOwnership' (expected shared, dedicated, or personal)."
     }
 }
 
@@ -61,15 +70,12 @@ Write-Output "Template: $templateName"
 Write-Output "Blocks: $policyDescription"
 Write-Output ""
 
-if (-not (Test-Path $appLockerToolPath)) {
-    throw "AppLockerPolicyTool.exe not found at $appLockerToolPath"
-}
+Assert-BundledBinary -BinaryPath $appLockerToolPath
 
 if (-not (Test-Path $templatePath)) {
     throw "AppLocker template not found at $templatePath"
 }
 
-# Step 1: Enable and start the Application Identity service
 Write-Output "Enabling Application Identity service (AppIdSvc)..."
 
 $service = Get-Service -Name "AppIDSvc" -ErrorAction SilentlyContinue
@@ -104,7 +110,6 @@ else {
 
 Write-Output ""
 
-# Step 2: Apply AppLocker policy template
 Write-Output "Applying AppLocker policy from $templateName..."
 
 try {
@@ -119,7 +124,6 @@ catch {
 
 Write-Output ""
 
-# Step 3: Verify policy was applied
 Write-Output "Verifying AppLocker policy..."
 
 try {
@@ -129,17 +133,40 @@ catch {
     throw "Could not read back local AppLocker policy after apply: $($_.Exception.Message)"
 }
 
-if (-not $policy -or -not $policy.RuleCollections) {
-    throw "Local AppLocker policy is empty after apply; enforcement would silently no-op."
+$exeRules = if ($policy -and $policy.RuleCollections) {
+    $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }
 }
-
-$exeRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Exe" }
-$appxRules = $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }
+$appxRules = if ($policy -and $policy.RuleCollections) {
+    $policy.RuleCollections | Where-Object { $_.RuleCollectionType -eq "Appx" }
+}
 $exeRuleCount = if ($exeRules) { ($exeRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
 $appxRuleCount = if ($appxRules) { ($appxRules | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum } else { 0 }
 
 Write-Output "  Executable rules: $exeRuleCount"
 Write-Output "  Packaged app rules: $appxRuleCount"
+
+if ($isResetTemplate) {
+    # Reset template must leave managed collections empty and not enforced.
+    if ($exeRuleCount -ne 0 -or $appxRuleCount -ne 0) {
+        throw "AppLocker reset applied but rules remain (Exe=$exeRuleCount, Appx=$appxRuleCount)."
+    }
+    $managedCollections = @($policy.RuleCollections | Where-Object { $_.RuleCollectionType -in @("Exe", "Appx") })
+    $stillEnforced = @($managedCollections | Where-Object { $_.EnforcementMode -eq "Enabled" })
+    if ($stillEnforced.Count -gt 0) {
+        $modes = ($stillEnforced | ForEach-Object { "$($_.RuleCollectionType)=$($_.EnforcementMode)" }) -join ", "
+        throw "AppLocker reset applied but rule collections still enforce: $modes."
+    }
+
+    Write-Output ""
+    Write-Output "=== AppLocker reset complete ==="
+    Write-Output ""
+    Write-Output "Existing AppLocker rules cleared; no enforcement on this system."
+    return
+}
+
+if (-not $policy -or -not $policy.RuleCollections) {
+    throw "Local AppLocker policy is empty after apply; enforcement would silently no-op."
+}
 
 if ($exeRuleCount -eq 0 -or $appxRuleCount -eq 0) {
     throw "AppLocker policy applied but rule counts are empty (Exe=$exeRuleCount, Appx=$appxRuleCount); enforcement would silently no-op."

@@ -1,4 +1,3 @@
-# Define script parameters
 param (
     [string]$systemPurpose,
     [string]$systemOwnership,
@@ -94,7 +93,6 @@ if ($userName) {
     }
 }
 
-# Set registry values for auto-login if enabled
 $regPath = "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
 if ($userName -and $enableAutoLogin) {
     Write-Output "Configuring auto-login for: $userName"
@@ -116,7 +114,6 @@ if ($userName -and $enableAutoLogin) {
     }
 }
 
-# Set maximum password age to unlimited
 Write-Output "Setting password policy (max age unlimited)..."
 Invoke-NativeCommand -FilePath "net.exe" `
     -Arguments @("accounts", "/maxpwage:unlimited") `

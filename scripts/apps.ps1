@@ -1,4 +1,3 @@
-# Define script parameters
 param (
     [string]$systemPurpose,
     [string]$systemOwnership
@@ -78,7 +77,7 @@ function Install-WingetDependencyPackage {
     }
 }
 
-# Winget package IDs (apps installed via winget)
+# App catalog.
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
     "chrome"        = "Google.Chrome"
@@ -90,10 +89,8 @@ $appDefinitions = @{
     "vlc"           = "VideoLAN.VLC"
 }
 
-# Apps requiring special installation (not via winget)
 $specialApps = @("spotify", "office")
 
-# Applications by purpose
 $appsByPurpose = @{
     "radio"     = @("audacity", "libreoffice", "spotify", "thunderbird", "vlc")
     "tv"        = @("creativecloud", "libreoffice", "vlc")
@@ -101,8 +98,7 @@ $appsByPurpose = @{
     "plain"     = @()
 }
 
-# Applications by ownership. Empty entries are intentional: every supported
-# ownership is explicit, even when it has no ownership-specific apps.
+# Empty ownership entries are intentional.
 $appsByOwnership = @{
     "personal"  = @("chrome")
     "shared"    = @()
@@ -112,7 +108,6 @@ $appsByOwnership = @{
 $validPurposes = @($appsByPurpose.Keys | Sort-Object)
 $validOwnership = @($appsByOwnership.Keys | Sort-Object)
 
-# Validate parameters
 if (-not $systemPurpose) {
     throw "'systemPurpose' parameter must be provided."
 }
@@ -131,8 +126,7 @@ if (-not $appsByOwnership.ContainsKey($systemOwnership)) {
     throw "Invalid 'systemOwnership': $systemOwnership. Valid values: $($validOwnership -join ', ')"
 }
 
-# Merge purpose and ownership app selections; Unique avoids duplicate installs
-# if an app is later selected by both dimensions.
+# Avoid duplicates if an app is selected by both dimensions.
 $apps = @($appsByPurpose[$systemPurpose])
 $apps += $appsByOwnership[$systemOwnership]
 $apps = @($apps | Select-Object -Unique)
@@ -142,7 +136,7 @@ if ($apps.Count -eq 0) {
     return
 }
 
-# Install winget if not available (required for LTSC which has no Microsoft Store)
+# LTSC has no Microsoft Store, so bootstrap winget when missing.
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Write-Output "Winget not found. Installing for LTSC..."
 
@@ -151,40 +145,34 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     $ProgressPreference = 'SilentlyContinue'
 
     try {
-        # Get latest winget release info from GitHub
         Write-Output "  Fetching latest Winget release..."
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/microsoft/winget-cli/releases/latest" -UseBasicParsing
         $msixUrl = ($release.assets | Where-Object { $_.name -match "\.msixbundle$" }).browser_download_url
         $licenseUrl = ($release.assets | Where-Object { $_.name -match "License.*\.xml$" }).browser_download_url
         $depsUrl = ($release.assets | Where-Object { $_.name -eq "DesktopAppInstaller_Dependencies.zip" }).browser_download_url
 
-        # Download dependencies zip (contains VCLibs + WindowsAppRuntime)
         Write-Output "  Downloading dependencies..."
         $depsZip = Join-Path $tempDir "deps.zip"
         $depsDir = Join-Path $tempDir "deps"
         Invoke-Download -Uri $depsUrl -OutFile $depsZip
         Expand-Archive -Path $depsZip -DestinationPath $depsDir -Force
 
-        # Detect architecture and install matching dependencies
         $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
         Write-Output "  Installing dependencies for $arch..."
         Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | Sort-Object Name | ForEach-Object {
             Install-WingetDependencyPackage -Path $_.FullName
         }
 
-        # Download winget msixbundle and license
         Write-Output "  Downloading Winget..."
         $msixPath = Join-Path $tempDir "winget.msixbundle"
         $licensePath = Join-Path $tempDir "license.xml"
         Invoke-Download -Uri $msixUrl -OutFile $msixPath
         Invoke-Download -Uri $licenseUrl -OutFile $licensePath
 
-        # Install winget (current user + provision for all users)
         Write-Output "  Installing Winget..."
         Add-AppxPackage -Path $msixPath -ErrorAction Stop
         Add-AppxProvisionedPackage -Online -PackagePath $msixPath -LicensePath $licensePath -ErrorAction Stop | Out-Null
 
-        # Wait for winget to become available and refresh PATH
         Start-Sleep -Seconds 3
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 
@@ -198,7 +186,6 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     }
 }
 
-# Verify winget is now available
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     throw "Winget not available. A reboot may be required."
 }
@@ -215,9 +202,7 @@ $failedApps = [System.Collections.Generic.List[string]]::new()
 #   0x8A15010D INSTALL_ALREADY_INSTALLED   (-1978334963) - underlying MSI/EXE installer
 $wingetSuccessExitCodes = @(0, -1978335189, -1978335135, -1978334963)
 
-# Install apps via winget
 foreach ($app in $apps) {
-    # Skip special apps (handled separately)
     if ($specialApps -contains $app) {
         continue
     }
@@ -240,7 +225,7 @@ foreach ($app in $apps) {
     }
 }
 
-# Install Spotify (requires special handling - winget fails in admin context)
+# Winget fails for Spotify in elevated installer context.
 if ($apps -contains "spotify") {
     Write-Output "Installing Spotify (direct download)..."
 
@@ -276,7 +261,6 @@ if ($apps -contains "spotify") {
     }
 }
 
-# Install Microsoft Office (using Office Deployment Tool)
 if ($apps -contains "office") {
     Write-Output "Installing Microsoft Office..."
 
@@ -319,7 +303,6 @@ if ($failedApps.Count -gt 0) {
     throw "App installation failed for: $($failedApps -join '; '). The workstation is not deployment-ready for '$systemPurpose'; re-run with -OnlyRun apps after investigating."
 }
 
-# Create WhatsApp Web shortcut (InPrivate mode) for shared computers
 if ($systemOwnership -eq "shared") {
     Write-Output "Creating WhatsApp Web shortcut (InPrivate mode)..."
 
@@ -333,7 +316,6 @@ if ($systemOwnership -eq "shared") {
     }
     $arguments = "--app=https://web.whatsapp.com --inprivate --mute-audio --window-size=800,600"
 
-    # Download WhatsApp icon
     $iconUrl = "https://web.whatsapp.com/favicon.ico"
     try {
         Invoke-Download -Uri $iconUrl -OutFile $iconPath
