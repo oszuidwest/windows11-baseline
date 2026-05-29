@@ -6,9 +6,10 @@
 .DESCRIPTION
     Runs as SYSTEM under the "ZuidWest\PolicyAutoUpdate" Scheduled Task.
     Reads its deployment state from C:\ProgramData\ZuidWest\policy-update\state.json
-    (written at install time by scripts/policyupdate.ps1), asks the GitHub API
-    for the HEAD commit SHA of the configured branch, and short-circuits when
-    that SHA matches the SHAs already applied on this machine.
+    (written at install time by scripts/policyupdate.ps1), reads github.com's
+    public commits.atom feed for the configured branch to learn the HEAD
+    commit SHA, and short-circuits when that SHA matches the SHAs already
+    applied on this machine.
 
     Rate-limit posture:
       - The SHA check goes to the public atom feed at
@@ -134,11 +135,15 @@ function Write-UpdateLog {
 function Get-BackoffUntilFromHeaders {
     <#
     .SYNOPSIS
-        Compute when polling may resume after a 403/429 from the GitHub API.
+        Compute when polling may resume after a 403/429 from github.com.
 
     .DESCRIPTION
         Implements the resume-time logic from GitHub's REST API best practices
-        guide (https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api):
+        guide (https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api).
+        Although the auto-updater talks to github.com's commits.atom feed and
+        not to api.github.com, github.com's general rate limiter uses the same
+        Retry-After / X-RateLimit-* header conventions, so the same ordering
+        applies:
 
           1. If Retry-After is set, wait that many seconds (it carries the
              secondary / abuse-detection limit and takes precedence).
