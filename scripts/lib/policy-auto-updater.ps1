@@ -11,15 +11,21 @@
     that SHA matches the SHAs already applied on this machine.
 
     Rate-limit posture (GitHub unauthenticated cap is 60 req/h/IP):
-      - Conditional requests via If-None-Match. A 304 response does not count
-        against the rate limit, so steady-state polling burns ~0 quota per
-        machine until something actually changes on the branch.
-      - On 403/429 the X-RateLimit-Reset / Retry-After headers are honoured
-        and persisted to state.backoffUntil; subsequent ticks return early
-        until that time has passed.
-      - The scheduled-task trigger anchored by policyupdate.ps1 includes a
-        per-install minute offset so a fleet behind one NAT does not all
-        fire simultaneously.
+      - Conditional requests via If-None-Match always save bandwidth on the
+        steady-state poll. Whether the 304 also avoids spending rate-limit
+        quota is documented as conditional on the request being
+        authenticated, so this implementation does not rely on it for the
+        unauthenticated case; the backoff handler below is the actual
+        defence.
+      - On 403/429 the response headers are honoured per GitHub's REST API
+        best practices: Retry-After takes precedence (it signals the
+        secondary / abuse-detection limit), then X-RateLimit-Reset is used
+        only when X-RateLimit-Remaining is 0, with a 1-minute floor
+        fallback. The resulting wake time is persisted to state.backoffUntil
+        and short-circuits subsequent ticks until it passes.
+      - The scheduled-task trigger anchored by policyupdate.ps1 uses
+        -RandomDelay so each fleet member fires at a different minute
+        within the hour.
 
     On a SHA that differs from either state.lastAppliedSha (policies need
     re-running) or state.lastSelfUpdateSha (the deployed copy of this script
@@ -131,15 +137,43 @@ function Get-BackoffUntilFromHeaders {
         Compute when polling may resume after a 403/429 from the GitHub API.
 
     .DESCRIPTION
-        GitHub signals the primary-rate-limit reset via X-RateLimit-Reset
-        (Unix epoch seconds) and the secondary-rate-limit retry via
-        Retry-After (seconds). Falls back to a 15-minute window if neither
-        header is present. Output is a DateTime in UTC.
+        Implements the resume-time logic from GitHub's REST API best practices
+        guide (https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api):
+
+          1. If Retry-After is set, wait that many seconds (it carries the
+             secondary / abuse-detection limit and takes precedence).
+          2. Otherwise, if X-RateLimit-Remaining is 0, wait until
+             X-RateLimit-Reset (Unix epoch seconds, the primary-limit reset).
+          3. Otherwise fall back to a 1-minute floor; subsequent scheduled
+             ticks effectively give us exponential spacing across the hour.
+
+        Output is a DateTime in UTC.
     #>
     [OutputType([datetime])]
     param ($Headers)
 
-    if ($Headers) {
+    $now = (Get-Date).ToUniversalTime()
+
+    if (-not $Headers) {
+        return $now.AddMinutes(1)
+    }
+
+    # 1. Retry-After wins when set: secondary rate / abuse detection.
+    $retryRaw = $Headers["Retry-After"]
+    if ($retryRaw) {
+        $seconds = 0
+        if ([int]::TryParse([string]$retryRaw, [ref]$seconds) -and $seconds -gt 0) {
+            return $now.AddSeconds($seconds)
+        }
+    }
+
+    # 2. Primary limit exhausted (Remaining == 0): honour X-RateLimit-Reset.
+    $remaining = -1
+    $remainingRaw = $Headers["X-RateLimit-Remaining"]
+    if ($remainingRaw) {
+        [int]::TryParse([string]$remainingRaw, [ref]$remaining) | Out-Null
+    }
+    if ($remaining -eq 0) {
         $resetRaw = $Headers["X-RateLimit-Reset"]
         if ($resetRaw) {
             $epoch = 0
@@ -147,16 +181,10 @@ function Get-BackoffUntilFromHeaders {
                 return [DateTimeOffset]::FromUnixTimeSeconds($epoch).UtcDateTime
             }
         }
-        $retryRaw = $Headers["Retry-After"]
-        if ($retryRaw) {
-            $seconds = 0
-            if ([int]::TryParse([string]$retryRaw, [ref]$seconds) -and $seconds -gt 0) {
-                return (Get-Date).ToUniversalTime().AddSeconds($seconds)
-            }
-        }
     }
 
-    return (Get-Date).ToUniversalTime().AddMinutes(15)
+    # 3. No header hints: GitHub recommends at least one minute before retry.
+    return $now.AddMinutes(1)
 }
 
 function Invoke-GitHubApiCommitCheck {
