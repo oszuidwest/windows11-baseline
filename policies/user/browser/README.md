@@ -76,10 +76,12 @@ Shared systems only.
 
 ### `edge-ui.txt`
 
-All systems. Removes bloatware from Edge UI.
+All systems. Removes bloatware from Edge UI and keeps the first-run browser customization flow hidden.
 
 | Setting | Value | Effect |
 |---------|-------|--------|
+| `HideFirstRunExperience` | 1 | Hides the first-run style and layout customization flow |
+| `VerticalTabsAllowed` | 0 | Keeps tabs horizontal by removing vertical tabs as an available layout |
 | `DefaultNotificationsSetting` | 2 | Blocks all website desktop notifications |
 | `ShowRecommendationsEnabled` | 0 | Disables browser feature recommendations |
 | `SpotlightExperiencesAndRecommendationsEnabled` | 0 | Turns off customized backgrounds and tips |

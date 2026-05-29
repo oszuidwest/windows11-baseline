@@ -1,5 +1,15 @@
 User
 Software\Policies\Microsoft\Edge
+HideFirstRunExperience
+DWORD:1
+
+User
+Software\Policies\Microsoft\Edge
+VerticalTabsAllowed
+DWORD:0
+
+User
+Software\Policies\Microsoft\Edge
 DefaultNotificationsSetting
 DWORD:2
 
