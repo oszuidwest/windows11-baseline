@@ -32,8 +32,10 @@ param (
 
     Re-running this script (via install.ps1 -OnlyRun policyupdate) refreshes
     state.json with the current purpose/ownership and reinstalls the payload
-    + task definition. The previously applied SHA is preserved so the next
-    auto-update tick is still a no-op if nothing in main has moved.
+    + task definition. If any context field (purpose, ownership, repo, branch,
+    scriptsToReapply) actually changed, the recorded lastAppliedSha and
+    lastSelfUpdateSha are cleared so the next auto-update tick re-applies
+    against the new context even when main has not moved.
 
 .PARAMETER systemPurpose
     The purpose of the system: "radio", "tv", "editorial", or "plain".
@@ -85,18 +87,55 @@ $state = [ordered]@{
     backoffUntil      = $null
 }
 
+$previous = $null
 if (Test-Path $statePath) {
     try {
         $previous = Read-DeploymentState -Path $statePath
-        foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastEtag", "lastCheckAt", "backoffUntil", "pollOffsetMinutes")) {
-            if ($previous.PSObject.Properties.Name -contains $key -and $null -ne $previous.$key) {
-                $state[$key] = $previous.$key
-            }
-        }
     }
     catch {
         Write-Warning "Could not read existing state file ($_); starting fresh."
     }
+}
+
+if ($previous) {
+    foreach ($key in @("lastAppliedSha", "lastAppliedAt", "lastSelfUpdateSha", "lastEtag", "lastCheckAt", "backoffUntil", "pollOffsetMinutes")) {
+        if ($previous.PSObject.Properties.Name -contains $key -and $null -ne $previous.$key) {
+            $state[$key] = $previous.$key
+        }
+    }
+}
+
+# Detect a context change: if any of the inputs that drive what gets applied
+# changed since the previous deployment, null out the applied-SHA tracking so
+# the next auto-update tick reapplies against the new context. Without this,
+# an operator running -OnlyRun policyupdate to switch purpose/ownership would
+# update state.json but the updater would short-circuit until main advances.
+$contextChanged = $false
+if ($previous) {
+    $contextKeys = @('systemPurpose', 'systemOwnership', 'branch', 'repoOwner', 'repoName', 'scriptsToReapply')
+    foreach ($key in $contextKeys) {
+        $oldValue = $previous.$key
+        $newValue = $state[$key]
+        if ($oldValue -is [array] -or $newValue -is [array]) {
+            $same = $null -eq (Compare-Object @($oldValue) @($newValue))
+        }
+        else {
+            $same = ($oldValue -eq $newValue)
+        }
+        if (-not $same) {
+            $contextChanged = $true
+            break
+        }
+    }
+}
+
+if ($contextChanged) {
+    $state.lastAppliedSha = $null
+    $state.lastAppliedAt = $null
+    $state.lastSelfUpdateSha = $null
+    $state.lastEtag = $null
+    $state.backoffUntil = $null
+    Write-Output "Deployment context changed since previous install; cleared applied-SHA tracking. Next auto-update tick will reapply."
 }
 
 Save-DeploymentStateAtomic -Path $statePath -State $state
