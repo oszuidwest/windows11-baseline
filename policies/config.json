@@ -249,7 +249,7 @@
     "system/bluetooth/disable-bluetooth.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Disable Bluetooth by blocking Bluetooth device class and disabling bthserv"
+      "description": "Disable Bluetooth, hide its Settings page, block device class, and disable bthserv"
     },
     "system/wifi/disable-wifi.txt": {
       "purposes": ["all"],

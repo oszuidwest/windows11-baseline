@@ -75,7 +75,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | bloatware | Disable Spotlight | Disable Windows Spotlight tips and suggestions | x | x | x |
 | system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | x | x | x |
 | system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | x | x | x |
-| system | bluetooth | Disable Bluetooth | Disable Bluetooth by blocking Bluetooth device class and disabling bthserv | x | x | x |
+| system | bluetooth | Disable Bluetooth | Disable Bluetooth, hide its Settings page, block device class, and disable bthserv | x | x | x |
 | system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | x |   |   |
 | system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | x |   |   |
