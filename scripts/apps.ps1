@@ -35,6 +35,49 @@ function New-Shortcut {
     }
 }
 
+$script:AppxPackageDowngradeHResult = -2147009274 # 0x80073D06: higher version already installed.
+
+function Test-AppxPackageDowngradeError {
+    param (
+        [Parameter(Mandatory)]
+        $ErrorRecord
+    )
+
+    $exception = $ErrorRecord.Exception
+    while ($exception) {
+        if ($exception.HResult -eq $script:AppxPackageDowngradeHResult) {
+            return $true
+        }
+        $exception = $exception.InnerException
+    }
+
+    $errorText = $ErrorRecord | Out-String
+    return (
+        $errorText -match "0x80073D06" -or
+        $errorText -match "higher version.*already installed" -or
+        $errorText -match "hogere versie"
+    )
+}
+
+function Install-WingetDependencyPackage {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    try {
+        Add-AppxPackage -Path $Path -ErrorAction Stop
+        Write-Output "    Installed $([System.IO.Path]::GetFileName($Path))"
+    }
+    catch {
+        if (Test-AppxPackageDowngradeError -ErrorRecord $_) {
+            Write-Output "    Skipping $([System.IO.Path]::GetFileName($Path)) (newer version already installed)."
+            return
+        }
+        throw
+    }
+}
+
 # Winget package IDs (apps installed via winget)
 $appDefinitions = @{
     "audacity"      = "Audacity.Audacity"
@@ -125,8 +168,8 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         # Detect architecture and install matching dependencies
         $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
         Write-Output "  Installing dependencies for $arch..."
-        Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | ForEach-Object {
-            Add-AppxPackage -Path $_.FullName -ErrorAction Stop
+        Get-ChildItem -Path (Join-Path $depsDir $arch) -Filter "*.appx" | Sort-Object Name | ForEach-Object {
+            Install-WingetDependencyPackage -Path $_.FullName
         }
 
         # Download winget msixbundle and license
