@@ -157,7 +157,6 @@ All systems.
 
 | Setting | Value | Effect |
 |---------|-------|--------|
-| `MetricsReportingEnabled` | 0 | Disables usage and crash reporting |
 | `UserFeedbackAllowed` | 0 | Disables Chrome feedback reports |
 | `UrlKeyedAnonymizedDataCollectionEnabled` | 0 | Disables URL-keyed anonymized data collection |
 | `SearchSuggestEnabled` | 0 | Disables search and URL suggestions |
@@ -171,17 +170,6 @@ All systems.
 | `PrivacySandboxAdTopicsEnabled` | 0 | Disables Privacy Sandbox ad topics |
 | `PrivacySandboxSiteEnabledAdsEnabled` | 0 | Disables site-suggested ads |
 | `PrivacySandboxPromptEnabled` | 0 | Suppresses Privacy Sandbox prompts |
-
-### `chrome-search.txt`
-
-All systems. Sets Google as the managed default search provider in Chrome.
-
-| Setting | Value | Effect |
-|---------|-------|--------|
-| `DefaultSearchProviderEnabled` | 1 | Enables the managed default search provider |
-| `DefaultSearchProviderName` | Google | Displays Google as the default search provider |
-| `DefaultSearchProviderKeyword` | google.com | Sets the search provider keyword |
-| `DefaultSearchProviderSearchURL` | `{google:baseURL}search?q={searchTerms}&...` | Sends address bar searches to Google |
 
 ### `chrome-autofill.txt`
 
@@ -204,17 +192,12 @@ Shared systems only.
 
 ### `chrome-ui.txt`
 
-All systems. Removes noisy Chrome UI and sets ZuidWest as the browser entry point.
+All systems. Removes noisy Chrome UI elements.
 
 | Setting | Value | Effect |
 |---------|-------|--------|
 | `DefaultNotificationsSetting` | 2 | Blocks all website desktop notifications |
 | `DefaultPopupsSetting` | 2 | Blocks website popups by default |
-| `HomepageLocation` | https://www.zuidwestupdate.nl/ | Sets homepage URL |
-| `HomepageIsNewTabPage` | 0 | Uses custom homepage instead of new tab |
-| `NewTabPageLocation` | https://www.zuidwestupdate.nl/ | Opens ZuidWest on new tabs |
-| `RestoreOnStartup` | 4 | Opens specific URLs on startup |
-| `RestoreOnStartupURLs` | https://www.zuidwestupdate.nl/ | URL to open on startup |
 | `PromotionsEnabled` | 0 | Disables Chrome promotions |
 | `PromotionalTabsEnabled` | 0 | Disables promotional tabs |
 | `ShoppingListEnabled` | 0 | Disables shopping list features |

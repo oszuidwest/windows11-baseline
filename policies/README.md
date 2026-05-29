@@ -99,11 +99,10 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | user | browser | Chrome Disable Sign In | Disable Chrome sign-in on shared and dedicated systems | x |   | x |
 | user | browser | Chrome Extensions | Block all Chrome extension installations | x | x | x |
 | user | browser | Chrome Google Accounts | Allow Google services only for ZuidWest account domains in Chrome | x | x | x |
-| user | browser | Chrome Privacy | Chrome privacy, safe browsing, and telemetry defaults | x | x | x |
+| user | browser | Chrome Privacy | Chrome privacy, safe browsing, and data collection defaults | x | x | x |
 | user | browser | Chrome Profile | Chrome ephemeral profiles, no history, no sync | x |   |   |
-| user | browser | Chrome Search | Set Google as the default Chrome search provider | x | x | x |
 | user | browser | Chrome Sign In | Allow only ZuidWest Google accounts for Chrome sign-in on personal systems |   | x |   |
-| user | browser | Chrome UI | Block Chrome notifications/popups, set ZuidWest homepage, and remove promotional UI | x | x | x |
+| user | browser | Chrome UI | Block Chrome notifications/popups and remove promotional UI | x | x | x |
 | user | browser | Edge Autofill | Disable Edge autofill and data import | x |   |   |
 | user | browser | Edge Developer Tools | Disable Edge Developer Tools (F12) | x |   |   |
 | user | browser | Edge Disable Sign In | Disable Edge sign-in on shared and dedicated systems | x |   | x |

@@ -184,12 +184,7 @@
     "user/browser/chrome-privacy.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Chrome privacy, safe browsing, and telemetry defaults"
-    },
-    "user/browser/chrome-search.txt": {
-      "purposes": ["all"],
-      "ownership": ["all"],
-      "description": "Set Google as the default Chrome search provider"
+      "description": "Chrome privacy, safe browsing, and data collection defaults"
     },
     "user/browser/chrome-autofill.txt": {
       "purposes": ["all"],
@@ -199,7 +194,7 @@
     "user/browser/chrome-ui.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Block Chrome notifications/popups, set ZuidWest homepage, and remove promotional UI"
+      "description": "Block Chrome notifications/popups and remove promotional UI"
     },
     "user/browser/chrome-developer-tools.txt": {
       "purposes": ["all"],

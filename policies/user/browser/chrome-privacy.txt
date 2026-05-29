@@ -1,10 +1,5 @@
 User
 Software\Policies\Google\Chrome
-MetricsReportingEnabled
-DWORD:0
-
-User
-Software\Policies\Google\Chrome
 UserFeedbackAllowed
 DWORD:0
 
@@ -67,4 +62,3 @@ User
 Software\Policies\Google\Chrome
 PrivacySandboxPromptEnabled
 DWORD:0
-
