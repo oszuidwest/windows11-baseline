@@ -190,6 +190,7 @@ $scriptRequirements = @{
     'dwservice'        = @('dwAgentCode')
     'hardening'        = @()
     'policies'         = @('systemPurpose', 'systemOwnership')
+    'policyupdate'     = @('systemPurpose', 'systemOwnership')
     'power'            = @('systemPurpose', 'systemOwnership')
     'securitybaseline' = @()
     'sounds'           = @()
