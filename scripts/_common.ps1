@@ -104,6 +104,55 @@ function Invoke-Download {
     }
 }
 
+function Assert-BundledBinary {
+    <#
+    .SYNOPSIS
+        Verify a binary in bin/ matches the SHA-256 declared in bin/hashes.json.
+
+    .DESCRIPTION
+        Reads the hashes manifest under the current deploy path (Get-DeployPath
+        honours $env:WINDOWS11_BASELINE_DEPLOY_PATH, so this works when the
+        auto-updater is operating against a staged copy too). Computes the
+        SHA-256 of the binary and throws if it does not match. Calling this
+        before every native invocation of a bundled Microsoft EXE prevents a
+        compromised or accidentally swapped repo copy from being executed.
+
+    .PARAMETER BinaryPath
+        Absolute path to the binary to verify. The lookup key into hashes.json
+        is the file name (e.g. "LGPO.exe").
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [string]$BinaryPath
+    )
+
+    if (-not (Test-Path $BinaryPath)) {
+        throw "Bundled binary not found at $BinaryPath"
+    }
+
+    $manifestPath = Join-DeployPath "bin", "hashes.json"
+    if (-not (Test-Path $manifestPath)) {
+        throw "Bundled binary manifest not found at $manifestPath. Refusing to run an unverified binary."
+    }
+
+    $manifest = Get-Content -Path $manifestPath -Raw | ConvertFrom-Json
+    if (-not $manifest.binaries) {
+        throw "Bundled binary manifest at $manifestPath is missing a 'binaries' object."
+    }
+
+    $binaryName = Split-Path -Path $BinaryPath -Leaf
+    $expected = $manifest.binaries.$binaryName
+    if (-not $expected) {
+        throw "No expected SHA-256 declared for '$binaryName' in $manifestPath. Add it in the same commit as the binary bump."
+    }
+
+    $actual = (Get-FileHash -Path $BinaryPath -Algorithm SHA256).Hash
+    if (-not $actual.Equals($expected, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "SHA-256 mismatch for '$binaryName' (expected $expected, got $actual). Refusing to invoke."
+    }
+}
+
 function Get-ScriptParameterNames {
     [OutputType([string[]])]
     param (

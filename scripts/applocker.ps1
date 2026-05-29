@@ -70,9 +70,7 @@ Write-Output "Template: $templateName"
 Write-Output "Blocks: $policyDescription"
 Write-Output ""
 
-if (-not (Test-Path $appLockerToolPath)) {
-    throw "AppLockerPolicyTool.exe not found at $appLockerToolPath"
-}
+Assert-BundledBinary -BinaryPath $appLockerToolPath
 
 if (-not (Test-Path $templatePath)) {
     throw "AppLocker template not found at $templatePath"

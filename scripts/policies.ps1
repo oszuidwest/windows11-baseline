@@ -163,10 +163,8 @@ if (-not $systemPurpose -or -not $systemOwnership) {
 $systemPurpose = $systemPurpose.ToLower()
 $systemOwnership = $systemOwnership.ToLower()
 
-# Verify LGPO.exe exists
-if (-not (Test-Path $lgpoPath)) {
-    throw "LGPO.exe not found at $lgpoPath"
-}
+# Verify LGPO.exe is present and matches the SHA-256 in bin/hashes.json.
+Assert-BundledBinary -BinaryPath $lgpoPath
 
 # Verify config exists
 if (-not (Test-Path $configPath)) {

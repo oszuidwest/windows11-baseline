@@ -1,0 +1,8 @@
+{
+  "$comment": "Runtime hashes for Microsoft binaries shipped in this directory. Bumping a binary requires bumping the matching SHA-256 here in the same commit. scripts/_common.ps1 :: Assert-BundledBinary enforces this at runtime; mismatches throw before the binary is invoked. Hashes must also match bin/README.md and the Authenticode signature must remain a valid Microsoft signature.",
+  "algorithm": "SHA256",
+  "binaries": {
+    "LGPO.exe": "0c97f29543418b30340c4ff5d930d31e6196dd59c2cc74b6b890fa7b90c910c7",
+    "AppLockerPolicyTool.exe": "163a7d3454437a43401f292ac4a48aa5c044ab54565aef4d76b39046bdf4a26d"
+  }
+}
