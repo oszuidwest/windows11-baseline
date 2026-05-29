@@ -1,6 +1,6 @@
 # Browser Policies
 
-Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions. Browser sign-in is disabled except on personal systems, where only ZuidWest work/school accounts are allowed.
+Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions. Browser sign-in is disabled except on personal systems, where only ZuidWest work/school accounts are allowed. Chrome Google service sign-in is limited to ZuidWest Google account domains on all systems.
 
 ## Policies
 
@@ -143,6 +143,14 @@ Shared and dedicated systems only.
 |---------|-------|--------|
 | `BrowserSignin` | 0 | Disables Chrome browser sign-in completely |
 
+### `chrome-google-accounts.txt`
+
+All systems. Blocks Chrome users from signing in to Google services with accounts outside the ZuidWest Google domains.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `AllowedDomainsForApps` | `zuidwestupdate.nl,zuidwesttv.nl,zuidwestfm.nl` | Allows Google service sign-in only for these domains |
+
 ### `chrome-privacy.txt`
 
 All systems.
@@ -163,6 +171,17 @@ All systems.
 | `PrivacySandboxAdTopicsEnabled` | 0 | Disables Privacy Sandbox ad topics |
 | `PrivacySandboxSiteEnabledAdsEnabled` | 0 | Disables site-suggested ads |
 | `PrivacySandboxPromptEnabled` | 0 | Suppresses Privacy Sandbox prompts |
+
+### `chrome-search.txt`
+
+All systems. Sets Google as the managed default search provider in Chrome.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DefaultSearchProviderEnabled` | 1 | Enables the managed default search provider |
+| `DefaultSearchProviderName` | Google | Displays Google as the default search provider |
+| `DefaultSearchProviderKeyword` | google.com | Sets the search provider keyword |
+| `DefaultSearchProviderSearchURL` | `{google:baseURL}search?q={searchTerms}&...` | Sends address bar searches to Google |
 
 ### `chrome-autofill.txt`
 

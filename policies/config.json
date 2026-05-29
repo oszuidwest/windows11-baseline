@@ -176,10 +176,20 @@
       "ownership": ["shared", "dedicated"],
       "description": "Disable Chrome sign-in on shared and dedicated systems"
     },
+    "user/browser/chrome-google-accounts.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Allow Google services only for ZuidWest account domains in Chrome"
+    },
     "user/browser/chrome-privacy.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
       "description": "Chrome privacy, safe browsing, and telemetry defaults"
+    },
+    "user/browser/chrome-search.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Set Google as the default Chrome search provider"
     },
     "user/browser/chrome-autofill.txt": {
       "purposes": ["all"],
