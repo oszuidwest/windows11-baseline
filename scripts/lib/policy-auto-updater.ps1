@@ -10,6 +10,17 @@
     for the HEAD commit SHA of the configured branch, and short-circuits when
     that SHA matches the SHAs already applied on this machine.
 
+    Rate-limit posture (GitHub unauthenticated cap is 60 req/h/IP):
+      - Conditional requests via If-None-Match. A 304 response does not count
+        against the rate limit, so steady-state polling burns ~0 quota per
+        machine until something actually changes on the branch.
+      - On 403/429 the X-RateLimit-Reset / Retry-After headers are honoured
+        and persisted to state.backoffUntil; subsequent ticks return early
+        until that time has passed.
+      - The scheduled-task trigger anchored by policyupdate.ps1 includes a
+        per-install minute offset so a fleet behind one NAT does not all
+        fire simultaneously.
+
     On a SHA that differs from either state.lastAppliedSha (policies need
     re-running) or state.lastSelfUpdateSha (the deployed copy of this script
     is out of date) the updater:
@@ -114,6 +125,103 @@ function Write-UpdateLog {
     Write-Output $line
 }
 
+function Get-BackoffUntilFromHeaders {
+    <#
+    .SYNOPSIS
+        Compute when polling may resume after a 403/429 from the GitHub API.
+
+    .DESCRIPTION
+        GitHub signals the primary-rate-limit reset via X-RateLimit-Reset
+        (Unix epoch seconds) and the secondary-rate-limit retry via
+        Retry-After (seconds). Falls back to a 15-minute window if neither
+        header is present. Output is a DateTime in UTC.
+    #>
+    [OutputType([datetime])]
+    param ($Headers)
+
+    if ($Headers) {
+        $resetRaw = $Headers["X-RateLimit-Reset"]
+        if ($resetRaw) {
+            $epoch = 0
+            if ([int]::TryParse([string]$resetRaw, [ref]$epoch) -and $epoch -gt 0) {
+                return [DateTimeOffset]::FromUnixTimeSeconds($epoch).UtcDateTime
+            }
+        }
+        $retryRaw = $Headers["Retry-After"]
+        if ($retryRaw) {
+            $seconds = 0
+            if ([int]::TryParse([string]$retryRaw, [ref]$seconds) -and $seconds -gt 0) {
+                return (Get-Date).ToUniversalTime().AddSeconds($seconds)
+            }
+        }
+    }
+
+    return (Get-Date).ToUniversalTime().AddMinutes(15)
+}
+
+function Invoke-GitHubApiCommitCheck {
+    <#
+    .SYNOPSIS
+        Conditional GET against /commits/<branch> with ETag caching.
+
+    .DESCRIPTION
+        Returns a pscustomobject with one of three shapes:
+          Status="ok"        : new data; .Sha and .Etag populated
+          Status="notModified": 304 response; ETag unchanged
+          Status="rateLimited": 403/429; .BackoffUntil populated
+        Network failure throws.
+    #>
+    [OutputType([pscustomobject])]
+    param (
+        [Parameter(Mandatory)][string]$Owner,
+        [Parameter(Mandatory)][string]$Repo,
+        [Parameter(Mandatory)][string]$Branch,
+        [string]$Etag
+    )
+
+    $url = "https://api.github.com/repos/$Owner/$Repo/commits/$Branch"
+    $headers = @{
+        "User-Agent" = "windows11-baseline-policy-auto-update"
+        "Accept"     = "application/vnd.github+json"
+    }
+    if ($Etag) {
+        $headers["If-None-Match"] = $Etag
+    }
+
+    $previousProgress = $ProgressPreference
+    $ProgressPreference = "SilentlyContinue"
+    try {
+        $response = Invoke-WebRequest -Uri $url -Headers $headers -UseBasicParsing -TimeoutSec 30
+    }
+    catch [System.Net.WebException] {
+        $webResponse = $_.Exception.Response
+        if ($null -eq $webResponse) {
+            throw
+        }
+        $statusCode = [int]$webResponse.StatusCode
+        if ($statusCode -eq 304) {
+            return [pscustomobject]@{ Status = "notModified" }
+        }
+        if ($statusCode -eq 403 -or $statusCode -eq 429) {
+            $until = Get-BackoffUntilFromHeaders -Headers $webResponse.Headers
+            return [pscustomobject]@{ Status = "rateLimited"; BackoffUntil = $until; StatusCode = $statusCode }
+        }
+        throw
+    }
+    finally {
+        $ProgressPreference = $previousProgress
+    }
+
+    $parsed = $response.Content | ConvertFrom-Json
+    $newEtag = $response.Headers["ETag"]
+    if ($newEtag -is [array]) { $newEtag = $newEtag[0] }
+    return [pscustomobject]@{
+        Status = "ok"
+        Sha    = $parsed.sha
+        Etag   = $newEtag
+    }
+}
+
 if (-not (Test-Path $logDir)) {
     New-Item -Path $logDir -ItemType Directory -Force | Out-Null
 }
@@ -150,7 +258,7 @@ try {
     $state = Read-StateOrBakLocal -Path $statePath
 
     # Ensure newer schema fields exist even when reading an older state file.
-    foreach ($field in @('lastSelfUpdateSha', 'lastCheckAt')) {
+    foreach ($field in @('lastSelfUpdateSha', 'lastEtag', 'backoffUntil', 'lastCheckAt', 'pollOffsetMinutes')) {
         if (-not ($state.PSObject.Properties.Name -contains $field)) {
             $state | Add-Member -NotePropertyName $field -NotePropertyValue $null -Force
         }
@@ -168,43 +276,73 @@ try {
         return
     }
 
+    # Honour any active backoff window before doing anything that touches the network.
+    if ($state.backoffUntil) {
+        $until = [datetime]::MinValue
+        if ([datetime]::TryParse([string]$state.backoffUntil, [ref]$until)) {
+            $untilUtc = $until.ToUniversalTime()
+            if ((Get-Date).ToUniversalTime() -lt $untilUtc) {
+                Write-UpdateLog "Backoff active until $($untilUtc.ToString('o')); skipping."
+                return
+            }
+        }
+    }
+
     Write-UpdateLog "Checking $repoOwner/$repoName@$branch (purpose=$purpose, ownership=$ownership)."
 
-    # Resolve the current branch HEAD SHA via the GitHub API.
-    $apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/commits/$branch"
-    $headers = @{
-        "User-Agent" = "windows11-baseline-policy-auto-update"
-        "Accept"     = "application/vnd.github+json"
-    }
+    # Send a conditional request. Only the first request (or after a real change)
+    # spends a unit of the unauthenticated rate-limit budget; 304s are free.
+    $check = Invoke-GitHubApiCommitCheck -Owner $repoOwner -Repo $repoName -Branch $branch -Etag $state.lastEtag
 
-    $previousProgress = $ProgressPreference
-    $ProgressPreference = "SilentlyContinue"
-    try {
-        $apiResponse = Invoke-RestMethod -Uri $apiUrl -Headers $headers -UseBasicParsing -TimeoutSec 30
-    }
-    catch {
-        Write-UpdateLog "GitHub API call failed: $($_.Exception.Message)" "ERROR"
-        return
-    }
-    finally {
-        $ProgressPreference = $previousProgress
-    }
-
-    $remoteSha = $apiResponse.sha
-    if (-not $remoteSha) {
-        Write-UpdateLog "GitHub API response did not include a SHA; aborting." "ERROR"
-        return
-    }
-
-    # Record the check time even when there is nothing to apply.
     $now = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+    if ($check.Status -eq "rateLimited") {
+        $state.backoffUntil = $check.BackoffUntil.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        $state.lastCheckAt = $now
+        Save-StateAtomicLocal -Path $statePath -State $state
+        Write-UpdateLog "GitHub API returned $($check.StatusCode); backoff until $($state.backoffUntil)." "WARN"
+        return
+    }
+
+    # Clear any stale backoff now that the API is answering normally again.
+    $state.backoffUntil = $null
     $state.lastCheckAt = $now
-    Save-StateAtomicLocal -Path $statePath -State $state
+
+    if ($check.Status -eq "notModified") {
+        # Server confirms our cached version is current. Use the SHA we last applied
+        # as the target so we can still retry a stalled self-copy from this run.
+        $remoteSha = $state.lastAppliedSha
+        if (-not $remoteSha) {
+            # We have an ETag but no recorded SHA (unusual). Force a fresh request
+            # next tick by dropping the ETag.
+            $state.lastEtag = $null
+            Save-StateAtomicLocal -Path $statePath -State $state
+            Write-UpdateLog "304 received but no lastAppliedSha; cleared ETag, will fetch full payload next tick." "WARN"
+            return
+        }
+        Write-UpdateLog "API returned 304 (no change); target SHA $remoteSha."
+        $pendingEtag = $state.lastEtag
+    }
+    else {
+        $remoteSha = $check.Sha
+        if (-not $remoteSha) {
+            Write-UpdateLog "GitHub API response did not include a SHA; aborting." "ERROR"
+            return
+        }
+        # The new ETag goes into state ONLY after a successful apply below; if we
+        # crash between here and there, the next tick will re-fetch the same SHA.
+        $pendingEtag = $check.Etag
+    }
 
     $policyCurrent = $state.lastAppliedSha -eq $remoteSha
     $selfCurrent = $state.lastSelfUpdateSha -eq $remoteSha
 
     if ($policyCurrent -and $selfCurrent) {
+        # Fully caught up. Persist lastCheckAt (and, on a fresh 200, the new ETag).
+        if ($check.Status -eq "ok") {
+            $state.lastEtag = $pendingEtag
+        }
+        Save-StateAtomicLocal -Path $statePath -State $state
         Write-UpdateLog "Already at $remoteSha; nothing to do."
         return
     }
@@ -302,6 +440,9 @@ try {
             # there does not force a re-apply on the next tick.
             $state.lastAppliedSha = $remoteSha
             $state.lastAppliedAt = $now
+            if ($check.Status -eq "ok") {
+                $state.lastEtag = $pendingEtag
+            }
             Save-StateAtomicLocal -Path $statePath -State $state
             Write-UpdateLog "Applied policy SHA $remoteSha."
         }
@@ -327,6 +468,9 @@ try {
             try {
                 Copy-Item -Path $newSelf -Destination $selfPath -Force
                 $state.lastSelfUpdateSha = $remoteSha
+                if ($check.Status -eq "ok") {
+                    $state.lastEtag = $pendingEtag
+                }
                 Save-StateAtomicLocal -Path $statePath -State $state
                 Write-UpdateLog "Auto-updater payload refreshed at $selfPath."
             }
