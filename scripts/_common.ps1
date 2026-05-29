@@ -3,12 +3,29 @@
     Shared helpers for Windows 11 baseline deployment scripts.
 #>
 
+function Get-ZuidWestRoot {
+    return (Join-Path $env:ProgramData "ZuidWest")
+}
+
+function Join-ZuidWestPath {
+    param (
+        [Parameter(Mandatory, Position = 0)]
+        [string[]]$ChildPath
+    )
+
+    $path = Get-ZuidWestRoot
+    foreach ($child in $ChildPath) {
+        $path = Join-Path $path $child
+    }
+    return $path
+}
+
 function Get-DeployPath {
     if ($env:WINDOWS11_BASELINE_DEPLOY_PATH) {
         return $env:WINDOWS11_BASELINE_DEPLOY_PATH
     }
 
-    return "C:\Windows\deploy"
+    return (Join-ZuidWestPath "deploy")
 }
 
 function Join-DeployPath {

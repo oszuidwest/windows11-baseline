@@ -178,7 +178,7 @@ Write-Output ""
 # Download wallpaper for shared and personal systems
 if ($systemOwnership -eq "shared" -or $systemOwnership -eq "personal") {
     $wallpaperUrl = "https://www.zuidwestupdate.nl/wp-content/uploads/2021/03/voorpagina-placeholder.png"
-    $wallpaperDir = "C:\ProgramData\ZuidWest\wallpaper"
+    $wallpaperDir = Join-ZuidWestPath "wallpaper"
     $wallpaperPath = Join-Path $wallpaperDir "wallpaper.png"
 
     Write-Output "Downloading wallpaper..."

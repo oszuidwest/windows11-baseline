@@ -42,9 +42,10 @@ Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservic
 
 A full install also registers an auto-update Scheduled Task (`\ZuidWest\PolicyAutoUpdate`) so policy changes pushed to `main` propagate to every deployed machine without a manual re-run.
 
-- **Triggers:** system startup, any user logon, hourly thereafter.
-- **What it does:** reads the public commits.atom feed at `https://github.com/oszuidwest/windows11-baseline/commits/main.atom` (not the REST API, so no 60 req/h/IP quota) to learn the current `main` commit SHA. If it matches the last applied SHA, exits silently. If different, downloads the archive for that SHA into `C:\ProgramData\ZuidWest\policy-update\staging`, then re-runs `policies` and `applocker` against that staged copy via the `$env:WINDOWS11_BASELINE_DEPLOY_PATH` override (so it never touches `C:\Windows\deploy`).
-- **State and logs:**
+- **Triggers:** system startup (15 min jitter), any user logon (5 min jitter), hourly thereafter (60 min jitter).
+- **What it does:** reads the public commits.atom feed at `https://github.com/oszuidwest/windows11-baseline/commits/main.atom` (not the REST API, so no 60 req/h/IP quota) to learn the current `main` commit SHA. If it matches the last applied SHA, exits silently. If different, downloads the archive for that SHA into `C:\ProgramData\ZuidWest\policy-update\staging`, then re-runs `policies` and `applocker` against that staged copy via the `$env:WINDOWS11_BASELINE_DEPLOY_PATH` override.
+- **Runtime layout:** all ZuidWest-managed deployment/runtime files live under `C:\ProgramData\ZuidWest`.
+  - `C:\ProgramData\ZuidWest\deploy` - current full-install deploy cache
   - `C:\ProgramData\ZuidWest\policy-update\state.json` - purpose, ownership, repo coordinates, last applied SHA
   - `C:\ProgramData\ZuidWest\policy-update\update.ps1` - the auto-updater payload (self-refreshes from `scripts/lib/policy-auto-updater.ps1` on each successful apply)
   - `C:\ProgramData\ZuidWest\Logs\policy-auto-update.log` - rotated at 5 MB

@@ -11,9 +11,9 @@ param (
 
 .DESCRIPTION
     Persists deployment state, deploys the auto-updater payload to a stable
-    location outside C:\Windows\deploy, and registers a Scheduled Task that
-    re-applies the policy + AppLocker layers whenever the configured GitHub
-    branch advances.
+    runtime location under C:\ProgramData\ZuidWest, and registers a Scheduled
+    Task that re-applies the policy + AppLocker layers whenever the configured
+    GitHub branch advances.
 
     Persistent files (under C:\ProgramData\ZuidWest\policy-update\):
       - state.json        Deployment context, repo coordinates, last SHA
@@ -49,7 +49,7 @@ if (-not $systemPurpose -or -not $systemOwnership) {
     throw "Both 'systemPurpose' and 'systemOwnership' parameters must be provided."
 }
 
-$persistentRoot = Join-Path $env:ProgramData "ZuidWest\policy-update"
+$persistentRoot = Join-ZuidWestPath "policy-update"
 $statePath = Join-Path $persistentRoot "state.json"
 $updaterPath = Join-Path $persistentRoot "update.ps1"
 $payloadSource = Join-Path $PSScriptRoot "lib\policy-auto-updater.ps1"
@@ -190,6 +190,6 @@ Write-Output "Scheduled Task registered: $taskFullPath"
 
 Write-Output ""
 Write-Output "Triggers: startup (jitter 15 min), logon (jitter 5 min), hourly (jitter 60 min)."
-Write-Output "Logs:     $(Join-Path $env:ProgramData 'ZuidWest\Logs\policy-auto-update.log')"
+Write-Output "Logs:     $(Join-ZuidWestPath 'Logs', 'policy-auto-update.log')"
 Write-Output ""
 Write-Output "=== Policy Auto-Update Installation complete ==="

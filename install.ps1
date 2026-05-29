@@ -9,6 +9,10 @@ param(
     [string[]]$OnlyRun
 )
 
+$script:ZuidWestRoot = Join-Path $env:ProgramData "ZuidWest"
+$script:InstallLogRoot = Join-Path $script:ZuidWestRoot "Logs"
+$script:DeployRoot = Join-Path $script:ZuidWestRoot "deploy"
+
 # Function to check for admin rights
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -21,7 +25,7 @@ $script:InstallLogPath = $null
 function Initialize-InstallLog {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $logDirectories = @(
-        (Join-Path $env:ProgramData "ZuidWest\Logs"),
+        $script:InstallLogRoot,
         $env:TEMP
     )
 
@@ -124,10 +128,10 @@ Write-Output "This script will configure a Windows 11 system with the specified 
 Write-Output ""
 
 # Download before prompting so we can source _common.ps1 and validate the password input.
-$deployDir = "C:\Windows\deploy"
+$deployDir = $script:DeployRoot
 $zipUrl = "https://github.com/oszuidwest/windows11-baseline/archive/refs/heads/main.zip"
-$zipFilePath = "$deployDir\main.zip"
-$sourceDir = "$deployDir\windows11-baseline-main"
+$zipFilePath = Join-Path $deployDir "main.zip"
+$sourceDir = Join-Path $deployDir "windows11-baseline-main"
 
 if (Test-Path $deployDir) {
     Remove-Item -Path $deployDir -Recurse -Force

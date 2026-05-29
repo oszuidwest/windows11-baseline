@@ -24,9 +24,9 @@
         1-minute floor fallback. The resulting wake time is persisted to
         state.backoffUntil and short-circuits subsequent ticks until it
         passes.
-      - The scheduled-task trigger anchored by policyupdate.ps1 uses
-        -RandomDelay so each fleet member fires at a different minute
-        within the hour.
+      - The scheduled-task triggers anchored by policyupdate.ps1 use
+        -RandomDelay so startup, logon, and hourly checks do not fire in
+        lockstep across the fleet.
 
     On a SHA that differs from either state.lastAppliedSha (policies need
     re-running) or state.lastSelfUpdateSha (the deployed copy of this script
@@ -38,7 +38,7 @@
          ($env:WINDOWS11_BASELINE_DEPLOY_PATH) at the staging directory so
          the existing sub-scripts (which use Get-DeployPath / Join-DeployPath
          from scripts/_common.ps1) operate on the freshly downloaded copy
-         without touching C:\Windows\deploy.
+         without touching the persistent deploy cache.
       3. If policy is stale: runs each script listed in state.scriptsToReapply
          (default: policies, applocker), passing systemPurpose /
          systemOwnership from the state file. Sub-scripts are invoked
@@ -68,10 +68,11 @@
 
 $ErrorActionPreference = "Stop"
 
-$persistentRoot = Join-Path $env:ProgramData "ZuidWest\policy-update"
+$zuidWestRoot = Join-Path $env:ProgramData "ZuidWest"
+$persistentRoot = Join-Path $zuidWestRoot "policy-update"
 $statePath = Join-Path $persistentRoot "state.json"
 $stagingRoot = Join-Path $persistentRoot "staging"
-$logDir = Join-Path $env:ProgramData "ZuidWest\Logs"
+$logDir = Join-Path $zuidWestRoot "Logs"
 $logPath = Join-Path $logDir "policy-auto-update.log"
 $lockPath = Join-Path $persistentRoot "update.lock"
 $selfPath = $PSCommandPath
@@ -408,7 +409,7 @@ try {
 
     # Redirect Get-DeployPath to the staging directory so policies.ps1 / applocker.ps1
     # read their inputs (policies/, bin/) from the freshly downloaded copy instead of
-    # C:\Windows\deploy. install.ps1 might be running concurrently; this keeps us isolated.
+    # the persistent deploy cache. install.ps1 might be running concurrently; this keeps us isolated.
     $env:WINDOWS11_BASELINE_DEPLOY_PATH = $stagingRoot
     try {
         . $commonPath
