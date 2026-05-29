@@ -416,8 +416,11 @@ try {
                 )
                 $scriptPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
                 if (-not $scriptPath) {
-                    Write-UpdateLog "Script '$scriptName' not found in staging; skipping." "WARN"
-                    continue
+                    # Hard fail. Skipping would let lastAppliedSha advance and
+                    # short-circuit the missing script forever, even though the
+                    # operator explicitly requested it.
+                    Write-UpdateLog "Script '$scriptName' is in scriptsToReapply but not found in staging; aborting (lastAppliedSha not advanced)." "ERROR"
+                    return
                 }
 
                 $detectedParams = Get-ScriptParameterNames -Path $scriptPath
