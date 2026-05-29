@@ -151,11 +151,13 @@ $startupTrigger = New-ScheduledTaskTrigger -AtStartup `
 $logonTrigger = New-ScheduledTaskTrigger -AtLogOn `
     -RandomDelay (New-TimeSpan -Minutes 5)
 
+# RepetitionDuration must fit Task Scheduler's XML range; 9999 days is the
+# largest well-known accepted value, plenty for a workstation lifetime.
 $hourlyTrigger = New-ScheduledTaskTrigger `
     -Once -At (Get-Date).AddMinutes(5) `
     -RandomDelay (New-TimeSpan -Minutes 60) `
     -RepetitionInterval (New-TimeSpan -Hours 1) `
-    -RepetitionDuration (New-TimeSpan -Days 365000)
+    -RepetitionDuration (New-TimeSpan -Days 9999)
 
 $principal = New-ScheduledTaskPrincipal `
     -UserId "SYSTEM" `
