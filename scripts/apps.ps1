@@ -70,7 +70,7 @@ function Install-WingetDependencyPackage {
     )
 
     try {
-        Add-AppxPackage -Path $Path -ErrorAction Stop
+        Add-AppxPackage -Path $Path -ForceApplicationShutdown -ErrorAction Stop
         Write-Output "    Installed $([System.IO.Path]::GetFileName($Path))"
     }
     catch {
@@ -174,7 +174,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Invoke-Download -Uri $licenseUrl -OutFile $licensePath
 
         Write-Output "  Installing Winget..."
-        Add-AppxPackage -Path $msixPath -ErrorAction Stop
+        Add-AppxPackage -Path $msixPath -ForceApplicationShutdown -ErrorAction Stop
         Add-AppxProvisionedPackage -Online -PackagePath $msixPath -LicensePath $licensePath -ErrorAction Stop | Out-Null
 
         Start-Sleep -Seconds 3
