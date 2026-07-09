@@ -1,6 +1,6 @@
 # Browser Policies
 
-Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions. Browser sign-in is disabled except on personal systems, where only ZuidWest work/school accounts are allowed. Chrome Google service sign-in is limited to ZuidWest Google account domains on all systems.
+Microsoft Edge and Google Chrome: ephemeral profiles for shared systems, strict privacy, no autofill, clean UI, no extensions. Browser sign-in is disabled except on personal systems, where only ZuidWest work/school accounts are allowed. Chrome Google service sign-in is temporarily open to all account domains on all systems.
 
 ## Policies
 
@@ -147,11 +147,11 @@ Shared and dedicated systems only.
 
 ### `chrome-google-accounts.txt`
 
-All systems. Blocks Chrome users from signing in to Google services with accounts outside the ZuidWest Google domains.
+All systems. Temporarily removes the Chrome domain allowlist for Google services so users can sign in with any Google account domain.
 
 | Setting | Value | Effect |
 |---------|-------|--------|
-| `AllowedDomainsForApps` | `zuidwestupdate.nl,zuidwesttv.nl,zuidwestfm.nl` | Allows Google service sign-in only for these domains |
+| `AllowedDomainsForApps` | `DELETE` | Allows Google service sign-in for all account domains |
 
 ### `chrome-privacy.txt`
 

@@ -179,7 +179,7 @@
     "user/browser/chrome-google-accounts.txt": {
       "purposes": ["all"],
       "ownership": ["all"],
-      "description": "Allow Google services only for ZuidWest account domains in Chrome"
+      "description": "Temporarily allow all Google account domains in Chrome"
     },
     "user/browser/chrome-privacy.txt": {
       "purposes": ["all"],
