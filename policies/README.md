@@ -106,6 +106,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | security | Disable Autorun | Disable autorun for USB, CD and other drives | all | x | x | x |
 | system | security | Hide Shutdown Button | Hide shutdown button, only allow restart | all | x |   |   |
 | system | security | NTLM Hardening | Force NTLMv2 only authentication (LmCompatibilityLevel 5) | all | x | x | x |
+| system | security | Relax Password Policy | Disable minimum password length and complexity requirements | all | x | x | x |
 | system | security | SmartScreen | Enable Windows SmartScreen for apps and files | all | x | x | x |
 | system | wifi | Disable WiFi | Disable WiFi by disabling WLAN AutoConfig service | all | x |   | x |
 | system | windows-update | Configure Auto Update | Configure automatic updates daily at 3:00 AM | all | x | x | x |

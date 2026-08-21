@@ -3,8 +3,6 @@
     Shared helpers for Windows 11 baseline deployment scripts.
 #>
 
-$script:DeploymentMinimumPasswordLength = 14
-
 function Get-ZuidWestRoot {
     return (Join-Path $env:ProgramData "ZuidWest")
 }
@@ -274,26 +272,6 @@ function Test-LocalUserPassword {
         throw "A password is required when creating '$AccountName'."
     }
 
-    if ($plainPassword.Length -lt $script:DeploymentMinimumPasswordLength) {
-        throw "The password for '$AccountName' must be at least $script:DeploymentMinimumPasswordLength characters."
-    }
-
-    $characterClasses = 0
-    if ($plainPassword -cmatch "[A-Z]") { $characterClasses++ }
-    if ($plainPassword -cmatch "[a-z]") { $characterClasses++ }
-    if ($plainPassword -match "\d") { $characterClasses++ }
-    if ($plainPassword -match "[^a-zA-Z\d]") { $characterClasses++ }
-
-    if ($characterClasses -lt 3) {
-        throw "The password for '$AccountName' must contain characters from at least 3 of these groups: uppercase, lowercase, numbers, symbols."
-    }
-
-    $userNameParts = @($AccountName -split "[\s._-]+" | Where-Object { $_.Length -ge 3 })
-    foreach ($userNamePart in $userNameParts) {
-        if ($plainPassword.IndexOf($userNamePart, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
-            throw "The password for '$AccountName' must not contain username part '$userNamePart'."
-        }
-    }
 }
 
 function Resolve-DeploymentUserName {
@@ -345,11 +323,6 @@ function Read-DeploymentPassword {
 
         [string]$Prompt = "Enter the user password"
     )
-
-    Write-Host "Password requirements for '$AccountName':"
-    Write-Host "  - At least $script:DeploymentMinimumPasswordLength characters"
-    Write-Host "  - Characters from at least 3 of: uppercase, lowercase, numbers, symbols"
-    Write-Host "  - Must not contain parts of the username"
 
     while ($true) {
         $securePassword = Read-Host -Prompt $Prompt -AsSecureString

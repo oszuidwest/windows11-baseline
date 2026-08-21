@@ -10,6 +10,15 @@ System hardening policies for malware prevention, authentication security, and a
 |---------|-------|--------|
 | `NoDriveTypeAutoRun` | 255 | Disables AutoRun/AutoPlay for all drive types |
 
+### `relax-password-policy.inf`
+
+Applies to every system and overrides the minimum length and complexity requirements from the Microsoft Windows 11 security baseline. The deployment still requires a non-empty password when creating an account.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `MinimumPasswordLength` | 0 | Removes the Windows minimum password length requirement |
+| `PasswordComplexity` | 0 | Allows passwords without requiring a mix of character types or excluding the username |
+
 ### `hide-shutdown-button.txt`
 
 Shared systems only. Ensures workstations are restarted (applying updates) rather than shut down.

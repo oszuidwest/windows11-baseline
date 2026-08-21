@@ -58,6 +58,11 @@
       "ownership": ["all"],
       "description": "Disable autorun for USB, CD and other drives"
     },
+    "system/security/relax-password-policy.inf": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Disable minimum password length and complexity requirements"
+    },
     "system/security/hide-shutdown-button.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],

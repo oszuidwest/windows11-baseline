@@ -17,7 +17,7 @@ function ConvertTo-FriendlyPasswordError {
     )
 
     if ($ErrorRecord.Exception.GetType().FullName -eq "Microsoft.PowerShell.Commands.InvalidPasswordException") {
-        return "Password was rejected by the local Windows password policy. Use at least $script:DeploymentMinimumPasswordLength characters, 3 character groups, and do not include the username."
+        return "Password was rejected by the local Windows password policy."
     }
     return $ErrorRecord.Exception.Message
 }

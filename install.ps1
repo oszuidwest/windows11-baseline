@@ -379,7 +379,7 @@ if ('personalUserName' -in $requiredParams -and $systemOwnership -eq "personal")
     } while (-not $personalUserName)
 }
 
-# Resolve account first for username-substring password validation.
+# Resolve the account before prompting so the password message names its user.
 if ('userPassword' -in $requiredParams) {
     $plannedUser = Resolve-DeploymentUserName -SystemPurpose $systemPurpose -SystemOwnership $systemOwnership `
         -DedicatedUserName $dedicatedUserName -PersonalUserName $personalUserName
