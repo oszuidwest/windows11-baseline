@@ -74,7 +74,7 @@ generate_table() {
         | map({
             scope: .parts[0],
             category: .parts[1],
-            slug: (.parts[2] | sub("\\.txt$"; "")),
+            slug: (.parts[2] | sub("\\.(txt|inf)$"; "")),
             description: .description,
             shared: (if (.ownership | index("all")) or (.ownership | index("shared")) then "x" else " " end),
             personal: (if (.ownership | index("all")) or (.ownership | index("personal")) then "x" else " " end),

@@ -1,6 +1,6 @@
 # User Security Policies
 
-Shared systems only. Blocks system tools for non-admin users.
+Applies ownership-specific restrictions to non-admin users.
 
 ## Policies
 
@@ -34,6 +34,14 @@ Shared systems only. Blocks system tools for non-admin users.
 | Setting | Value | Effect |
 |---------|-------|--------|
 | `DisableTaskMgr` | 1 | Prevents users from starting Task Manager |
+
+### `disable-workstation-lock.txt`
+
+Dedicated systems only.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableLockWorkstation` | 1 | Removes the Lock command and disables Win+L |
 
 ### `disable-control-panel.txt`
 

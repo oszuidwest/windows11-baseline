@@ -45,6 +45,7 @@ function Get-ApplicablePolicies {
 
     $applicable = @{
         Computer = @()
+        Security = @()
         User     = @()
     }
 
@@ -58,15 +59,20 @@ function Get-ApplicablePolicies {
             $fullPath = Join-Path $policiesPath $policyPath
 
             if (Test-Path $fullPath) {
-                $firstLine = Get-Content $fullPath -First 1
-                if ($firstLine -eq "Computer") {
-                    $applicable.Computer += $fullPath
-                }
-                elseif ($firstLine -eq "User") {
-                    $applicable.User += $fullPath
+                if ([System.IO.Path]::GetExtension($fullPath) -eq ".inf") {
+                    $applicable.Security += $fullPath
                 }
                 else {
-                    Write-Warning "Unknown policy type in $policyPath - skipping"
+                    $firstLine = Get-Content $fullPath -First 1
+                    if ($firstLine -eq "Computer") {
+                        $applicable.Computer += $fullPath
+                    }
+                    elseif ($firstLine -eq "User") {
+                        $applicable.User += $fullPath
+                    }
+                    else {
+                        Write-Warning "Unknown policy type in $policyPath - skipping"
+                    }
                 }
                 Write-Host "  [+] $policyPath"
             }
@@ -140,6 +146,18 @@ function Set-Policy {
         Write-Output "  User policies applied successfully"
     }
 
+    if ($policies.Security.Count -gt 0 -and $PSCmdlet.ShouldProcess("Local security policy", "Apply $($policies.Security.Count) policies")) {
+        Write-Output "`nApplying $($policies.Security.Count) security policies..."
+
+        foreach ($securityPolicy in $policies.Security) {
+            Invoke-NativeCommand -FilePath $lgpoPath `
+                -Arguments @("/s", $securityPolicy) `
+                -FailureMessage "LGPO security policy apply failed for '$securityPolicy'"
+        }
+
+        Write-Output "  Security policies applied successfully"
+    }
+
     Remove-Item -Path $tempPath -Recurse -Force -ErrorAction SilentlyContinue
 }
 
@@ -188,7 +206,7 @@ $config = Get-Content $configPath -Raw | ConvertFrom-Json
 
 $applicablePolicies = Get-ApplicablePolicies -config $config -purpose $systemPurpose -ownership $systemOwnership
 
-$totalPolicies = $applicablePolicies.Computer.Count + $applicablePolicies.User.Count
+$totalPolicies = $applicablePolicies.Computer.Count + $applicablePolicies.Security.Count + $applicablePolicies.User.Count
 
 if ($totalPolicies -eq 0) {
     Write-Output "`nNo applicable policies found for this configuration."

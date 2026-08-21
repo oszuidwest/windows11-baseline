@@ -76,6 +76,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | x | x | x |
 | system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | x | x | x |
 | system | bluetooth | Disable Bluetooth | Disable Bluetooth, hide its Settings page, block device class, and disable bthserv | x | x | x |
+| system | logon-experience | Disable Inactivity Lock | Disable automatic workstation locking after inactivity |   |   | x |
 | system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | x |   |   |
 | system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | x |   |   |
@@ -120,11 +121,12 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | user | security | Disable Registry Editor | Disable Registry Editor for non-admin users | x |   |   |
 | user | security | Disable Run Dialog | Disable Run dialog (Win+R) for non-admin users | x |   |   |
 | user | security | Disable Task Manager | Disable Task Manager for non-admin users | x |   |   |
+| user | security | Disable Workstation Lock | Remove the Lock command and disable Win+L for non-admin users |   |   | x |
 <!-- END_POLICY_MATRIX -->
 
 ## File Format
 
-Policy files use LGPO.exe text format:
+Registry policy files (`.txt`) use LGPO.exe text format:
 
 ```
 Computer|User
@@ -139,10 +141,12 @@ Types:
 - `EXSZ:string` - Expandable string
 - `DELETE` - Remove the value
 
+Local security policy overrides use security template (`.inf`) format and are applied with `LGPO.exe /s`. Use this format for settings that the Microsoft security baseline stores in the local security policy database.
+
 ## Adding New Policies
 
 1. Create a new directory under `system/` or `user/`
-2. Add policy `.txt` file(s) in LGPO format
+2. Add registry policy `.txt` file(s) in LGPO format or local security policy `.inf` file(s) in security template format
 3. Add a `README.md` documenting each policy setting
 4. Register the policy in `config.json` with appropriate scopes
 

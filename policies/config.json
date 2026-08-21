@@ -11,6 +11,11 @@
       "ownership": ["all"],
       "description": "Disable first logon animation and fast user switching"
     },
+    "system/logon-experience/disable-inactivity-lock.inf": {
+      "purposes": ["all"],
+      "ownership": ["dedicated"],
+      "description": "Disable automatic workstation locking after inactivity"
+    },
     "system/microsoft-account/disable-microsoft-account.txt": {
       "purposes": ["all"],
       "ownership": ["shared"],
@@ -135,6 +140,11 @@
       "purposes": ["all"],
       "ownership": ["shared"],
       "description": "Disable Task Manager for non-admin users"
+    },
+    "user/security/disable-workstation-lock.txt": {
+      "purposes": ["all"],
+      "ownership": ["dedicated"],
+      "description": "Remove the Lock command and disable Win+L for non-admin users"
     },
     "user/security/disable-control-panel.txt": {
       "purposes": ["all"],
