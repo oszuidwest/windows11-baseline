@@ -43,6 +43,14 @@ Dedicated systems only.
 |---------|-------|--------|
 | `DisableLockWorkstation` | 1 | Removes the Lock command and disables Win+L |
 
+### `disable-workstation-lock-production-shared.txt`
+
+Shared radio and TV production systems only. Shared editorial and plain systems retain the Lock command and Win+L.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `DisableLockWorkstation` | 1 | Removes the Lock command and disables Win+L |
+
 ### `disable-control-panel.txt`
 
 | Setting | Value | Effect |

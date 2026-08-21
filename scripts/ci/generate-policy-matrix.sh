@@ -43,24 +43,8 @@ humanize() {
 }
 
 generate_table() {
-    # This matrix only models ownership; fail on purpose-specific policies.
-    local purpose_specific
-    purpose_specific=$(jq -r '
-        [.policies | to_entries[]
-         | select(.value.purposes != ["all"])
-         | .key] | join(", ")
-    ' "$CONFIG")
-    if [ -n "$purpose_specific" ]; then
-        echo "ERROR: matrix generator only models the ownership dimension, but the following" >&2
-        echo "policies have purpose-specific scopes:" >&2
-        echo "  $purpose_specific" >&2
-        echo "Extend scripts/ci/generate-policy-matrix.sh (add a Purposes column or split" >&2
-        echo "the matrix per purpose) before adding such policies." >&2
-        exit 1
-    fi
-
-    echo "| Scope | Category | Policy | Description | Shared | Personal | Dedicated |"
-    echo "|:-----:|----------|--------|-------------|:------:|:--------:|:---------:|"
+    echo "| Scope | Category | Policy | Description | Purposes | Shared | Personal | Dedicated |"
+    echo "|:-----:|----------|--------|-------------|----------|:------:|:--------:|:---------:|"
 
     # Emit TSV so the shell loop does not parse JSON.
     jq -r '
@@ -70,24 +54,26 @@ generate_table() {
             parts: (.key | split("/")),
             description: .value.description,
             ownership: .value.ownership,
+            purposes: .value.purposes,
           })
         | map({
             scope: .parts[0],
             category: .parts[1],
             slug: (.parts[2] | sub("\\.(txt|inf)$"; "")),
             description: .description,
+            purposes: (if (.purposes | index("all")) then "all" else (.purposes | join(", ")) end),
             shared: (if (.ownership | index("all")) or (.ownership | index("shared")) then "x" else " " end),
             personal: (if (.ownership | index("all")) or (.ownership | index("personal")) then "x" else " " end),
             dedicated: (if (.ownership | index("all")) or (.ownership | index("dedicated")) then "x" else " " end),
           })
         | sort_by(.scope, .category, .slug)
         | .[]
-        | [.scope, .category, .slug, .description, .shared, .personal, .dedicated]
+        | [.scope, .category, .slug, .description, .purposes, .shared, .personal, .dedicated]
         | @tsv
     ' "$CONFIG" |
-    while IFS=$'\t' read -r scope category slug description shared personal dedicated; do
+    while IFS=$'\t' read -r scope category slug description purposes shared personal dedicated; do
         policy_name=$(humanize "$slug")
-        echo "| $scope | $category | $policy_name | $description | $shared | $personal | $dedicated |"
+        echo "| $scope | $category | $policy_name | $description | $purposes | $shared | $personal | $dedicated |"
     done
 }
 

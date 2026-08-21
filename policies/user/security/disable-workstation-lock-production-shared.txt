@@ -1,0 +1,4 @@
+User
+SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+DisableLockWorkstation
+DWORD:1

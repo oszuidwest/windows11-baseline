@@ -61,67 +61,69 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | `personal` | Personal workstations (single user) |
 | `dedicated` | Dedicated workstations (specific function) |
 
-> **Note:** all policies in `config.json` currently use `purposes: ["all"]`. The purpose dimension is kept in the schema and the apply pipeline as a reserved future hook so that purpose-specific policies can be added without restructuring `config.json`. `scripts/ci/generate-policy-matrix.sh` enforces this assumption: it fails fast if any policy adopts a purpose-specific scope so the matrix cannot silently misrepresent it.
+The purpose and ownership scopes are combined: a policy applies only when both columns match the current system. The generated matrix lists purpose-specific policies explicitly.
 
 ## Policy Matrix
 
 The table below is generated from `config.json` by `scripts/ci/generate-policy-matrix.sh`. Do not edit by hand - run `./scripts/ci/generate-policy-matrix.sh write` after changing `config.json` (CI enforces this).
 
 <!-- BEGIN_POLICY_MATRIX -->
-| Scope | Category | Policy | Description | Shared | Personal | Dedicated |
-|:-----:|----------|--------|-------------|:------:|:--------:|:---------:|
-| system | bitlocker | Removable Media Safe | Apply BitLocker-related hardening without blocking writes to SD cards or USB media | x | x | x |
-| system | bloatware | Disable Game Bar | Disable Game Bar popups and DVR (not installed on LTSC) | x | x | x |
-| system | bloatware | Disable Spotlight | Disable Windows Spotlight tips and suggestions | x | x | x |
-| system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | x | x | x |
-| system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | x | x | x |
-| system | bluetooth | Disable Bluetooth | Disable Bluetooth, hide its Settings page, block device class, and disable bthserv | x | x | x |
-| system | logon-experience | Disable Inactivity Lock | Disable automatic workstation locking after inactivity |   |   | x |
-| system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | x | x | x |
-| system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | x |   |   |
-| system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | x |   |   |
-| system | onedrive | Disable OneDrive Sync | Disable OneDrive file synchronization | x |   |   |
-| system | oobe | Skip Privacy Wizard | Skip privacy wizard during Windows setup | x | x | x |
-| system | privacy | Disable Activity History | Disable Windows Activity History and Timeline | x | x | x |
-| system | privacy | Disable Clipboard History | Disable clipboard history and cross-device clipboard | x |   | x |
-| system | privacy | Disable Recall | Disable Windows Recall AI screenshot feature | x |   | x |
-| system | privacy | Disable Tracking | Disable telemetry, location, advertising ID and tracking | x | x | x |
-| system | security | Defender Network Protection | Enable Defender Network Protection to block malicious domains | x | x | x |
-| system | security | Defender PUA Protection | Enable Defender PUA (Potentially Unwanted Application) Protection | x | x | x |
-| system | security | Disable Autorun | Disable autorun for USB, CD and other drives | x | x | x |
-| system | security | Hide Shutdown Button | Hide shutdown button, only allow restart | x |   |   |
-| system | security | NTLM Hardening | Force NTLMv2 only authentication (LmCompatibilityLevel 5) | x | x | x |
-| system | security | SmartScreen | Enable Windows SmartScreen for apps and files | x | x | x |
-| system | wifi | Disable WiFi | Disable WiFi by disabling WLAN AutoConfig service | x |   | x |
-| system | windows-update | Configure Auto Update | Configure automatic updates daily at 3:00 AM | x | x | x |
-| system | windows-update | Disable Auto Reboot | Prevent automatic reboot after updates (dedicated systems have auto-login) |   |   | x |
-| user | browser | Chrome Autofill | Disable Chrome password manager, autofill, passkeys, payments, and imports | x |   |   |
-| user | browser | Chrome Developer Tools | Disable Chrome Developer Tools (F12) | x |   |   |
-| user | browser | Chrome Disable Sign In | Disable Chrome sign-in on shared and dedicated systems | x |   | x |
-| user | browser | Chrome Extensions | Block all Chrome extension installations | x | x | x |
-| user | browser | Chrome Google Accounts | Temporarily allow all Google account domains in Chrome | x | x | x |
-| user | browser | Chrome Privacy | Chrome privacy, safe browsing, and data collection defaults | x | x | x |
-| user | browser | Chrome Profile | Chrome ephemeral profiles, no history, no sync | x |   |   |
-| user | browser | Chrome Sign In | Allow only ZuidWest Google accounts for Chrome sign-in on personal systems |   | x |   |
-| user | browser | Chrome UI | Block Chrome notifications/popups and remove promotional UI | x | x | x |
-| user | browser | Edge Autofill | Disable Edge autofill and data import | x |   |   |
-| user | browser | Edge Developer Tools | Disable Edge Developer Tools (F12) | x |   |   |
-| user | browser | Edge Disable Sign In | Disable Edge sign-in on shared and dedicated systems | x |   | x |
-| user | browser | Edge Extensions | Block all Edge extension installations | x |   |   |
-| user | browser | Edge Privacy | Edge tracking prevention and security | x | x | x |
-| user | browser | Edge Profile | Edge ephemeral profiles, no history, no sync | x |   |   |
-| user | browser | Edge Sign In | Allow only ZuidWest work/school accounts for Edge sign-in on personal systems |   | x |   |
-| user | browser | Edge UI | Disable Edge bloatware UI elements and set homepage to zuidwestupdate.nl | x | x | x |
-| user | personalization | Set Wallpaper Black | Set solid black wallpaper for dedicated systems |   |   | x |
-| user | personalization | Set Wallpaper Branded | Set branded ZuidWest wallpaper for shared and personal systems | x | x |   |
-| user | security | Disable Command Prompt | Disable Command Prompt for non-admin users | x |   |   |
-| user | security | Disable Control Panel | Disable Control Panel and Settings app for non-admin users | x |   |   |
-| user | security | Disable Network Settings | Disable network connection property changes for non-admin users | x |   |   |
-| user | security | Disable PowerShell | Disable PowerShell for non-admin users | x |   |   |
-| user | security | Disable Registry Editor | Disable Registry Editor for non-admin users | x |   |   |
-| user | security | Disable Run Dialog | Disable Run dialog (Win+R) for non-admin users | x |   |   |
-| user | security | Disable Task Manager | Disable Task Manager for non-admin users | x |   |   |
-| user | security | Disable Workstation Lock | Remove the Lock command and disable Win+L for non-admin users |   |   | x |
+| Scope | Category | Policy | Description | Purposes | Shared | Personal | Dedicated |
+|:-----:|----------|--------|-------------|----------|:------:|:--------:|:---------:|
+| system | bitlocker | Removable Media Safe | Apply BitLocker-related hardening without blocking writes to SD cards or USB media | all | x | x | x |
+| system | bloatware | Disable Game Bar | Disable Game Bar popups and DVR (not installed on LTSC) | all | x | x | x |
+| system | bloatware | Disable Spotlight | Disable Windows Spotlight tips and suggestions | all | x | x | x |
+| system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | all | x | x | x |
+| system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | all | x | x | x |
+| system | bluetooth | Disable Bluetooth | Disable Bluetooth, hide its Settings page, block device class, and disable bthserv | all | x | x | x |
+| system | logon-experience | Disable Inactivity Lock | Disable automatic workstation locking after inactivity | all |   |   | x |
+| system | logon-experience | Disable Inactivity Lock Production Shared | Disable automatic workstation locking on shared radio and TV production systems | radio, tv | x |   |   |
+| system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | all | x | x | x |
+| system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | all | x |   |   |
+| system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | all | x |   |   |
+| system | onedrive | Disable OneDrive Sync | Disable OneDrive file synchronization | all | x |   |   |
+| system | oobe | Skip Privacy Wizard | Skip privacy wizard during Windows setup | all | x | x | x |
+| system | privacy | Disable Activity History | Disable Windows Activity History and Timeline | all | x | x | x |
+| system | privacy | Disable Clipboard History | Disable clipboard history and cross-device clipboard | all | x |   | x |
+| system | privacy | Disable Recall | Disable Windows Recall AI screenshot feature | all | x |   | x |
+| system | privacy | Disable Tracking | Disable telemetry, location, advertising ID and tracking | all | x | x | x |
+| system | security | Defender Network Protection | Enable Defender Network Protection to block malicious domains | all | x | x | x |
+| system | security | Defender PUA Protection | Enable Defender PUA (Potentially Unwanted Application) Protection | all | x | x | x |
+| system | security | Disable Autorun | Disable autorun for USB, CD and other drives | all | x | x | x |
+| system | security | Hide Shutdown Button | Hide shutdown button, only allow restart | all | x |   |   |
+| system | security | NTLM Hardening | Force NTLMv2 only authentication (LmCompatibilityLevel 5) | all | x | x | x |
+| system | security | SmartScreen | Enable Windows SmartScreen for apps and files | all | x | x | x |
+| system | wifi | Disable WiFi | Disable WiFi by disabling WLAN AutoConfig service | all | x |   | x |
+| system | windows-update | Configure Auto Update | Configure automatic updates daily at 3:00 AM | all | x | x | x |
+| system | windows-update | Disable Auto Reboot | Prevent automatic reboot after updates (dedicated systems have auto-login) | all |   |   | x |
+| user | browser | Chrome Autofill | Disable Chrome password manager, autofill, passkeys, payments, and imports | all | x |   |   |
+| user | browser | Chrome Developer Tools | Disable Chrome Developer Tools (F12) | all | x |   |   |
+| user | browser | Chrome Disable Sign In | Disable Chrome sign-in on shared and dedicated systems | all | x |   | x |
+| user | browser | Chrome Extensions | Block all Chrome extension installations | all | x | x | x |
+| user | browser | Chrome Google Accounts | Temporarily allow all Google account domains in Chrome | all | x | x | x |
+| user | browser | Chrome Privacy | Chrome privacy, safe browsing, and data collection defaults | all | x | x | x |
+| user | browser | Chrome Profile | Chrome ephemeral profiles, no history, no sync | all | x |   |   |
+| user | browser | Chrome Sign In | Allow only ZuidWest Google accounts for Chrome sign-in on personal systems | all |   | x |   |
+| user | browser | Chrome UI | Block Chrome notifications/popups and remove promotional UI | all | x | x | x |
+| user | browser | Edge Autofill | Disable Edge autofill and data import | all | x |   |   |
+| user | browser | Edge Developer Tools | Disable Edge Developer Tools (F12) | all | x |   |   |
+| user | browser | Edge Disable Sign In | Disable Edge sign-in on shared and dedicated systems | all | x |   | x |
+| user | browser | Edge Extensions | Block all Edge extension installations | all | x |   |   |
+| user | browser | Edge Privacy | Edge tracking prevention and security | all | x | x | x |
+| user | browser | Edge Profile | Edge ephemeral profiles, no history, no sync | all | x |   |   |
+| user | browser | Edge Sign In | Allow only ZuidWest work/school accounts for Edge sign-in on personal systems | all |   | x |   |
+| user | browser | Edge UI | Disable Edge bloatware UI elements and set homepage to zuidwestupdate.nl | all | x | x | x |
+| user | personalization | Set Wallpaper Black | Set solid black wallpaper for dedicated systems | all |   |   | x |
+| user | personalization | Set Wallpaper Branded | Set branded ZuidWest wallpaper for shared and personal systems | all | x | x |   |
+| user | security | Disable Command Prompt | Disable Command Prompt for non-admin users | all | x |   |   |
+| user | security | Disable Control Panel | Disable Control Panel and Settings app for non-admin users | all | x |   |   |
+| user | security | Disable Network Settings | Disable network connection property changes for non-admin users | all | x |   |   |
+| user | security | Disable PowerShell | Disable PowerShell for non-admin users | all | x |   |   |
+| user | security | Disable Registry Editor | Disable Registry Editor for non-admin users | all | x |   |   |
+| user | security | Disable Run Dialog | Disable Run dialog (Win+R) for non-admin users | all | x |   |   |
+| user | security | Disable Task Manager | Disable Task Manager for non-admin users | all | x |   |   |
+| user | security | Disable Workstation Lock | Remove the Lock command and disable Win+L for non-admin users | all |   |   | x |
+| user | security | Disable Workstation Lock Production Shared | Remove the Lock command and disable Win+L on shared radio and TV production systems | radio, tv | x |   |   |
 <!-- END_POLICY_MATRIX -->
 
 ## File Format
