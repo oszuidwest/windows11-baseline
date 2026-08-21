@@ -239,7 +239,6 @@ $scriptRequirements = @{
     'securitybaseline' = @()
     'sounds'           = @()
     'time'             = @()
-    'updates'          = @()
     'users'            = @('systemPurpose', 'systemOwnership', 'userPassword', 'dedicatedUserName', 'personalUserName')
     'workgroupname'    = @('computerName', 'workgroupName')
 }

@@ -32,7 +32,7 @@ Deployment values are not accepted as command-line parameters; `-OnlyRun` is the
 Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { iwr 'https://raw.githubusercontent.com/oszuidwest/windows11-baseline/main/install.ps1' -OutFile `$env:TEMP\install.ps1; & `$env:TEMP\install.ps1 -OnlyRun 'policies','hardening' }`"" -Verb RunAs
 ```
 
-Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `policyupdate`, `power`, `sounds`, `time`, `updates`, `users`, `workgroupname`
+Available scripts: `debloat`, `securitybaseline`, `applocker`, `apps`, `dwservice`, `hardening`, `policies`, `policyupdate`, `power`, `sounds`, `time`, `users`, `workgroupname`
 
 ### Auto-Update for Policies
 
