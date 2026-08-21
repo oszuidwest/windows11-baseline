@@ -1,0 +1,4 @@
+Computer
+SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile
+AllowLocalPolicyMerge
+DWORD:1

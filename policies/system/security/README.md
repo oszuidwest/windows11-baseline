@@ -4,6 +4,14 @@ System hardening policies for malware prevention, authentication security, and a
 
 ## Policies
 
+### `allow-local-firewall-rules.txt`
+
+Allows administrators to add local Windows Defender Firewall rules when the active network uses the Public profile. This overrides the Microsoft security baseline setting that otherwise ignores local firewall rules on public networks. It does not disable the firewall or change its default inbound and outbound actions.
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `PublicProfile\\AllowLocalPolicyMerge` | 1 | Merge locally created firewall rules into the effective public-profile policy |
+
 ### `disable-autorun.txt`
 
 | Setting | Value | Effect |

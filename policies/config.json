@@ -58,6 +58,11 @@
       "ownership": ["all"],
       "description": "Disable autorun for USB, CD and other drives"
     },
+    "system/security/allow-local-firewall-rules.txt": {
+      "purposes": ["all"],
+      "ownership": ["all"],
+      "description": "Allow administrators to add local firewall rules on public networks"
+    },
     "system/security/relax-password-policy.inf": {
       "purposes": ["all"],
       "ownership": ["all"],

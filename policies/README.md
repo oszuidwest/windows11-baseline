@@ -101,6 +101,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | privacy | Disable Clipboard History | Disable clipboard history and cross-device clipboard | all | x |   | x |
 | system | privacy | Disable Recall | Disable Windows Recall AI screenshot feature | all | x |   | x |
 | system | privacy | Disable Tracking | Disable telemetry, location, advertising ID and tracking | all | x | x | x |
+| system | security | Allow Local Firewall Rules | Allow administrators to add local firewall rules on public networks | all | x | x | x |
 | system | security | Defender Network Protection | Enable Defender Network Protection to block malicious domains | all | x | x | x |
 | system | security | Defender PUA Protection | Enable Defender PUA (Potentially Unwanted Application) Protection | all | x | x | x |
 | system | security | Disable Autorun | Disable autorun for USB, CD and other drives | all | x | x | x |
