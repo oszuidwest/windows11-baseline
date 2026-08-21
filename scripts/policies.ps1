@@ -36,6 +36,27 @@ function Test-PolicyMatch {
     return ($configuredScopes -contains "all") -or ($configuredScopes -contains $currentValue.ToLower())
 }
 
+function Test-PolicyScopeMatch {
+    param (
+        [object]$policy,
+        [string]$purpose,
+        [string]$ownership
+    )
+
+    $scopeConfigurations = if ($policy.scopes) { @($policy.scopes) } else { @($policy) }
+
+    foreach ($scope in $scopeConfigurations) {
+        $purposeMatch = Test-PolicyMatch -configuredScopes $scope.purposes -currentValue $purpose
+        $ownershipMatch = Test-PolicyMatch -configuredScopes $scope.ownership -currentValue $ownership
+
+        if ($purposeMatch -and $ownershipMatch) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-ApplicablePolicies {
     param (
         [object]$config,
@@ -52,10 +73,7 @@ function Get-ApplicablePolicies {
     foreach ($policyPath in $config.policies.PSObject.Properties.Name) {
         $policy = $config.policies.$policyPath
 
-        $purposeMatch = Test-PolicyMatch -configuredScopes $policy.purposes -currentValue $purpose
-        $ownershipMatch = Test-PolicyMatch -configuredScopes $policy.ownership -currentValue $ownership
-
-        if ($purposeMatch -and $ownershipMatch) {
+        if (Test-PolicyScopeMatch -policy $policy -purpose $purpose -ownership $ownership) {
             $fullPath = Join-Path $policiesPath $policyPath
 
             if (Test-Path $fullPath) {

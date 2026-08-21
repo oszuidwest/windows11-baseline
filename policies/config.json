@@ -12,14 +12,11 @@
       "description": "Disable first logon animation and fast user switching"
     },
     "system/logon-experience/disable-inactivity-lock.inf": {
-      "purposes": ["all"],
-      "ownership": ["dedicated"],
-      "description": "Disable automatic workstation locking after inactivity"
-    },
-    "system/logon-experience/disable-inactivity-lock-production-shared.inf": {
-      "purposes": ["radio", "tv"],
-      "ownership": ["shared"],
-      "description": "Disable automatic workstation locking on shared radio and TV production systems"
+      "scopes": [
+        { "purposes": ["all"], "ownership": ["dedicated"] },
+        { "purposes": ["radio", "tv"], "ownership": ["shared"] }
+      ],
+      "description": "Disable automatic workstation locking on dedicated and shared production systems"
     },
     "system/microsoft-account/disable-microsoft-account.txt": {
       "purposes": ["all"],
@@ -147,14 +144,11 @@
       "description": "Disable Task Manager for non-admin users"
     },
     "user/security/disable-workstation-lock.txt": {
-      "purposes": ["all"],
-      "ownership": ["dedicated"],
-      "description": "Remove the Lock command and disable Win+L for non-admin users"
-    },
-    "user/security/disable-workstation-lock-production-shared.txt": {
-      "purposes": ["radio", "tv"],
-      "ownership": ["shared"],
-      "description": "Remove the Lock command and disable Win+L on shared radio and TV production systems"
+      "scopes": [
+        { "purposes": ["all"], "ownership": ["dedicated"] },
+        { "purposes": ["radio", "tv"], "ownership": ["shared"] }
+      ],
+      "description": "Remove the Lock command and disable Win+L on dedicated and shared production systems"
     },
     "user/security/disable-control-panel.txt": {
       "purposes": ["all"],

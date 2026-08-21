@@ -37,15 +37,7 @@ Applies ownership-specific restrictions to non-admin users.
 
 ### `disable-workstation-lock.txt`
 
-Dedicated systems only.
-
-| Setting | Value | Effect |
-|---------|-------|--------|
-| `DisableLockWorkstation` | 1 | Removes the Lock command and disables Win+L |
-
-### `disable-workstation-lock-production-shared.txt`
-
-Shared radio and TV production systems only. Shared editorial and plain systems retain the Lock command and Win+L.
+Dedicated systems of every purpose, plus shared radio and TV production systems. Shared editorial and plain systems retain the Lock command and Win+L.
 
 | Setting | Value | Effect |
 |---------|-------|--------|

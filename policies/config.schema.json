@@ -31,12 +31,54 @@
             "minItems": 1,
             "description": "System ownership types this policy applies to. Use 'all' for universal application."
           },
+          "scopes": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Alternative purpose and ownership combinations. A policy applies when any scope matches.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "purposes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["all", "radio", "tv", "editorial", "plain"]
+                  },
+                  "minItems": 1
+                },
+                "ownership": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["all", "shared", "personal", "dedicated"]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": ["purposes", "ownership"],
+              "additionalProperties": false
+            }
+          },
           "description": {
             "type": "string",
             "description": "Brief description of what this policy does"
           }
         },
-        "required": ["purposes", "ownership"],
+        "oneOf": [
+          {
+            "required": ["purposes", "ownership"],
+            "not": { "required": ["scopes"] }
+          },
+          {
+            "required": ["scopes"],
+            "not": {
+              "anyOf": [
+                { "required": ["purposes"] },
+                { "required": ["ownership"] }
+              ]
+            }
+          }
+        ],
         "additionalProperties": false
       }
     }

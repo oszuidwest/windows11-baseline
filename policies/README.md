@@ -44,6 +44,21 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 }
 ```
 
+When one policy needs multiple purpose/ownership combinations, use `scopes`. The policy applies when any entry matches:
+
+```json
+{
+  "policies": {
+    "system/logon-experience/disable-inactivity-lock.inf": {
+      "scopes": [
+        { "purposes": ["all"], "ownership": ["dedicated"] },
+        { "purposes": ["radio", "tv"], "ownership": ["shared"] }
+      ]
+    }
+  }
+}
+```
+
 ### Available Scopes
 
 | Purpose | Description |
@@ -61,14 +76,14 @@ Policies can be applied conditionally based on **system purpose** and **ownershi
 | `personal` | Personal workstations (single user) |
 | `dedicated` | Dedicated workstations (specific function) |
 
-The purpose and ownership scopes are combined: a policy applies only when both columns match the current system. The generated matrix lists purpose-specific policies explicitly.
+Within each scope, purpose and ownership are combined: both must match the current system. Multiple `scopes` entries are alternatives, so any matching scope applies the policy.
 
 ## Policy Matrix
 
 The table below is generated from `config.json` by `scripts/ci/generate-policy-matrix.sh`. Do not edit by hand - run `./scripts/ci/generate-policy-matrix.sh write` after changing `config.json` (CI enforces this).
 
 <!-- BEGIN_POLICY_MATRIX -->
-| Scope | Category | Policy | Description | Purposes | Shared | Personal | Dedicated |
+| Scope | Category | Policy | Description | Applies to | Shared | Personal | Dedicated |
 |:-----:|----------|--------|-------------|----------|:------:|:--------:|:---------:|
 | system | bitlocker | Removable Media Safe | Apply BitLocker-related hardening without blocking writes to SD cards or USB media | all | x | x | x |
 | system | bloatware | Disable Game Bar | Disable Game Bar popups and DVR (not installed on LTSC) | all | x | x | x |
@@ -76,8 +91,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | system | bloatware | Disable Web In Search | Disable web search and suggestions in Start menu | all | x | x | x |
 | system | bloatware | Disable Widgets | Disable Windows 11 Widgets panel | all | x | x | x |
 | system | bluetooth | Disable Bluetooth | Disable Bluetooth, hide its Settings page, block device class, and disable bthserv | all | x | x | x |
-| system | logon-experience | Disable Inactivity Lock | Disable automatic workstation locking after inactivity | all |   |   | x |
-| system | logon-experience | Disable Inactivity Lock Production Shared | Disable automatic workstation locking on shared radio and TV production systems | radio, tv | x |   |   |
+| system | logon-experience | Disable Inactivity Lock | Disable automatic workstation locking on dedicated and shared production systems | dedicated: all; shared: radio, tv | x |   | x |
 | system | logon-experience | Disable Logon Animations | Disable first logon animation and fast user switching | all | x | x | x |
 | system | microsoft-account | Disable Microsoft Account | Disable Microsoft Account authentication | all | x |   |   |
 | system | microsoft-store | Disable Store | Block Store access, app installs, and prevent non-admin package installation | all | x |   |   |
@@ -122,8 +136,7 @@ The table below is generated from `config.json` by `scripts/ci/generate-policy-m
 | user | security | Disable Registry Editor | Disable Registry Editor for non-admin users | all | x |   |   |
 | user | security | Disable Run Dialog | Disable Run dialog (Win+R) for non-admin users | all | x |   |   |
 | user | security | Disable Task Manager | Disable Task Manager for non-admin users | all | x |   |   |
-| user | security | Disable Workstation Lock | Remove the Lock command and disable Win+L for non-admin users | all |   |   | x |
-| user | security | Disable Workstation Lock Production Shared | Remove the Lock command and disable Win+L on shared radio and TV production systems | radio, tv | x |   |   |
+| user | security | Disable Workstation Lock | Remove the Lock command and disable Win+L on dedicated and shared production systems | dedicated: all; shared: radio, tv | x |   | x |
 <!-- END_POLICY_MATRIX -->
 
 ## File Format

@@ -43,37 +43,38 @@ humanize() {
 }
 
 generate_table() {
-    echo "| Scope | Category | Policy | Description | Purposes | Shared | Personal | Dedicated |"
+    echo "| Scope | Category | Policy | Description | Applies to | Shared | Personal | Dedicated |"
     echo "|:-----:|----------|--------|-------------|----------|:------:|:--------:|:---------:|"
 
     # Emit TSV so the shell loop does not parse JSON.
     jq -r '
+        def list_or_all: if index("all") then "all" else join(", ") end;
+
         .policies
         | to_entries
         | map({
             parts: (.key | split("/")),
             description: .value.description,
-            ownership: .value.ownership,
-            purposes: .value.purposes,
+            scopes: (if .value.scopes then .value.scopes else [{ purposes: .value.purposes, ownership: .value.ownership }] end),
           })
         | map({
             scope: .parts[0],
             category: .parts[1],
             slug: (.parts[2] | sub("\\.(txt|inf)$"; "")),
             description: .description,
-            purposes: (if (.purposes | index("all")) then "all" else (.purposes | join(", ")) end),
-            shared: (if (.ownership | index("all")) or (.ownership | index("shared")) then "x" else " " end),
-            personal: (if (.ownership | index("all")) or (.ownership | index("personal")) then "x" else " " end),
-            dedicated: (if (.ownership | index("all")) or (.ownership | index("dedicated")) then "x" else " " end),
+            applies_to: (if (.scopes | length) == 1 then (.scopes[0].purposes | list_or_all) else (.scopes | map((.ownership | list_or_all) + ": " + (.purposes | list_or_all)) | join("; ")) end),
+            shared: (if any(.scopes[]; (.ownership | index("all")) or (.ownership | index("shared"))) then "x" else " " end),
+            personal: (if any(.scopes[]; (.ownership | index("all")) or (.ownership | index("personal"))) then "x" else " " end),
+            dedicated: (if any(.scopes[]; (.ownership | index("all")) or (.ownership | index("dedicated"))) then "x" else " " end),
           })
         | sort_by(.scope, .category, .slug)
         | .[]
-        | [.scope, .category, .slug, .description, .purposes, .shared, .personal, .dedicated]
+        | [.scope, .category, .slug, .description, .applies_to, .shared, .personal, .dedicated]
         | @tsv
     ' "$CONFIG" |
-    while IFS=$'\t' read -r scope category slug description purposes shared personal dedicated; do
+    while IFS=$'\t' read -r scope category slug description applies_to shared personal dedicated; do
         policy_name=$(humanize "$slug")
-        echo "| $scope | $category | $policy_name | $description | $purposes | $shared | $personal | $dedicated |"
+        echo "| $scope | $category | $policy_name | $description | $applies_to | $shared | $personal | $dedicated |"
     done
 }
 
